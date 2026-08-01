@@ -15,11 +15,13 @@ interface PruebaDetalle {
     consentimiento_aceptado: boolean;
     consentimiento_en: string | null;
     evidencia_path: string | null;
+    firma_path: string | null;
     observaciones: string | null;
     fecha_hora: string;
     colaborador: { nombres: string; apellidos: string; cedula: string } | null;
     alcoholimetro: { codigo: string } | null;
     responsable: { name: string } | null;
+    evidencias: { id: number; path: string }[];
 }
 
 const EVALUACION_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -28,13 +30,15 @@ const EVALUACION_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'
     'No Apto': 'destructive',
 };
 
-export default function PruebaShow({ prueba }: { prueba: PruebaDetalle }) {
+export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; qrSvg: string | null }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Seguridad', href: '/modules/seguridad' },
         { title: 'Pruebas de Alcoholemia', href: '/modules/seguridad/pruebas' },
         { title: `Prueba #${prueba.id}`, href: `/modules/seguridad/pruebas/${prueba.id}` },
     ];
+
+    const fotos = [prueba.evidencia_path, ...prueba.evidencias.map((e) => e.path)].filter((p): p is string => Boolean(p));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -52,28 +56,57 @@ export default function PruebaShow({ prueba }: { prueba: PruebaDetalle }) {
                     )}
                 </div>
 
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                    <CardContent className="grid gap-3 p-6 text-sm sm:grid-cols-2">
-                        <p>Cédula: {prueba.colaborador?.cedula ?? '—'}</p>
-                        <p>Dispositivo: {prueba.alcoholimetro?.codigo ?? '—'}</p>
-                        <p>Resultado: {prueba.resultado ?? '—'}</p>
-                        <p>Responsable: {prueba.responsable?.name ?? '—'}</p>
-                        <p>
-                            Consentimiento informado: {prueba.consentimiento_aceptado ? 'Aceptado' : 'No registrado'}
-                            {prueba.consentimiento_en ? ` (${new Date(prueba.consentimiento_en).toLocaleString()})` : ''}
-                        </p>
-                        {prueba.observaciones && <p className="sm:col-span-2">Observaciones: {prueba.observaciones}</p>}
-                    </CardContent>
-                </Card>
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <Card className="border-sidebar-border/70 lg:col-span-2 dark:border-sidebar-border">
+                        <CardContent className="grid gap-3 p-6 text-sm sm:grid-cols-2">
+                            <p>Cédula: {prueba.colaborador?.cedula ?? '—'}</p>
+                            <p>Dispositivo: {prueba.alcoholimetro?.codigo ?? '—'}</p>
+                            <p>Resultado: {prueba.resultado ?? '—'}</p>
+                            <p>Responsable: {prueba.responsable?.name ?? '—'}</p>
+                            <p>
+                                Consentimiento informado: {prueba.consentimiento_aceptado ? 'Aceptado' : 'No registrado'}
+                                {prueba.consentimiento_en ? ` (${new Date(prueba.consentimiento_en).toLocaleString()})` : ''}
+                            </p>
+                            {prueba.observaciones && <p className="sm:col-span-2">Observaciones: {prueba.observaciones}</p>}
+                        </CardContent>
+                    </Card>
 
-                {prueba.evidencia_path && (
-                    <div className="max-w-md">
-                        <h2 className="mb-2 text-lg font-medium tracking-tight">Evidencia</h2>
+                    {qrSvg && (
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                            <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
+                                <div className="rounded-lg bg-white p-2" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                                <p className="text-muted-foreground text-xs">
+                                    Escanea para verificar la autenticidad de este registro sin necesidad de iniciar sesión.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+
+                {prueba.firma_path && (
+                    <div className="max-w-xs">
+                        <h2 className="mb-2 text-lg font-medium tracking-tight">Firma del colaborador</h2>
                         <img
-                            src={`/storage/${prueba.evidencia_path}`}
-                            alt="Evidencia de la prueba"
-                            className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border"
+                            src={`/storage/${prueba.firma_path}`}
+                            alt="Firma del colaborador"
+                            className="rounded-lg border border-sidebar-border/70 bg-white dark:border-sidebar-border"
                         />
+                    </div>
+                )}
+
+                {fotos.length > 0 && (
+                    <div>
+                        <h2 className="mb-2 text-lg font-medium tracking-tight">Evidencias</h2>
+                        <div className="flex flex-wrap gap-3">
+                            {fotos.map((path) => (
+                                <img
+                                    key={path}
+                                    src={`/storage/${path}`}
+                                    alt="Evidencia de la prueba"
+                                    className="h-32 w-32 rounded-lg border border-sidebar-border/70 object-cover dark:border-sidebar-border"
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

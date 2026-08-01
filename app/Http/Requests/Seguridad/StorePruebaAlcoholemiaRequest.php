@@ -33,6 +33,9 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
             'resultado' => ['required_unless:es_programacion,1', 'nullable', 'numeric'],
             'consentimiento_aceptado' => ['required_unless:es_programacion,1', 'accepted'],
             'evidencia' => ['nullable', 'image', 'max:5120'],
+            'evidencias' => ['nullable', 'array'],
+            'evidencias.*' => ['image', 'max:5120'],
+            'firma' => ['nullable', 'image', 'max:2048'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ];
     }

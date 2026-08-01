@@ -5,7 +5,9 @@ namespace App\Models\Seguridad;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class PruebaAlcoholemia extends Model
 {
@@ -19,10 +21,12 @@ class PruebaAlcoholemia extends Model
         'consentimiento_aceptado',
         'consentimiento_en',
         'evidencia_path',
+        'firma_path',
         'observaciones',
         'responsable_id',
         'fecha_hora',
         'programada_en',
+        'recordatorio_enviado_at',
         'estado',
     ];
 
@@ -35,6 +39,7 @@ class PruebaAlcoholemia extends Model
             'consentimiento_en' => 'datetime',
             'fecha_hora' => 'datetime',
             'programada_en' => 'datetime',
+            'recordatorio_enviado_at' => 'datetime',
         ];
     }
 
@@ -44,11 +49,20 @@ class PruebaAlcoholemia extends Model
             $prueba->es_positivo = $prueba->resultado !== null
                 && (float) $prueba->resultado > (float) config('seguridad.umbral_positivo');
         });
+
+        static::creating(function (self $prueba) {
+            $prueba->qr_token ??= Str::random(40);
+        });
     }
 
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    public function evidencias(): HasMany
+    {
+        return $this->hasMany(PruebaEvidencia::class);
     }
 
     public function alcoholimetro(): BelongsTo

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Seguridad\Alcoholimetro;
 use App\Models\Seguridad\Alerta;
+use App\Services\Seguridad\AlertaNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -26,11 +27,12 @@ class RevisarCalibracionesAlcoholimetros extends Command
                 ->exists();
 
             if (! $yaExiste) {
-                Alerta::create([
+                $alerta = Alerta::create([
                     'tipo' => 'calibracion_proxima',
                     'alcoholimetro_id' => $dispositivo->id,
                     'mensaje' => "El alcoholímetro {$dispositivo->codigo} está próximo a su fecha de calibración ({$dispositivo->fecha_calibracion->toDateString()}).",
                 ]);
+                AlertaNotifier::notificar($alerta);
                 $creadas++;
             }
         });
@@ -43,11 +45,12 @@ class RevisarCalibracionesAlcoholimetros extends Command
                 ->exists();
 
             if (! $yaExiste) {
-                Alerta::create([
+                $alerta = Alerta::create([
                     'tipo' => 'certificado_vencido',
                     'alcoholimetro_id' => $dispositivo->id,
                     'mensaje' => "El certificado del alcoholímetro {$dispositivo->codigo} vence el {$dispositivo->fecha_vencimiento_certificado->toDateString()}.",
                 ]);
+                AlertaNotifier::notificar($alerta);
                 $creadas++;
             }
         });

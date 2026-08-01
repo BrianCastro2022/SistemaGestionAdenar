@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { FirmaPad, type FirmaPadHandle } from '@/pages/seguridad/pruebas/firma-pad';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useRef } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -42,8 +43,10 @@ interface PruebaForm {
     resultado: string;
     consentimiento_aceptado: boolean;
     evidencia: File | null;
+    evidencias: File[];
+    firma: File | null;
     observaciones: string;
-    [key: string]: string | boolean | File | null;
+    [key: string]: string | boolean | File | File[] | null;
 }
 
 const TURNO_LABELS: Record<string, string> = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' };
@@ -57,7 +60,7 @@ export default function CreatePrueba({
     dispositivosDisponibles: DispositivoOption[];
     filters: { turno: string };
 }) {
-    const { data, setData, post, processing, errors } = useForm<PruebaForm>({
+    const { data, setData, post, processing, errors, transform } = useForm<PruebaForm>({
         colaborador_id: '',
         tipo: 'entrada',
         es_programacion: false,
@@ -66,15 +69,21 @@ export default function CreatePrueba({
         resultado: '',
         consentimiento_aceptado: false,
         evidencia: null,
+        evidencias: [],
+        firma: null,
         observaciones: '',
     });
+
+    const firmaPadRef = useRef<FirmaPadHandle>(null);
 
     const filtrarPorTurno = (turno: string) => {
         router.get(route('seguridad.pruebas.create'), { turno: turno === 'todos' ? '' : turno }, { preserveState: true, replace: true });
     };
 
-    const submit: FormEventHandler = (e) => {
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+        const firma = await firmaPadRef.current?.getFile();
+        transform((data) => ({ ...data, firma: firma ?? null }));
         post(route('seguridad.pruebas.store'), { forceFormData: true });
     };
 
@@ -191,10 +200,24 @@ export default function CreatePrueba({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="evidencia">Evidencia (foto)</Label>
+                                <Label htmlFor="evidencia">Evidencia principal (foto)</Label>
                                 <Input id="evidencia" type="file" accept="image/*" onChange={(e) => setData('evidencia', e.target.files?.[0] ?? null)} />
                                 <InputError message={errors.evidencia} />
                             </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="evidencias">Evidencias adicionales (opcional)</Label>
+                                <Input
+                                    id="evidencias"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => setData('evidencias', Array.from(e.target.files ?? []))}
+                                />
+                                <InputError message={errors.evidencias} />
+                            </div>
+
+                            <FirmaPad ref={firmaPadRef} />
 
                             <div className="flex items-center space-x-2">
                                 <Checkbox

@@ -1,12 +1,15 @@
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { CalendarDays, FileSpreadsheet, FileText, Plus } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -37,36 +40,109 @@ interface PruebasPaginator {
     links: PaginationLink[];
 }
 
-export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPaginator; filters: { estado: string } }) {
-    const filtrarPorEstado = (estado: string) => {
-        router.get(route('seguridad.pruebas.index'), { estado: estado === 'todas' ? '' : estado }, { preserveState: true, replace: true });
+interface Filters {
+    estado: string;
+    tipo: string;
+    fecha_desde: string;
+    fecha_hasta: string;
+    colaborador: string;
+}
+
+export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPaginator; filters: Filters }) {
+    const [form, setForm] = useState(filters);
+
+    const submitFilters: FormEventHandler = (e) => {
+        e.preventDefault();
+        router.get(route('seguridad.pruebas.index'), { ...form }, { preserveState: true, replace: true });
     };
+
+    const exportUrl = (ruta: string) => route(ruta, { ...form });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Pruebas de Alcoholemia" />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <HeadingSmall title="Pruebas de Alcoholemia" description="Registro y programación de pruebas de alcoholemia." />
-                    <Button asChild>
-                        <Link href={route('seguridad.pruebas.create')}>
-                            <Plus className="size-4" />
-                            Registrar prueba
-                        </Link>
-                    </Button>
+                    <HeadingSmall title="Pruebas de Alcoholemia" description="Registro, filtros y exportación de pruebas de alcoholemia." />
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href={route('seguridad.pruebas.calendario')}>
+                                <CalendarDays className="size-4" />
+                                Calendario
+                            </Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={route('seguridad.pruebas.create')}>
+                                <Plus className="size-4" />
+                                Registrar prueba
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
-                <Select value={filters.estado || 'todas'} onValueChange={filtrarPorEstado}>
-                    <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="todas">Todos los estados</SelectItem>
-                        <SelectItem value="realizada">Realizadas</SelectItem>
-                        <SelectItem value="programada">Programadas</SelectItem>
-                        <SelectItem value="cancelada">Canceladas</SelectItem>
-                    </SelectContent>
-                </Select>
+                <form onSubmit={submitFilters} className="grid gap-3 rounded-lg border border-sidebar-border/70 p-4 sm:grid-cols-2 lg:grid-cols-5 dark:border-sidebar-border">
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="colaborador">Colaborador o cédula</Label>
+                        <Input
+                            id="colaborador"
+                            value={form.colaborador}
+                            onChange={(e) => setForm({ ...form, colaborador: e.target.value })}
+                            placeholder="Buscar..."
+                        />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="fecha_desde">Desde</Label>
+                        <Input id="fecha_desde" type="date" value={form.fecha_desde} onChange={(e) => setForm({ ...form, fecha_desde: e.target.value })} />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="fecha_hasta">Hasta</Label>
+                        <Input id="fecha_hasta" type="date" value={form.fecha_hasta} onChange={(e) => setForm({ ...form, fecha_hasta: e.target.value })} />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label>Tipo</Label>
+                        <Select value={form.tipo || 'todos'} onValueChange={(value) => setForm({ ...form, tipo: value === 'todos' ? '' : value })}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todos">Todos</SelectItem>
+                                <SelectItem value="entrada">Entrada</SelectItem>
+                                <SelectItem value="ruta">Ruta</SelectItem>
+                                <SelectItem value="salida">Salida</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label>Estado</Label>
+                        <Select value={form.estado || 'todas'} onValueChange={(value) => setForm({ ...form, estado: value === 'todas' ? '' : value })}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todas">Todos los estados</SelectItem>
+                                <SelectItem value="realizada">Realizadas</SelectItem>
+                                <SelectItem value="programada">Programadas</SelectItem>
+                                <SelectItem value="cancelada">Canceladas</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-5">
+                        <Button type="submit">Filtrar</Button>
+                        <Button type="button" variant="outline" asChild>
+                            <a href={exportUrl('seguridad.pruebas.exportar-pdf')}>
+                                <FileText className="size-4" />
+                                Exportar PDF
+                            </a>
+                        </Button>
+                        <Button type="button" variant="outline" asChild>
+                            <a href={exportUrl('seguridad.pruebas.exportar-excel')}>
+                                <FileSpreadsheet className="size-4" />
+                                Exportar Excel
+                            </a>
+                        </Button>
+                    </div>
+                </form>
 
                 <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                     <Table>
