@@ -1,0 +1,73 @@
+import { NavFooter } from '@/components/nav-footer';
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { modules } from '@/data/modules';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { LayoutGrid, UserCog } from 'lucide-react';
+import AppLogo from './app-logo';
+
+const footerNavItems: NavItem[] = [
+
+];
+
+export function AppSidebar() {
+    const { auth } = usePage<SharedData>().props;
+    const visibleModules = auth.isAdmin ? modules : modules.filter((mod) => auth.accessibleModules.includes(mod.slug));
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            url: '/dashboard',
+            icon: LayoutGrid,
+        },
+        ...visibleModules.map((mod) => ({
+            title: mod.title,
+            url: `/modules/${mod.slug}`,
+            icon: mod.icon,
+            color: mod.accent,
+            items: mod.submodules.map((sub) => ({
+                title: sub.title,
+                url: `/modules/${mod.slug}/${sub.slug}`,
+                icon: sub.icon,
+                color: mod.accent,
+            })),
+        })),
+        ...(auth.isAdmin
+            ? [
+                  {
+                      title: 'Gestión de Usuarios',
+                      url: '/admin/users',
+                      icon: UserCog,
+                      color: '#6B21A8',
+                  },
+              ]
+            : []),
+    ];
+
+    return (
+        <Sidebar collapsible="icon" variant="inset">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <Link href="/dashboard" prefetch>
+                                <AppLogo />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+                <NavMain items={mainNavItems} />
+            </SidebarContent>
+
+            <SidebarFooter>
+                <NavFooter items={footerNavItems} className="mt-auto" />
+                <NavUser />
+            </SidebarFooter>
+        </Sidebar>
+    );
+}
