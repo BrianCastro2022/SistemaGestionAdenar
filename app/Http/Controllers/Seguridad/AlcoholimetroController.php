@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Http\Controllers\Seguridad;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Seguridad\StoreAlcoholimetroRequest;
+use App\Http\Requests\Seguridad\StoreMantenimientoRequest;
+use App\Http\Requests\Seguridad\UpdateAlcoholimetroRequest;
+use App\Models\Seguridad\Alcoholimetro;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class AlcoholimetroController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $search = $request->string('search')->trim()->toString();
+
+        $dispositivos = Alcoholimetro::query()
+            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('codigo', 'like', "%{$search}%")
+                    ->orWhere('marca', 'like', "%{$search}%")
+                    ->orWhere('modelo', 'like', "%{$search}%");
+            }))
+            ->orderBy('codigo')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (Alcoholimetro $dispositivo) => [
+                'id' => $dispositivo->id,
+                'codigo' => $dispositivo->codigo,
+                'marca' => $dispositivo->marca,
+                'modelo' => $dispositivo->modelo,
+                'estado' => $dispositivo->estado,
+                'fecha_calibracion' => $dispositivo->fecha_calibracion?->toDateString(),
+                'fecha_vencimiento_certificado' => $dispositivo->fecha_vencimiento_certificado?->toDateString(),
+                'calibracion_proxima' => $dispositivo->calibracionProxima(),
+            ]);
+
+        return Inertia::render('seguridad/dispositivos/index', [
+            'dispositivos' => $dispositivos,
+            'filters' => ['search' => $search],
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('seguridad/dispositivos/create');
+    }
+
+    public function store(StoreAlcoholimetroRequest $request): RedirectResponse
+    {
+        $dispositivo = Alcoholimetro::create([
+            ...$request->safe()->except('documento'),
+            'documento_path' => $request->file('documento')?->store('dispositivos', 'public'),
+        ]);
+
+        return to_route('seguridad.dispositivos.show', $dispositivo)->with('status', 'Dispositivo registrado correctamente.');
+    }
+
+    public function show(Alcoholimetro $dispositivo): Response
+    {
+        return Inertia::render('seguridad/dispositivos/show', [
+            'dispositivo' => [
+                ...$dispositivo->toArray(),
+                'calibracion_proxima' => $dispositivo->calibracionProxima(),
+            ],
+            'mantenimientos' => $dispositivo->mantenimientos()->with('realizadoPor:id,name')->get(),
+        ]);
+    }
+
+    public function edit(Alcoholimetro $dispositivo): Response
+    {
+        return Inertia::render('seguridad/dispositivos/edit', [
+            'dispositivo' => $dispositivo,
+        ]);
+    }
+
+    public function update(UpdateAlcoholimetroRequest $request, Alcoholimetro $dispositivo): RedirectResponse
+    {
+        $dispositivo->update([
+            ...$request->safe()->except('documento'),
+            'documento_path' => $request->file('documento')?->store('dispositivos', 'public') ?? $dispositivo->documento_path,
+        ]);
+
+        return to_route('seguridad.dispositivos.index')->with('status', 'Dispositivo actualizado correctamente.');
+    }
+
+    public function destroy(Alcoholimetro $dispositivo): RedirectResponse
+    {
+        $dispositivo->delete();
+
+        return to_route('seguridad.dispositivos.index')->with('status', 'Dispositivo eliminado correctamente.');
+    }
+
+    public function storeMantenimiento(StoreMantenimientoRequest $request, Alcoholimetro $dispositivo): RedirectResponse
+    {
+        $dispositivo->mantenimientos()->create([
+            ...$request->validated(),
+            'realizado_por' => $request->user()->id,
+        ]);
+
+        return back()->with('status', 'Mantenimiento registrado correctamente.');
+    }
+}

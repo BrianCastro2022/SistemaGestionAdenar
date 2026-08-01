@@ -11,6 +11,8 @@ Route::get('/', function () {
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    require __DIR__.'/seguridad.php';
+
     Route::middleware('module.access')->group(function () {
         Route::get('modules/{module}', function (string $module) {
             return Inertia::render('modules/show', ['module' => $module]);
