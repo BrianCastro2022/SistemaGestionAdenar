@@ -11,8 +11,21 @@
         th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; }
         th { background-color: #f3f4f6; }
         .positivo { color: #b91c1c; font-weight: bold; }
+        .firma { max-width: 70px; max-height: 30px; }
     </style>
 </head>
+@php
+    $firmaDataUri = function (?string $path) {
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($path);
+        $contenido = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
+
+        return "data:{$mime};base64,".base64_encode($contenido);
+    };
+@endphp
 <body>
     <h1>Reporte de Pruebas de Alcoholemia</h1>
     <p class="subtitle">Generado el {{ now()->format('d/m/Y H:i') }} &mdash; {{ $pruebas->count() }} registro(s)</p>
@@ -29,10 +42,12 @@
                 <th>Evaluación</th>
                 <th>Estado</th>
                 <th>Responsable</th>
+                <th>Firma</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($pruebas as $prueba)
+                @php $firma = $firmaDataUri($prueba->firma_path); @endphp
                 <tr>
                     <td>{{ $prueba->fecha_hora->format('d/m/Y H:i') }}</td>
                     <td>{{ $prueba->colaborador?->nombre_completo }}</td>
@@ -43,6 +58,13 @@
                     <td>{{ $prueba->estado === 'programada' ? '—' : $prueba->evaluacion() }}</td>
                     <td>{{ ucfirst($prueba->estado) }}</td>
                     <td>{{ $prueba->responsable?->name }}</td>
+                    <td>
+                        @if ($firma)
+                            <img class="firma" src="{{ $firma }}" alt="Firma">
+                        @else
+                            —
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

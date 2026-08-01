@@ -24,6 +24,7 @@ interface PruebaRow {
     es_positivo: boolean;
     estado: string;
     fecha_hora: string;
+    firma_path: string | null;
     colaborador: { nombres: string; apellidos: string; cedula: string } | null;
     alcoholimetro: { codigo: string } | null;
     responsable: { name: string } | null;
@@ -154,12 +155,13 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                 <TableHead>Dispositivo</TableHead>
                                 <TableHead>Resultado</TableHead>
                                 <TableHead>Responsable</TableHead>
+                                <TableHead>Firma</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {pruebas.data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                                    <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
                                         No se encontraron pruebas.
                                     </TableCell>
                                 </TableRow>
@@ -186,6 +188,17 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                         )}
                                     </TableCell>
                                     <TableCell>{prueba.responsable?.name ?? '—'}</TableCell>
+                                    <TableCell>
+                                        {prueba.firma_path ? (
+                                            <img
+                                                src={`/storage/${prueba.firma_path}`}
+                                                alt="Firma"
+                                                className="h-8 w-16 rounded border border-sidebar-border/70 bg-white object-contain dark:border-sidebar-border"
+                                            />
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
