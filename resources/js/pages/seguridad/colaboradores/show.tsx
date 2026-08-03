@@ -18,6 +18,14 @@ interface ColaboradorDetalle {
     turno: string | null;
     area: string | null;
     imagen: string | null;
+    documento_cedula: string | null;
+    documento_licencia_conduccion: string | null;
+    documento_carnet_manejo_defensivo: string | null;
+    documento_certificado_manejo_defensivo: string | null;
+    documento_carnet_ingreso_cd: string | null;
+    documento_simit: string | null;
+    documento_examen_medico_ocupacional: string | null;
+    documento_recordatorio_vehiculo_licencia_conduccion: string | null;
     is_active: boolean;
 }
 
@@ -52,6 +60,17 @@ const NIVEL_VARIANT: Record<IndiceRiesgo['nivel'], 'default' | 'secondary' | 'de
     Medio: 'secondary',
     Alto: 'destructive',
 };
+
+const DOCUMENTOS: { key: keyof ColaboradorDetalle; label: string }[] = [
+    { key: 'documento_cedula', label: 'Documento de cédula' },
+    { key: 'documento_licencia_conduccion', label: 'Documento licencia de conducción' },
+    { key: 'documento_carnet_manejo_defensivo', label: 'Documento carnet manejo defensivo' },
+    { key: 'documento_certificado_manejo_defensivo', label: 'Documento certificado manejo defensivo' },
+    { key: 'documento_carnet_ingreso_cd', label: 'Carnet ingreso CD' },
+    { key: 'documento_simit', label: 'Documento Simit' },
+    { key: 'documento_examen_medico_ocupacional', label: 'Documento examen médico ocupacional' },
+    { key: 'documento_recordatorio_vehiculo_licencia_conduccion', label: 'Documento recordatorio vehículo licencia de conducción' },
+];
 
 export default function ColaboradorShow({
     colaborador,
@@ -123,6 +142,32 @@ export default function ColaboradorShow({
                     <CardContent className="text-muted-foreground text-sm">
                         Puntaje {indiceRiesgo.puntaje} — {indiceRiesgo.pruebas_positivas} prueba(s) positiva(s), {indiceRiesgo.salud_mala} episodio(s)
                         de salud "Malo".
+                    </CardContent>
+                </Card>
+
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Documentos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {DOCUMENTOS.some((doc) => colaborador[doc.key]) ? (
+                            <ul className="grid gap-2 text-sm sm:grid-cols-2">
+                                {DOCUMENTOS.filter((doc) => colaborador[doc.key]).map((doc) => (
+                                    <li key={doc.key}>
+                                        <a
+                                            href={`/storage/${colaborador[doc.key]}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-primary underline underline-offset-4"
+                                        >
+                                            {doc.label}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No se han cargado documentos.</p>
+                        )}
                     </CardContent>
                 </Card>
 

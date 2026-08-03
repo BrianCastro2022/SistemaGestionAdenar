@@ -23,6 +23,14 @@ export default function CreateColaborador() {
         turno: 'manana',
         area: '',
         imagen: null,
+        documento_cedula: null,
+        documento_licencia_conduccion: null,
+        documento_carnet_manejo_defensivo: null,
+        documento_certificado_manejo_defensivo: null,
+        documento_carnet_ingreso_cd: null,
+        documento_simit: null,
+        documento_examen_medico_ocupacional: null,
+        documento_recordatorio_vehiculo_licencia_conduccion: null,
         is_active: true,
     });
 

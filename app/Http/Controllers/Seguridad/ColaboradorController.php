@@ -15,6 +15,20 @@ use Inertia\Response;
 
 class ColaboradorController extends Controller
 {
+    /**
+     * Campos de documentos (PDF/Excel) almacenados en colaboradores/documentos.
+     */
+    private const DOCUMENTO_FIELDS = [
+        'documento_cedula',
+        'documento_licencia_conduccion',
+        'documento_carnet_manejo_defensivo',
+        'documento_certificado_manejo_defensivo',
+        'documento_carnet_ingreso_cd',
+        'documento_simit',
+        'documento_examen_medico_ocupacional',
+        'documento_recordatorio_vehiculo_licencia_conduccion',
+    ];
+
     public function index(Request $request): Response
     {
         $search = $request->string('search')->trim()->toString();
@@ -50,6 +64,12 @@ class ColaboradorController extends Controller
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
+            }
         }
 
         Colaborador::create([
@@ -94,6 +114,16 @@ class ColaboradorController extends Controller
             }
 
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                if ($colaborador->{$field}) {
+                    Storage::disk('public')->delete($colaborador->{$field});
+                }
+
+                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
+            }
         }
 
         $colaborador->update([
