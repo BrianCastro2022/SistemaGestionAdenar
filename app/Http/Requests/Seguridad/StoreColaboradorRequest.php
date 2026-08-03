@@ -24,6 +24,7 @@ class StoreColaboradorRequest extends FormRequest
             'cargo' => ['nullable', 'string', 'max:100'],
             'turno' => ['nullable', Rule::in(['manana', 'tarde', 'noche'])],
             'area' => ['nullable', 'string', 'max:100'],
+            'imagen' => ['nullable', 'image', 'max:2048'],
             'is_active' => ['boolean'],
         ];
     }

@@ -11,8 +11,9 @@ export interface ColaboradorFormData {
     cargo: string;
     turno: string;
     area: string;
+    imagen: File | null;
     is_active: boolean;
-    [key: string]: string | boolean;
+    [key: string]: string | boolean | File | null;
 }
 
 interface ColaboradorFormFieldsProps {
@@ -85,6 +86,18 @@ export function ColaboradorFormFields({ data, setData, errors, processing }: Col
                     <Input id="area" value={data.area} onChange={(e) => setData('area', e.target.value)} disabled={processing} />
                     <InputError message={errors.area} />
                 </div>
+            </div>
+
+            <div className="grid gap-2">
+                <Label htmlFor="imagen">Imagen</Label>
+                <Input
+                    id="imagen"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setData('imagen', e.target.files?.[0] ?? null)}
+                    disabled={processing}
+                />
+                <InputError message={errors.imagen} />
             </div>
 
             <div className="flex items-center space-x-2">

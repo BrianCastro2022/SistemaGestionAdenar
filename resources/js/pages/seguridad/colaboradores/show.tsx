@@ -17,6 +17,7 @@ interface ColaboradorDetalle {
     cargo: string | null;
     turno: string | null;
     area: string | null;
+    imagen: string | null;
     is_active: boolean;
 }
 
@@ -75,20 +76,36 @@ export default function ColaboradorShow({
             <Head title={`${colaborador.nombres} ${colaborador.apellidos}`} />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <HeadingSmall
-                        title={`${colaborador.nombres} ${colaborador.apellidos}`}
-                        description={`Cédula ${colaborador.cedula}${colaborador.cargo ? ` · ${colaborador.cargo}` : ''}`}
-                    />
-                    <CondicionSaludDialog
-                        colaboradorId={colaborador.id}
-                        trigger={
-                            <Button variant="outline">
-                                <HeartPulse className="size-4" />
-                                Registrar condición de salud
-                            </Button>
-                        }
-                    />
-                </div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-4">
+                            {colaborador.imagen ? (
+                                <img
+                                    src={`/storage/${colaborador.imagen}`}
+                                    alt={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                    className="h-24 w-24 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                    SIN
+                                </div>
+                            )}
+                            <div>
+                                <HeadingSmall
+                                    title={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                    description={`Cédula ${colaborador.cedula}${colaborador.cargo ? ` · ${colaborador.cargo}` : ''}`}
+                                />
+                            </div>
+                        </div>
+                        <CondicionSaludDialog
+                            colaboradorId={colaborador.id}
+                            trigger={
+                                <Button variant="outline">
+                                    <HeartPulse className="size-4" />
+                                    Registrar condición de salud
+                                </Button>
+                            }
+                        />
+                    </div>
 
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">

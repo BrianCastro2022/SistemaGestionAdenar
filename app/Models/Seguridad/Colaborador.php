@@ -19,6 +19,7 @@ class Colaborador extends Model
         'cargo',
         'turno',
         'area',
+        'imagen',
         'is_active',
     ];
 

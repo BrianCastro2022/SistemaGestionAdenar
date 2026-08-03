@@ -22,6 +22,7 @@ export default function CreateColaborador() {
         cargo: '',
         turno: 'manana',
         area: '',
+        imagen: null,
         is_active: true,
     });
 

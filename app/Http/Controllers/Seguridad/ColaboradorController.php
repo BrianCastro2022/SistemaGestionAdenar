@@ -9,6 +9,7 @@ use App\Models\Seguridad\Colaborador;
 use App\Services\Seguridad\IndiceRiesgoCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,8 +46,14 @@ class ColaboradorController extends Controller
 
     public function store(StoreColaboradorRequest $request): RedirectResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
         Colaborador::create([
-            ...$request->validated(),
+            ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
 
@@ -79,8 +86,18 @@ class ColaboradorController extends Controller
 
     public function update(UpdateColaboradorRequest $request, Colaborador $colaborador): RedirectResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('imagen')) {
+            if ($colaborador->imagen) {
+                Storage::disk('public')->delete($colaborador->imagen);
+            }
+
+            $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
         $colaborador->update([
-            ...$request->validated(),
+            ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
 

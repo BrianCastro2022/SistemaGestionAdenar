@@ -33,6 +33,7 @@ export default function EditColaborador({ colaborador }: { colaborador: Editable
         cargo: colaborador.cargo ?? '',
         turno: colaborador.turno ?? 'manana',
         area: colaborador.area ?? '',
+        imagen: null,
         is_active: colaborador.is_active,
     });
 
