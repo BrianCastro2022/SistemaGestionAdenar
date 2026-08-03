@@ -276,7 +276,7 @@ export default function CreatePrueba({
 
                     <Button type="submit" disabled={processing}>
                         {processing && <LoaderCircle className="size-4 animate-spin" />}
-                        {data.es_programacion ? (prueba ? 'Actualizar programación' : 'Programar prueba') : (prueba ? 'Actualizar prueba' : 'Registrar prueba')Programar prueba') : (prueba ? 'Actualizar prueba' : 'Registrar prueba')}
+                        {data.es_programacion ? (prueba ? 'Actualizar programación' : 'Programar prueba') : (prueba ? 'Actualizar prueba' : 'Registrar prueba')}
                     </Button>
                 </form>
             </div>

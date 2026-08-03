@@ -88,8 +88,13 @@ class PruebaAlcoholemiaController extends Controller
         $turno = $request->string('turno')->trim()->toString();
 
         $dispositivosDisponibles = Alcoholimetro::query()
-            ->where('estado', 'Disponible')
-            ->orWhereKey($prueba->alcoholimetro_id)
+            ->where(function ($query) use ($prueba) {
+                $query->where('estado', 'Disponible');
+
+                if ($prueba->alcoholimetro_id !== null) {
+                    $query->orWhere('id', $prueba->alcoholimetro_id);
+                }
+            })
             ->orderBy('codigo')
             ->get(['id', 'codigo', 'valor_min', 'valor_max']);
 
