@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { CondicionSaludDialog } from '@/pages/seguridad/colaboradores/condicion-salud-dialog';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { HeartPulse } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { HeartPulse, ClipboardCheck } from 'lucide-react';
 
 interface ColaboradorDetalle {
     id: number;
@@ -96,15 +96,23 @@ export default function ColaboradorShow({
                                 />
                             </div>
                         </div>
-                        <CondicionSaludDialog
-                            colaboradorId={colaborador.id}
-                            trigger={
-                                <Button variant="outline">
-                                    <HeartPulse className="size-4" />
-                                    Registrar condición de salud
-                                </Button>
-                            }
-                        />
+                        <div className="flex gap-2">
+                            <Button variant="outline" asChild>
+                                <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
+                                    <ClipboardCheck className="mr-2 size-4" />
+                                    Crear evaluación
+                                </Link>
+                            </Button>
+                            <CondicionSaludDialog
+                                colaboradorId={colaborador.id}
+                                trigger={
+                                    <Button variant="outline">
+                                        <HeartPulse className="mr-2 size-4" />
+                                        Registrar condición de salud
+                                    </Button>
+                                }
+                            />
+                        </div>
                     </div>
 
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">

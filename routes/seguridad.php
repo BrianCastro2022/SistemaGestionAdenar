@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Seguridad\AlcoholimetroController;
 use App\Http\Controllers\Seguridad\AlertaController;
+use App\Http\Controllers\Seguridad\AsignacionConductorController;
 use App\Http\Controllers\Seguridad\ColaboradorController;
 use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
 
         Route::get('alertas', [AlertaController::class, 'index'])->name('alertas.index');
         Route::patch('alertas/{alerta}/atender', [AlertaController::class, 'atender'])->name('alertas.atender');
+
+        Route::resource('asignaciones-conductores', AsignacionConductorController::class)->except(['show', 'update', 'destroy']);
 
         Route::get('indicador', [EstadoColaboradorController::class, 'index'])->name('indicador.index');
     });

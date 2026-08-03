@@ -47,6 +47,7 @@ export const modules: ModuleDef[] = [
             { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
             { title: 'Dispositivos', slug: 'dispositivos', icon: Cpu },
             { title: 'Pruebas de Alcoholemia', slug: 'pruebas', icon: TestTube },
+            { title: 'Asignaciones de conductores', slug: 'asignaciones-conductores', icon: Truck },
             { title: 'Indicador', slug: 'indicador', icon: Activity },
             { title: 'Alertas', slug: 'alertas', icon: BellRing },
             { title: 'ACIS', slug: 'acis', icon: ShieldCheck },
