@@ -83,6 +83,65 @@ class PruebaAlcoholemiaController extends Controller
         );
     }
 
+    public function edit(PruebaAlcoholemia $prueba, Request $request): Response
+    {
+        $turno = $request->string('turno')->trim()->toString();
+
+        $dispositivosDisponibles = Alcoholimetro::query()
+            ->where('estado', 'Disponible')
+            ->orWhereKey($prueba->alcoholimetro_id)
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'valor_min', 'valor_max']);
+
+        return Inertia::render('seguridad/pruebas/create', [
+            'colaboradores' => Colaborador::query()
+                ->where('is_active', true)
+                ->when($turno !== '', fn ($query) => $query->where('turno', $turno))
+                ->orderBy('nombres')
+                ->get(['id', 'nombres', 'apellidos', 'cedula', 'turno']),
+            'dispositivosDisponibles' => $dispositivosDisponibles,
+            'filters' => ['turno' => $turno],
+            'prueba' => $prueba->load(['colaborador', 'alcoholimetro', 'responsable']),
+        ]);
+    }
+
+    public function update(StorePruebaAlcoholemiaRequest $request, PruebaAlcoholemia $prueba): RedirectResponse
+    {
+        $esProgramacion = $request->boolean('es_programacion');
+
+        $prueba->fill([
+            'colaborador_id' => $request->input('colaborador_id'),
+            'tipo' => $request->input('tipo'),
+            'alcoholimetro_id' => $esProgramacion ? null : $request->input('alcoholimetro_id'),
+            'resultado' => $esProgramacion ? null : $request->input('resultado'),
+            'consentimiento_aceptado' => ! $esProgramacion && $request->boolean('consentimiento_aceptado'),
+            'consentimiento_en' => $esProgramacion ? null : ($prueba->consentimiento_en ?? Carbon::now()),
+            'observaciones' => $request->input('observaciones'),
+            'fecha_hora' => $esProgramacion ? $request->date('programada_en') : ($prueba->fecha_hora ?? Carbon::now()),
+            'programada_en' => $esProgramacion ? $request->date('programada_en') : null,
+            'estado' => $esProgramacion ? 'programada' : 'realizada',
+        ]);
+
+        if ($request->file('evidencia')) {
+            $prueba->evidencia_path = $request->file('evidencia')->store('evidencias', 'public');
+        }
+
+        if ($request->file('firma')) {
+            $prueba->firma_path = $request->file('firma')->store('firmas', 'public');
+        }
+
+        $prueba->save();
+
+        foreach ($request->file('evidencias', []) as $archivo) {
+            $prueba->evidencias()->create(['path' => $archivo->store('evidencias', 'public')]);
+        }
+
+        return to_route('seguridad.pruebas.index')->with(
+            'status',
+            $esProgramacion ? 'Prueba programada actualizada correctamente.' : 'Prueba actualizada correctamente.'
+        );
+    }
+
     public function show(PruebaAlcoholemia $prueba, QrCodeGenerator $qrCodeGenerator): Response
     {
         $prueba->load(['colaborador', 'alcoholimetro', 'responsable:id,name', 'evidencias']);

@@ -61,8 +61,9 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
 
             $fechaHora = Carbon::now();
             $horas = (int) config('seguridad.intervalo_minimo_horas');
+            $ignorarId = $this->route('prueba')?->id;
 
-            if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora)) {
+            if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora, $ignorarId)) {
                 $validator->errors()->add(
                     'tipo',
                     "Este colaborador ya tiene una prueba de tipo \"{$this->input('tipo')}\" registrada en las últimas {$horas} horas."

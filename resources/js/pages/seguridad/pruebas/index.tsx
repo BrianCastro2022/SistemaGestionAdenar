@@ -161,7 +161,7 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                         <TableBody>
                             {pruebas.data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
+                                    <TableCell colSpan={8} className="text-muted-foreground py-6 text-center">
                                         No se encontraron pruebas.
                                     </TableCell>
                                 </TableRow>
@@ -198,6 +198,13 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                         ) : (
                                             <span className="text-muted-foreground">—</span>
                                         )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={route('seguridad.pruebas.edit', prueba.id)}>
+                                                Editar
+                                            </Link>
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
