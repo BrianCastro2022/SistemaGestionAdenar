@@ -13,6 +13,51 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
 
+/** ¿La url actual coincide con este ítem o con alguno de sus descendientes? */
+function containsUrl(item: NavItem, url: string): boolean {
+    if (item.url === url) return true;
+    return item.items?.some((child) => containsUrl(child, url)) ?? false;
+}
+
+/** Nivel de submenú (dentro de un módulo ya desplegado). Soporta un nivel más de anidación. */
+function NavSubItems({ items, currentUrl }: { items: NavItem[]; currentUrl: string }) {
+    return (
+        <SidebarMenuSub>
+            {items.map((item) =>
+                item.items?.length ? (
+                    <Collapsible key={item.title} defaultOpen={containsUrl(item, currentUrl)} className="group/subcollapsible">
+                        <SidebarMenuSubItem>
+                            <CollapsibleTrigger asChild>
+                                <SidebarMenuButton size="sm" isActive={containsUrl(item, currentUrl)}>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
+                                    <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/subcollapsible:rotate-90" />
+                                </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <NavSubItems items={item.items} currentUrl={currentUrl} />
+                            </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                    </Collapsible>
+                ) : (
+                    <SidebarMenuSubItem key={item.title}>
+                        <SidebarMenuSubButton
+                            asChild
+                            isActive={item.url === currentUrl}
+                            style={item.url === currentUrl && item.color ? { color: item.color } : undefined}
+                        >
+                            <Link href={item.url} prefetch>
+                                {item.icon && <item.icon />}
+                                <span>{item.title}</span>
+                            </Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                ),
+            )}
+        </SidebarMenuSub>
+    );
+}
+
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();
 
@@ -41,25 +86,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     </SidebarMenuButton>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <SidebarMenuSub>
-                                        {item.items.map((subItem) => {
-                                            const isSubActive = subItem.url === page.url;
-                                            return (
-                                                <SidebarMenuSubItem key={subItem.title}>
-                                                    <SidebarMenuSubButton
-                                                        asChild
-                                                        isActive={isSubActive}
-                                                        style={isSubActive && subItem.color ? { color: subItem.color } : undefined}
-                                                    >
-                                                        <Link href={subItem.url} prefetch>
-                                                            {subItem.icon && <subItem.icon />}
-                                                            <span>{subItem.title}</span>
-                                                        </Link>
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                            );
-                                        })}
-                                    </SidebarMenuSub>
+                                    <NavSubItems items={item.items} currentUrl={page.url} />
                                 </CollapsibleContent>
                             </SidebarMenuItem>
                         </Collapsible>

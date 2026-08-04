@@ -4,18 +4,18 @@
     <meta charset="utf-8">
     <title>Pruebas de Alcoholemia</title>
     <style>
-        body { font-family: sans-serif; font-size: 11px; color: #111; }
+        body { font-family: sans-serif; font-size: 9px; color: #111; }
         h1 { font-size: 16px; margin-bottom: 4px; }
         p.subtitle { color: #555; margin-top: 0; margin-bottom: 16px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 3px 4px; text-align: left; }
         th { background-color: #f3f4f6; }
         .positivo { color: #b91c1c; font-weight: bold; }
-        .firma { max-width: 70px; max-height: 30px; }
+        .thumb { max-width: 55px; max-height: 26px; margin: 1px; }
     </style>
 </head>
 @php
-    $firmaDataUri = function (?string $path) {
+    $fotoDataUri = function (?string $path) {
         if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
             return null;
         }
@@ -43,11 +43,16 @@
                 <th>Estado</th>
                 <th>Responsable</th>
                 <th>Firma</th>
+                <th>Evidencia principal</th>
+                <th>Evidencias adicionales</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($pruebas as $prueba)
-                @php $firma = $firmaDataUri($prueba->firma_path); @endphp
+                @php
+                    $firma = $fotoDataUri($prueba->firma_path);
+                    $evidenciaPrincipal = $fotoDataUri($prueba->evidencia_path);
+                @endphp
                 <tr>
                     <td>{{ $prueba->fecha_hora->format('d/m/Y H:i') }}</td>
                     <td>{{ $prueba->colaborador?->nombre_completo }}</td>
@@ -60,10 +65,27 @@
                     <td>{{ $prueba->responsable?->name }}</td>
                     <td>
                         @if ($firma)
-                            <img class="firma" src="{{ $firma }}" alt="Firma">
+                            <img class="thumb" src="{{ $firma }}" alt="Firma">
                         @else
                             —
                         @endif
+                    </td>
+                    <td>
+                        @if ($evidenciaPrincipal)
+                            <img class="thumb" src="{{ $evidenciaPrincipal }}" alt="Evidencia principal">
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td>
+                        @forelse ($prueba->evidencias as $evidencia)
+                            @php $foto = $fotoDataUri($evidencia->path); @endphp
+                            @if ($foto)
+                                <img class="thumb" src="{{ $foto }}" alt="Evidencia adicional">
+                            @endif
+                        @empty
+                            —
+                        @endforelse
                     </td>
                 </tr>
             @endforeach

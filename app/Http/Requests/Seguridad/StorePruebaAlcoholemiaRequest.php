@@ -21,14 +21,36 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
      */
     public function rules(): array
     {
+        $pruebaActual = $this->route('prueba');
+        $alcoholimetroActualId = $pruebaActual?->alcoholimetro_id;
+
         return [
             'colaborador_id' => ['required', 'integer', Rule::exists('colaboradores', 'id')->whereNull('deleted_at')],
             'tipo' => ['required', Rule::in(['entrada', 'ruta', 'salida'])],
             'es_programacion' => ['boolean'],
-            'programada_en' => ['required_if:es_programacion,1', 'nullable', 'date', 'after:now'],
+            'programada_en' => [
+                'required_if:es_programacion,1', 'nullable', 'date',
+                function ($attribute, $value, $fail) use ($pruebaActual) {
+                    if (! $value) {
+                        return;
+                    }
+
+                    $sinCambios = $pruebaActual?->programada_en && Carbon::parse($value)->equalTo($pruebaActual->programada_en);
+
+                    if (! $sinCambios && Carbon::parse($value)->isPast()) {
+                        $fail('La fecha programada debe ser posterior al momento actual.');
+                    }
+                },
+            ],
             'alcoholimetro_id' => [
                 'required_unless:es_programacion,1', 'nullable', 'integer',
-                Rule::exists('alcoholimetros', 'id')->where('estado', 'Disponible'),
+                Rule::exists('alcoholimetros', 'id')->where(function ($query) use ($alcoholimetroActualId) {
+                    $query->where('estado', 'Disponible');
+
+                    if ($alcoholimetroActualId) {
+                        $query->orWhere('id', $alcoholimetroActualId);
+                    }
+                }),
             ],
             'resultado' => ['required_unless:es_programacion,1', 'nullable', 'numeric'],
             'consentimiento_aceptado' => ['required_unless:es_programacion,1', 'accepted'],
@@ -59,10 +81,12 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
                 );
             }
 
-            $fechaHora = Carbon::now();
+            $prueba = $this->route('prueba');
+            $fechaHora = $prueba?->fecha_hora ?? Carbon::now();
             $horas = (int) config('seguridad.intervalo_minimo_horas');
+            $ignorarId = $prueba?->id;
 
-            if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora)) {
+            if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora, $ignorarId)) {
                 $validator->errors()->add(
                     'tipo',
                     "Este colaborador ya tiene una prueba de tipo \"{$this->input('tipo')}\" registrada en las últimas {$horas} horas."

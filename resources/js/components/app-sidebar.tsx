@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { modules } from '@/data/modules';
+import { modules, type SubModuleDef } from '@/data/modules';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid, UserCog } from 'lucide-react';
@@ -11,6 +11,25 @@ import AppLogo from './app-logo';
 const footerNavItems: NavItem[] = [
 
 ];
+
+function buildSubNavItems(submodules: SubModuleDef[], moduleSlug: string, color: string): NavItem[] {
+    return submodules.map((sub) =>
+        sub.submodules
+            ? {
+                  title: sub.title,
+                  url: '#',
+                  icon: sub.icon,
+                  color,
+                  items: buildSubNavItems(sub.submodules, moduleSlug, color),
+              }
+            : {
+                  title: sub.title,
+                  url: `/modules/${moduleSlug}/${sub.slug}`,
+                  icon: sub.icon,
+                  color,
+              },
+    );
+}
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
@@ -27,12 +46,7 @@ export function AppSidebar() {
             url: `/modules/${mod.slug}`,
             icon: mod.icon,
             color: mod.accent,
-            items: mod.submodules.map((sub) => ({
-                title: sub.title,
-                url: `/modules/${mod.slug}/${sub.slug}`,
-                icon: sub.icon,
-                color: mod.accent,
-            })),
+            items: buildSubNavItems(mod.submodules, mod.slug, mod.accent),
         })),
         ...(auth.isAdmin
             ? [

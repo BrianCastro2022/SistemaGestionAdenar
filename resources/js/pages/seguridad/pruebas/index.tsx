@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,7 +162,7 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                         <TableBody>
                             {pruebas.data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
+                                    <TableCell colSpan={8} className="text-muted-foreground py-6 text-center">
                                         No se encontraron pruebas.
                                     </TableCell>
                                 </TableRow>
@@ -190,7 +191,7 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                     <TableCell>{prueba.responsable?.name ?? '—'}</TableCell>
                                     <TableCell>
                                         {prueba.firma_path ? (
-                                            <img
+                                            <SafeImage
                                                 src={`/storage/${prueba.firma_path}`}
                                                 alt="Firma"
                                                 className="h-8 w-16 rounded border border-sidebar-border/70 bg-white object-contain dark:border-sidebar-border"
@@ -198,6 +199,13 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                         ) : (
                                             <span className="text-muted-foreground">—</span>
                                         )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={route('seguridad.pruebas.edit', prueba.id)}>
+                                                Editar
+                                            </Link>
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}

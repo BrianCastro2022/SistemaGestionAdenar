@@ -10,6 +10,7 @@ import {
     Fuel,
     Gauge,
     HeartHandshake,
+    Map,
     MapPin,
     Megaphone,
     ShieldCheck,
@@ -19,13 +20,17 @@ import {
     Truck,
     UserCheck,
     Users,
+    Wine,
     type LucideIcon,
 } from 'lucide-react';
 
 export interface SubModuleDef {
     title: string;
-    slug: string;
+    /** Presente en los ítems "hoja" (tienen su propia página). Ausente en los ítems que solo agrupan otros submódulos. */
+    slug?: string;
     icon: LucideIcon;
+    /** Presente en los ítems que agrupan otros submódulos (se despliegan en el sidebar en vez de navegar). */
+    submodules?: SubModuleDef[];
 }
 
 export interface ModuleDef {
@@ -45,13 +50,21 @@ export const modules: ModuleDef[] = [
         accent: '#3F7A22',
         submodules: [
             { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
-            { title: 'Dispositivos', slug: 'dispositivos', icon: Cpu },
-            { title: 'Pruebas de Alcoholemia', slug: 'pruebas', icon: TestTube },
+            {
+                title: 'Alcoholimetría',
+                icon: Wine,
+                submodules: [
+                    { title: 'Dispositivos', slug: 'dispositivos', icon: Cpu },
+                    { title: 'Pruebas de Alcoholemia', slug: 'pruebas', icon: TestTube },
+                ],
+            },
+            { title: 'Asignaciones de conductores', slug: 'asignaciones-conductores', icon: Truck },
             { title: 'Indicador', slug: 'indicador', icon: Activity },
             { title: 'Alertas', slug: 'alertas', icon: BellRing },
             { title: 'ACIS', slug: 'acis', icon: ShieldCheck },
             { title: 'Jornada Laboral', slug: 'jornada-laboral', icon: Timer },
             { title: 'Excesos en Curvas', slug: 'excesos-en-curvas', icon: AlertTriangle },
+            { title: 'Mapa de Rutas Críticas', slug: 'rutas-criticas', icon: Map },
         ],
     },
     {
@@ -93,8 +106,13 @@ export function findModule(moduleSlug: string): ModuleDef | undefined {
     return modules.find((mod) => mod.slug === moduleSlug);
 }
 
+/** Convierte el árbol de submódulos en una lista plana de solo los ítems "hoja" (los que tienen página propia). */
+export function flattenSubmodules(submodules: SubModuleDef[]): SubModuleDef[] {
+    return submodules.flatMap((sub) => (sub.submodules ? flattenSubmodules(sub.submodules) : [sub]));
+}
+
 export function findSubmodule(moduleSlug: string, submoduleSlug: string): { module: ModuleDef; submodule: SubModuleDef } | undefined {
     const module = findModule(moduleSlug);
-    const submodule = module?.submodules.find((sub) => sub.slug === submoduleSlug);
+    const submodule = module && flattenSubmodules(module.submodules).find((sub) => sub.slug === submoduleSlug);
     return module && submodule ? { module, submodule } : undefined;
 }

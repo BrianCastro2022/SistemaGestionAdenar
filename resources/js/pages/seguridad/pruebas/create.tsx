@@ -12,11 +12,10 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useRef } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbsBase: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Seguridad', href: '/modules/seguridad' },
     { title: 'Pruebas de Alcoholemia', href: '/modules/seguridad/pruebas' },
-    { title: 'Registrar prueba', href: '/modules/seguridad/pruebas/create' },
 ];
 
 interface ColaboradorOption {
@@ -32,6 +31,23 @@ interface DispositivoOption {
     codigo: string;
     valor_min: string;
     valor_max: string;
+}
+
+interface PruebaData {
+    id: number;
+    colaborador_id: number;
+    tipo: string;
+    es_programacion: boolean;
+    programada_en: string | null;
+    alcoholimetro_id: number | null;
+    resultado: string | null;
+    consentimiento_aceptado: boolean;
+    evidencia_path: string | null;
+    firma_path: string | null;
+    observaciones: string | null;
+    estado: string;
+    colaborador: { id: number; nombres: string; apellidos: string; cedula: string } | null;
+    alcoholimetro: { id: number; codigo: string; valor_min: string; valor_max: string } | null;
 }
 
 interface PruebaForm {
@@ -55,23 +71,28 @@ export default function CreatePrueba({
     colaboradores,
     dispositivosDisponibles,
     filters,
+    prueba,
 }: {
     colaboradores: ColaboradorOption[];
     dispositivosDisponibles: DispositivoOption[];
     filters: { turno: string };
+    prueba?: PruebaData;
 }) {
+    const breadcrumbs: BreadcrumbItem[] = prueba
+        ? [...breadcrumbsBase, { title: 'Editar prueba', href: `/modules/seguridad/pruebas/${prueba.id}/edit` }]
+        : [...breadcrumbsBase, { title: 'Registrar prueba', href: '/modules/seguridad/pruebas/create' }];
     const { data, setData, post, processing, errors, transform } = useForm<PruebaForm>({
-        colaborador_id: '',
-        tipo: 'entrada',
-        es_programacion: false,
-        programada_en: '',
-        alcoholimetro_id: '',
-        resultado: '',
-        consentimiento_aceptado: false,
+        colaborador_id: prueba?.colaborador_id ? String(prueba.colaborador_id) : '',
+        tipo: prueba?.tipo ?? 'entrada',
+        es_programacion: prueba ? prueba.estado === 'programada' : false,
+        programada_en: prueba?.programada_en ? String(prueba.programada_en).slice(0, 16) : '',
+        alcoholimetro_id: prueba?.alcoholimetro_id ? String(prueba.alcoholimetro_id) : '',
+        resultado: prueba?.resultado ? String(prueba.resultado) : '',
+        consentimiento_aceptado: prueba?.consentimiento_aceptado ?? false,
         evidencia: null,
         evidencias: [],
         firma: null,
-        observaciones: '',
+        observaciones: prueba?.observaciones ?? '',
     });
 
     const firmaPadRef = useRef<FirmaPadHandle>(null);
@@ -83,15 +104,27 @@ export default function CreatePrueba({
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         const firma = await firmaPadRef.current?.getFile();
+
+        if (prueba) {
+            // PHP no parsea el body multipart/form-data en peticiones PUT/PATCH nativas,
+            // por eso se envía como POST con el spoofing estándar de Laravel (_method).
+            transform((data) => ({ ...data, firma: firma ?? null, _method: 'put' }));
+            post(route('seguridad.pruebas.update', prueba.id), { forceFormData: true });
+            return;
+        }
+
         transform((data) => ({ ...data, firma: firma ?? null }));
         post(route('seguridad.pruebas.store'), { forceFormData: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Registrar prueba" />
+            <Head title={prueba ? 'Editar prueba de alcoholemia' : 'Registrar prueba de alcoholemia'} />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <HeadingSmall title="Registrar prueba de alcoholemia" description="Selecciona al colaborador y completa los datos de la prueba." />
+                <HeadingSmall
+                    title={prueba ? 'Editar prueba de alcoholemia' : 'Registrar prueba de alcoholemia'}
+                    description={prueba ? 'Modifica los datos de la prueba y guarda los cambios.' : 'Selecciona al colaborador y completa los datos de la prueba.'}
+                />
 
                 <form onSubmit={submit} className="max-w-2xl space-y-6">
                     <div className="grid gap-2">
@@ -246,7 +279,7 @@ export default function CreatePrueba({
 
                     <Button type="submit" disabled={processing}>
                         {processing && <LoaderCircle className="size-4 animate-spin" />}
-                        {data.es_programacion ? 'Programar prueba' : 'Registrar prueba'}
+                        {data.es_programacion ? (prueba ? 'Actualizar programación' : 'Programar prueba') : (prueba ? 'Actualizar prueba' : 'Registrar prueba')}
                     </Button>
                 </form>
             </div>

@@ -19,6 +19,15 @@ class Colaborador extends Model
         'cargo',
         'turno',
         'area',
+        'imagen',
+        'documento_cedula',
+        'documento_licencia_conduccion',
+        'documento_carnet_manejo_defensivo',
+        'documento_certificado_manejo_defensivo',
+        'documento_carnet_ingreso_cd',
+        'documento_simit',
+        'documento_examen_medico_ocupacional',
+        'documento_recordatorio_vehiculo_licencia_conduccion',
         'is_active',
     ];
 

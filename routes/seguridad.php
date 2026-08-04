@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Seguridad\AlcoholimetroController;
 use App\Http\Controllers\Seguridad\AlertaController;
+use App\Http\Controllers\Seguridad\AsignacionConductorController;
 use App\Http\Controllers\Seguridad\ColaboradorController;
 use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
 use App\Http\Controllers\Seguridad\PruebaAlcoholemiaController;
 use App\Http\Controllers\Seguridad\PublicVerificationController;
+use App\Http\Controllers\Seguridad\RutaCriticaController;
 use Illuminate\Support\Facades\Route;
 
 // HU037: verificación pública del QR — intencionalmente fuera del grupo `auth`.
@@ -29,12 +31,16 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
         Route::get('pruebas/calendario', [PruebaAlcoholemiaController::class, 'calendario'])->name('pruebas.calendario');
         Route::get('pruebas/exportar/pdf', [PruebaAlcoholemiaController::class, 'exportarPdf'])->name('pruebas.exportar-pdf');
         Route::get('pruebas/exportar/excel', [PruebaAlcoholemiaController::class, 'exportarExcel'])->name('pruebas.exportar-excel');
-        Route::resource('pruebas', PruebaAlcoholemiaController::class)->only(['index', 'create', 'store', 'show']);
+        Route::resource('pruebas', PruebaAlcoholemiaController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
 
         Route::post('condiciones-salud', [CondicionSaludController::class, 'store'])->name('condiciones-salud.store');
 
         Route::get('alertas', [AlertaController::class, 'index'])->name('alertas.index');
         Route::patch('alertas/{alerta}/atender', [AlertaController::class, 'atender'])->name('alertas.atender');
 
+        Route::resource('asignaciones-conductores', AsignacionConductorController::class)->except(['show', 'update', 'destroy']);
+
         Route::get('indicador', [EstadoColaboradorController::class, 'index'])->name('indicador.index');
+
+        Route::get('rutas-criticas', [RutaCriticaController::class, 'index'])->name('rutas-criticas.index');
     });

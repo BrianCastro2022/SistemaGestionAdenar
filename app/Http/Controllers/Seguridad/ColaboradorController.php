@@ -9,11 +9,26 @@ use App\Models\Seguridad\Colaborador;
 use App\Services\Seguridad\IndiceRiesgoCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ColaboradorController extends Controller
 {
+    /**
+     * Campos de documentos (PDF/Excel) almacenados en colaboradores/documentos.
+     */
+    private const DOCUMENTO_FIELDS = [
+        'documento_cedula',
+        'documento_licencia_conduccion',
+        'documento_carnet_manejo_defensivo',
+        'documento_certificado_manejo_defensivo',
+        'documento_carnet_ingreso_cd',
+        'documento_simit',
+        'documento_examen_medico_ocupacional',
+        'documento_recordatorio_vehiculo_licencia_conduccion',
+    ];
+
     public function index(Request $request): Response
     {
         $search = $request->string('search')->trim()->toString();
@@ -45,8 +60,20 @@ class ColaboradorController extends Controller
 
     public function store(StoreColaboradorRequest $request): RedirectResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
+            }
+        }
+
         Colaborador::create([
-            ...$request->validated(),
+            ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
 
@@ -79,8 +106,28 @@ class ColaboradorController extends Controller
 
     public function update(UpdateColaboradorRequest $request, Colaborador $colaborador): RedirectResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('imagen')) {
+            if ($colaborador->imagen) {
+                Storage::disk('public')->delete($colaborador->imagen);
+            }
+
+            $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        }
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                if ($colaborador->{$field}) {
+                    Storage::disk('public')->delete($colaborador->{$field});
+                }
+
+                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
+            }
+        }
+
         $colaborador->update([
-            ...$request->validated(),
+            ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
 

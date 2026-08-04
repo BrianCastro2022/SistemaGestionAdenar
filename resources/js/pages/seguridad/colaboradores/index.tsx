@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -27,6 +28,7 @@ interface ColaboradorRow {
     cargo: string | null;
     turno: string | null;
     area: string | null;
+    imagen: string | null;
     is_active: boolean;
 }
 
@@ -41,6 +43,8 @@ interface ColaboradoresPaginator {
     links: PaginationLink[];
 }
 
+type ViewMode = 'lista' | 'fotografias';
+
 export default function ColaboradoresIndex({
     colaboradores,
     filters,
@@ -49,6 +53,7 @@ export default function ColaboradoresIndex({
     filters: { search: string; turno: string };
 }) {
     const [search, setSearch] = useState(filters.search);
+    const [viewMode, setViewMode] = useState<ViewMode>('lista');
 
     const submitFilters: FormEventHandler = (e) => {
         e.preventDefault();
@@ -61,6 +66,12 @@ export default function ColaboradoresIndex({
 
     const destroyColaborador = (colaborador: ColaboradorRow) => {
         router.delete(route('seguridad.colaboradores.destroy', colaborador.id), { preserveScroll: true });
+    };
+
+    const getInitials = (colaborador: ColaboradorRow) => {
+        const first = colaborador.nombres?.trim().charAt(0) ?? '';
+        const last = colaborador.apellidos?.trim().charAt(0) ?? '';
+        return `${first}${last}`.toUpperCase();
     };
 
     return (
@@ -96,76 +107,157 @@ export default function ColaboradoresIndex({
                             <SelectItem value="noche">Noche</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <div className="flex rounded-md border border-sidebar-border/70 p-1">
+                        <Button
+                            type="button"
+                            variant={viewMode === 'lista' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('lista')}
+                        >
+                            Lista
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={viewMode === 'fotografias' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('fotografias')}
+                        >
+                            Fotografías
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead>Cédula</TableHead>
-                                <TableHead>Cargo</TableHead>
-                                <TableHead>Turno</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {colaboradores.data.length === 0 && (
+                {viewMode === 'lista' ? (
+                    <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
-                                        No se encontraron colaboradores.
-                                    </TableCell>
+                                    <TableHead>Nombre</TableHead>
+                                    <TableHead>Cédula</TableHead>
+                                    <TableHead>Cargo</TableHead>
+                                    <TableHead>Turno</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
-                            )}
-                            {colaboradores.data.map((colaborador) => (
-                                <TableRow key={colaborador.id}>
-                                    <TableCell className="font-medium">
-                                        <Link href={route('seguridad.colaboradores.show', colaborador.id)} className="hover:underline">
-                                            {colaborador.nombres} {colaborador.apellidos}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>{colaborador.cedula}</TableCell>
-                                    <TableCell>{colaborador.cargo ?? '—'}</TableCell>
-                                    <TableCell>{colaborador.turno ? TURNO_LABELS[colaborador.turno] : '—'}</TableCell>
-                                    <TableCell>
+                            </TableHeader>
+                            <TableBody>
+                                {colaboradores.data.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                                            No se encontraron colaboradores.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {colaboradores.data.map((colaborador) => (
+                                    <TableRow key={colaborador.id}>
+                                        <TableCell className="font-medium">
+                                            <Link href={route('seguridad.colaboradores.show', colaborador.id)} className="hover:underline">
+                                                {colaborador.nombres} {colaborador.apellidos}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>{colaborador.cedula}</TableCell>
+                                        <TableCell>{colaborador.cargo ?? '—'}</TableCell>
+                                        <TableCell>{colaborador.turno ? TURNO_LABELS[colaborador.turno] : '—'}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={colaborador.is_active ? 'default' : 'destructive'}>
+                                                {colaborador.is_active ? 'Activo' : 'Inactivo'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
+                                                </Button>
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
+                                                </Button>
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
+                                                </Button>
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="destructive" size="sm">
+                                                            Eliminar
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogTitle>¿Eliminar a {colaborador.nombres} {colaborador.apellidos}?</DialogTitle>
+                                                        <DialogDescription>
+                                                            Esta acción elimina al colaborador de forma lógica; su historial de pruebas se conserva.
+                                                        </DialogDescription>
+                                                        <DialogFooter>
+                                                            <DialogClose asChild>
+                                                                <Button variant="secondary">Cancelar</Button>
+                                                            </DialogClose>
+                                                            <Button variant="destructive" onClick={() => destroyColaborador(colaborador)}>
+                                                                Eliminar
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                ) : (
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        {colaboradores.data.length === 0 && (
+                            <div className="col-span-full rounded-lg border border-dashed border-sidebar-border/70 p-8 text-center text-muted-foreground">
+                                No se encontraron colaboradores.
+                            </div>
+                        )}
+                        {colaboradores.data.map((colaborador) => (
+                            <div key={colaborador.id} className="overflow-hidden rounded-2xl border border-sidebar-border/70 bg-background shadow-sm">
+                                <div className="flex h-48 items-center justify-center bg-muted/40 p-4">
+                                    {colaborador.imagen ? (
+                                        <SafeImage
+                                            src={`/storage/${colaborador.imagen}`}
+                                            alt={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                            className="h-full w-full rounded-xl object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center rounded-xl bg-muted text-3xl font-semibold text-muted-foreground">
+                                            {getInitials(colaborador)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <Badge variant={colaborador.is_active ? 'default' : 'destructive'}>
                                             {colaborador.is_active ? 'Activo' : 'Inactivo'}
                                         </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
-                                            </Button>
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="destructive" size="sm">
-                                                        Eliminar
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent>
-                                                    <DialogTitle>¿Eliminar a {colaborador.nombres} {colaborador.apellidos}?</DialogTitle>
-                                                    <DialogDescription>
-                                                        Esta acción elimina al colaborador de forma lógica; su historial de pruebas se conserva.
-                                                    </DialogDescription>
-                                                    <DialogFooter>
-                                                        <DialogClose asChild>
-                                                            <Button variant="secondary">Cancelar</Button>
-                                                        </DialogClose>
-                                                        <Button variant="destructive" onClick={() => destroyColaborador(colaborador)}>
-                                                            Eliminar
-                                                        </Button>
-                                                    </DialogFooter>
-                                                </DialogContent>
-                                            </Dialog>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                                        {colaborador.cargo ? <Badge variant="secondary">{colaborador.cargo}</Badge> : null}
+                                    </div>
+                                    <div className="mt-3">
+                                        <Link href={route('seguridad.colaboradores.show', colaborador.id)} className="text-base font-semibold hover:underline">
+                                            {colaborador.nombres} {colaborador.apellidos}
+                                        </Link>
+                                        <p className="mt-1 text-sm text-muted-foreground">{colaborador.cedula}</p>
+                                    </div>
+                                    <div className="mt-4 space-y-1 text-sm text-muted-foreground">
+                                        <p>Turno: {colaborador.turno ? TURNO_LABELS[colaborador.turno] : '—'}</p>
+                                        <p>Área: {colaborador.area ?? '—'}</p>
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        <Button variant="default" size="sm" asChild>
+                                            <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
+                                        </Button>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
+                                        </Button>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {colaboradores.links.length > 3 && (
                     <div className="flex flex-wrap gap-1">
