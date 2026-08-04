@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('seguridad:revisar-calibraciones')->daily();
 Schedule::command('seguridad:recordatorios-pruebas')->hourly();
+Schedule::command('scrape:website')->hourly();

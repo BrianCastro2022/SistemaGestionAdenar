@@ -5,6 +5,7 @@ import {
     BarChart3,
     BookOpen,
     BellRing,
+    BookOpen,
     Car,
     ClipboardCheck,
     Cpu,
