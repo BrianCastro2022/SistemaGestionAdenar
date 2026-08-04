@@ -51,10 +51,6 @@ export const modules: ModuleDef[] = [
         accent: '#3F7A22',
         submodules: [
             { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
-<<<<<<< HEAD
-            { title: 'Dispositivos', slug: 'dispositivos', icon: Cpu },
-            { title: 'Pruebas de Alcoholemia', slug: 'pruebas', icon: TestTube },
-=======
             {
                 title: 'Alcoholimetría',
                 icon: Wine,
@@ -63,18 +59,16 @@ export const modules: ModuleDef[] = [
                     { title: 'Pruebas de Alcoholemia', slug: 'pruebas', icon: TestTube },
                 ],
             },
->>>>>>> origin/brian
             { title: 'Asignaciones de conductores', slug: 'asignaciones-conductores', icon: Truck },
             { title: 'Indicador', slug: 'indicador', icon: Activity },
             { title: 'Alertas', slug: 'alertas', icon: BellRing },
             { title: 'ACIS', slug: 'acis', icon: ShieldCheck },
             { title: 'Jornada Laboral', slug: 'jornada-laboral', icon: Timer },
             { title: 'Excesos en Curvas', slug: 'excesos-en-curvas', icon: AlertTriangle },
-<<<<<<< HEAD
             { title: 'Glosario', slug: 'glosario', icon: BookOpen },
-=======
+
             { title: 'Mapa de Rutas Críticas', slug: 'rutas-criticas', icon: Map },
->>>>>>> origin/brian
+
         ],
     },
     {
