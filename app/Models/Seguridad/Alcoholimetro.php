@@ -40,6 +40,11 @@ class Alcoholimetro extends Model
         return $this->hasMany(AlcoholimetroMantenimiento::class)->latest('fecha');
     }
 
+    public function imagenes(): HasMany
+    {
+        return $this->hasMany(AlcoholimetroImagen::class);
+    }
+
     public function pruebasAlcoholemia(): HasMany
     {
         return $this->hasMany(PruebaAlcoholemia::class);

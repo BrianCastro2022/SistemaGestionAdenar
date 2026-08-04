@@ -54,11 +54,17 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
             ],
             'resultado' => ['required_unless:es_programacion,1', 'nullable', 'numeric'],
             'consentimiento_aceptado' => ['required_unless:es_programacion,1', 'accepted'],
-            'evidencia' => ['nullable', 'image', 'max:5120'],
+            'evidencia' => ['nullable', 'array'],
+            'evidencia.*' => ['image', 'max:5120'],
             'evidencias' => ['nullable', 'array'],
             'evidencias.*' => ['image', 'max:5120'],
             'firma' => ['nullable', 'image', 'max:2048'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
+            'condiciones_salud_habilitadas' => ['boolean'],
+            'estado_ingreso' => ['nullable', Rule::in(['Bueno', 'Regular', 'Malo'])],
+            'observacion_entrada' => ['nullable', 'string', 'max:2000'],
+            'estado_salida' => ['nullable', Rule::in(['Bueno', 'Regular', 'Malo'])],
+            'observacion_salida' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -84,13 +90,34 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
             $prueba = $this->route('prueba');
             $fechaHora = $prueba?->fecha_hora ?? Carbon::now();
             $horas = (int) config('seguridad.intervalo_minimo_horas');
-            $ignorarId = $prueba?->id;
+            $ignorarId = $this->route('prueba')?->id;
 
             if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora, $ignorarId)) {
                 $validator->errors()->add(
                     'tipo',
                     "Este colaborador ya tiene una prueba de tipo \"{$this->input('tipo')}\" registrada en las últimas {$horas} horas."
                 );
+            }
+
+            // Validar condiciones de salud si están habilitadas
+            if ($this->boolean('condiciones_salud_habilitadas')) {
+                $tipo = $this->input('tipo');
+
+                if ($tipo === 'entrada') {
+                    if (! $this->filled('estado_ingreso')) {
+                        $validator->errors()->add('estado_ingreso', 'El estado al ingreso es requerido.');
+                    }
+                    if ($this->input('estado_ingreso') !== 'Bueno' && ! $this->filled('observacion_entrada')) {
+                        $validator->errors()->add('observacion_entrada', 'La observación es requerida para estados Regular o Malo.');
+                    }
+                } elseif ($tipo === 'salida') {
+                    if (! $this->filled('estado_salida')) {
+                        $validator->errors()->add('estado_salida', 'El estado a la salida es requerido.');
+                    }
+                    if ($this->input('estado_salida') !== 'Bueno' && ! $this->filled('observacion_salida')) {
+                        $validator->errors()->add('observacion_salida', 'La observación es requerida para estados Regular o Malo.');
+                    }
+                }
             }
         });
     }

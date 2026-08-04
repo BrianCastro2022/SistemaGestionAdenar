@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RoleSeeder::class);
+        $this->call(GlossarySeeder::class);
 
         $demoUsers = [
             ['id_number' => '1000000001', 'first' => 'Ana', 'last' => 'Administradora', 'role' => RoleEnum::Administrador],

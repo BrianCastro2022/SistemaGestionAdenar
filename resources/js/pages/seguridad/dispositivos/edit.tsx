@@ -37,6 +37,8 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
         valor_min: dispositivo.valor_min,
         valor_max: dispositivo.valor_max,
         estado: dispositivo.estado,
+        imagenes: [],
+        deleted_imagenes_indices: [],
     });
 
     const submit: FormEventHandler = (e) => {
@@ -53,7 +55,13 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
                 <HeadingSmall title="Editar dispositivo" description="Actualiza la información técnica del alcoholímetro." />
 
                 <form onSubmit={submit} className="max-w-2xl space-y-6">
-                    <DispositivoFormFields data={data} setData={setData} errors={errors} processing={processing} />
+                    <DispositivoFormFields 
+                        data={data} 
+                        setData={setData} 
+                        errors={errors} 
+                        processing={processing}
+                        savedImagenes={dispositivo.imagenes_paths ?? []}
+                    />
 
                     <Button type="submit" disabled={processing}>
                         {processing && <LoaderCircle className="size-4 animate-spin" />}

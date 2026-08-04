@@ -62,20 +62,20 @@ class ColaboradorController extends Controller
     {
         $data = $request->validated();
 
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            unset($data[$field]);
+        }
+
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
         }
 
-        foreach (self::DOCUMENTO_FIELDS as $field) {
-            if ($request->hasFile($field)) {
-                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
-            }
-        }
-
-        Colaborador::create([
+        $colaborador = Colaborador::create([
             ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
+
+        $this->storeDocuments($request, $colaborador);
 
         return to_route('seguridad.colaboradores.index')->with('status', 'Colaborador creado correctamente.');
     }
@@ -99,14 +99,21 @@ class ColaboradorController extends Controller
 
     public function edit(Colaborador $colaborador): Response
     {
+        $colaboradorData = $colaborador->toArray();
+        $colaboradorData = [...$colaboradorData, ...$this->documentPaths($colaborador)];
+
         return Inertia::render('seguridad/colaboradores/edit', [
-            'colaborador' => $colaborador,
+            'colaborador' => $colaboradorData,
         ]);
     }
 
     public function update(UpdateColaboradorRequest $request, Colaborador $colaborador): RedirectResponse
     {
         $data = $request->validated();
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            unset($data[$field]);
+        }
 
         if ($request->hasFile('imagen')) {
             if ($colaborador->imagen) {
@@ -116,28 +123,62 @@ class ColaboradorController extends Controller
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
         }
 
-        foreach (self::DOCUMENTO_FIELDS as $field) {
-            if ($request->hasFile($field)) {
-                if ($colaborador->{$field}) {
-                    Storage::disk('public')->delete($colaborador->{$field});
-                }
-
-                $data[$field] = $request->file($field)->store('colaboradores/documentos', 'public');
-            }
-        }
-
         $colaborador->update([
             ...$data,
             'is_active' => $request->boolean('is_active', true),
         ]);
+
+        $this->storeDocuments($request, $colaborador);
 
         return to_route('seguridad.colaboradores.index')->with('status', 'Colaborador actualizado correctamente.');
     }
 
     public function destroy(Colaborador $colaborador): RedirectResponse
     {
+        foreach ($this->documentPaths($colaborador) as $paths) {
+            foreach ($paths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
         $colaborador->delete();
 
         return to_route('seguridad.colaboradores.index')->with('status', 'Colaborador eliminado correctamente.');
+    }
+
+    private function storeDocuments(Request $request, Colaborador $colaborador): void
+    {
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            $files = $request->file($field, []);
+            $files = is_array($files) ? $files : [$files];
+
+            foreach (array_filter($files) as $file) {
+                $colaborador->documentos()->create([
+                    'campo' => $field,
+                    'path' => $file->store('colaboradores/documentos', 'public'),
+                    'fecha_documento' => now()->toDateString(),
+                ]);
+            }
+        }
+    }
+
+    private function documentPaths(Colaborador $colaborador): array
+    {
+        $paths = [];
+
+        foreach (self::DOCUMENTO_FIELDS as $field) {
+            $paths[$field] = $colaborador->{$field}
+                ? [['path' => $colaborador->{$field}, 'fecha' => null]]
+                : [];
+        }
+
+        foreach ($colaborador->documentos as $documento) {
+            $paths[$documento->campo][] = [
+                'path' => $documento->path,
+                'fecha' => $documento->fecha_documento?->format('Y-m-d'),
+            ];
+        }
+
+        return $paths;
     }
 }

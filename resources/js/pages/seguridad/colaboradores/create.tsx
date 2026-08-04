@@ -23,20 +23,20 @@ export default function CreateColaborador() {
         turno: 'manana',
         area: '',
         imagen: null,
-        documento_cedula: null,
-        documento_licencia_conduccion: null,
-        documento_carnet_manejo_defensivo: null,
-        documento_certificado_manejo_defensivo: null,
-        documento_carnet_ingreso_cd: null,
-        documento_simit: null,
-        documento_examen_medico_ocupacional: null,
-        documento_recordatorio_vehiculo_licencia_conduccion: null,
+        documento_cedula: [],
+        documento_licencia_conduccion: [],
+        documento_carnet_manejo_defensivo: [],
+        documento_certificado_manejo_defensivo: [],
+        documento_carnet_ingreso_cd: [],
+        documento_simit: [],
+        documento_examen_medico_ocupacional: [],
+        documento_recordatorio_vehiculo_licencia_conduccion: [],
         is_active: true,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('seguridad.colaboradores.store'));
+        post(route('seguridad.colaboradores.store'), { forceFormData: true });
     };
 
     return (
@@ -45,7 +45,7 @@ export default function CreateColaborador() {
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <HeadingSmall title="Nuevo colaborador" description="Registra un colaborador para poder realizarle pruebas de alcoholemia." />
 
-                <form onSubmit={submit} className="max-w-2xl space-y-6">
+                <form onSubmit={submit} className="w-full min-w-0 space-y-6">
                     <ColaboradorFormFields data={data} setData={setData} errors={errors} processing={processing} />
 
                     <Button type="submit" disabled={processing}>

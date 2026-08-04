@@ -170,9 +170,6 @@ export default function ColaboradoresIndex({
                                                     <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
                                                 </Button>
                                                 <Button variant="outline" size="sm" asChild>
-                                                    <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
-                                                </Button>
-                                                <Button variant="outline" size="sm" asChild>
                                                     <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
                                                 </Button>
                                                 <Dialog>
@@ -214,7 +211,7 @@ export default function ColaboradoresIndex({
                             <div key={colaborador.id} className="overflow-hidden rounded-2xl border border-sidebar-border/70 bg-background shadow-sm">
                                 <div className="flex h-48 items-center justify-center bg-muted/40 p-4">
                                     {colaborador.imagen ? (
-                                        <SafeImage
+                                        <img
                                             src={`/storage/${colaborador.imagen}`}
                                             alt={`${colaborador.nombres} ${colaborador.apellidos}`}
                                             className="h-full w-full rounded-xl object-cover"
@@ -245,9 +242,6 @@ export default function ColaboradoresIndex({
                                     <div className="mt-4 flex flex-wrap gap-2">
                                         <Button variant="default" size="sm" asChild>
                                             <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
-                                        </Button>
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
                                         </Button>
                                         <Button variant="outline" size="sm" asChild>
                                             <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
