@@ -7,26 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ExternalLink, Pencil, Trash2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
-
-interface GlossaryTerm {
-    id: number;
-    nombre: string;
-    definicion: string;
-    categoria: string;
-    pregunta_numero: string | null;
-    source: 'manual' | 'scraped';
-    enlaces_de_interes: string | null;
-}
-
-interface Paginator {
-    data: GlossaryTerm[];
-    links: { url: string | null; label: string; active: boolean }[];
-    from: number | null;
-    to: number | null;
-    total: number;
-}
+import { Edit2, Plus, Search, Trash2, ExternalLink } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -34,125 +16,172 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Glosario', href: '/modules/seguridad/glosario' },
 ];
 
-export default function GlosarioIndex({
-    terms,
-    filters,
-    categories,
-}: {
-    terms: Paginator;
-    filters: { search: string; categoria: string };
+interface GlossaryTerm {
+    id: number;
+    nombre: string;
+    definicion: string;
+    categoria: string;
+    pregunta_numero?: string;
+    representacion?: string;
+    enlaces_de_interes?: string;
+    source: 'manual' | 'scraped';
+    created_at: string;
+    updated_at: string;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface GlossaryPaginator {
+    data: GlossaryTerm[];
+    links: PaginationLink[];
+}
+
+interface GlossaryPageProps {
+    terms: GlossaryPaginator;
+    filters: {
+        search: string;
+        categoria?: string;
+    };
     categories: string[];
-}) {
-    const [search, setSearch] = useState(filters.search ?? '');
+}
 
-    const applyFilter = useCallback(
-        (params: Record<string, string>) => {
-            router.get(route('seguridad.glosario.index'), { ...filters, ...params }, { preserveState: true, replace: true });
-        },
-        [filters],
-    );
+const SOURCE_LABELS = {
+    manual: 'Manual',
+    scraped: 'Automático',
+};
 
-    const handleSearchSubmit = (e: React.FormEvent) => {
+export default function GlosarioIndex({ terms, filters, categories }: GlossaryPageProps) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [selectedCategory, setSelectedCategory] = useState(filters.categoria || '');
+
+    const submitFilters: FormEventHandler = (e) => {
         e.preventDefault();
-        applyFilter({ search, page: '1' });
+        router.get(
+            route('seguridad.glosario.index'),
+            {
+                search,
+                ...(selectedCategory && { categoria: selectedCategory }),
+            },
+            { preserveState: true, replace: true }
+        );
     };
 
-    const handleDelete = (id: number, nombre: string) => {
-        if (!window.confirm(`¿Eliminar el término "${nombre}"?`)) return;
-        router.delete(route('seguridad.glosario.destroy', id));
+    const handleDelete = (id: number) => {
+        if (confirm('¿Estás seguro de que deseas eliminar este término?')) {
+            router.delete(route('seguridad.glosario.destroy', id), { preserveScroll: true });
+        }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Glosario" />
+            <Head title="Glosario de Términos" />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                    <HeadingSmall title="Glosario de Términos" description="Términos y definiciones de revisión del camino" />
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <HeadingSmall
+                        title="Glosario de Términos"
+                        description="Consulta y administra términos de revisión del camino de rutas. Los términos se actualizan automáticamente desde fuentes web configuradas."
+                    />
                     <Button asChild>
-                        <Link href={route('seguridad.glosario.create')}>Nuevo Término</Link>
+                        <Link href={route('seguridad.glosario.create')}>
+                            <Plus className="mr-2 size-4" />
+                            Nuevo Término
+                        </Link>
                     </Button>
                 </div>
 
-                <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                    <Input
-                        placeholder="Buscar término o definición..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="max-w-sm"
-                    />
-                    <Select
-                        value={filters.categoria || 'all'}
-                        onValueChange={(v) => applyFilter({ categoria: v === 'all' ? '' : v, page: '1' })}
-                    >
-                        <SelectTrigger className="w-56">
+                <form onSubmit={submitFilters} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                        <Input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar por nombre o definición..."
+                        />
+                    </div>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger className="sm:w-48">
                             <SelectValue placeholder="Todas las categorías" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Todas las categorías</SelectItem>
+                            <SelectItem value="">Todas las categorías</SelectItem>
                             {categories.map((cat) => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                <SelectItem key={cat} value={cat}>
+                                    {cat}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button type="submit" variant="outline">Buscar</Button>
+                    <Button type="submit" variant="secondary" size="icon" aria-label="Buscar">
+                        <Search className="size-4" />
+                    </Button>
                 </form>
 
-                <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>N°</TableHead>
-                                <TableHead>Término</TableHead>
-                                <TableHead>Categoría</TableHead>
-                                <TableHead className="max-w-xs">Definición</TableHead>
-                                <TableHead>Fuente</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
+                                <TableHead className="w-48">Término</TableHead>
+                                <TableHead className="w-40">Categoría</TableHead>
+                                <TableHead className="w-80">Definición</TableHead>
+                                <TableHead className="w-20">Fuente</TableHead>
+                                <TableHead className="text-right w-24">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {terms.data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                                        No se encontraron términos.
+                                    <TableCell colSpan={5} className="text-muted-foreground py-6 text-center">
+                                        No hay términos registrados. {search || selectedCategory ? 'Intenta con otros filtros.' : 'Comienza agregando uno nuevo.'}
                                     </TableCell>
                                 </TableRow>
                             )}
                             {terms.data.map((term) => (
                                 <TableRow key={term.id}>
-                                    <TableCell className="text-muted-foreground">{term.pregunta_numero ?? '—'}</TableCell>
-                                    <TableCell className="font-medium">
-                                        <Link href={route('seguridad.glosario.show', term.id)} className="hover:underline">
-                                            {term.nombre}
-                                        </Link>
-                                    </TableCell>
+                                    <TableCell className="font-medium truncate">{term.nombre}</TableCell>
                                     <TableCell>
-                                        <Badge variant="secondary">{term.categoria}</Badge>
+                                        <Badge variant="outline">{term.categoria}</Badge>
                                     </TableCell>
-                                    <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                                        {term.definicion}
-                                    </TableCell>
+                                    <TableCell className="text-muted-foreground truncate max-w-xs">{term.definicion}</TableCell>
                                     <TableCell>
-                                        <Badge variant={term.source === 'scraped' ? 'default' : 'outline'}>
-                                            {term.source === 'scraped' ? 'Web' : 'Manual'}
+                                        <Badge variant={term.source === 'manual' ? 'secondary' : 'outline'}>
+                                            {SOURCE_LABELS[term.source]}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label="Editar"
+                                            >
+                                                <Link href={route('seguridad.glosario.edit', term.id)}>
+                                                    <Edit2 className="size-4" />
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleDelete(term.id)}
+                                                aria-label="Eliminar"
+                                            >
+                                                <Trash2 className="size-4 text-destructive" />
+                                            </Button>
                                             {term.enlaces_de_interes && (
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <a href={term.enlaces_de_interes} target="_blank" rel="noreferrer">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    asChild
+                                                    aria-label="Ver enlace"
+                                                >
+                                                    <a href={term.enlaces_de_interes} target="_blank" rel="noopener noreferrer">
                                                         <ExternalLink className="size-4" />
                                                     </a>
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={route('seguridad.glosario.edit', term.id)}>
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(term.id, term.nombre)}>
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -161,24 +190,29 @@ export default function GlosarioIndex({
                     </Table>
                 </div>
 
+                {/* Pagination */}
                 {terms.links.length > 3 && (
                     <div className="flex justify-center gap-1">
-                        {terms.links.map((link, i) =>
-                            link.url ? (
-                                <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
-                                    <Link href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
-                                </Button>
-                            ) : (
-                                <Button key={i} variant="outline" size="sm" disabled dangerouslySetInnerHTML={{ __html: link.label }} />
-                            ),
-                        )}
+                        {terms.links.map((link, index) => (
+                            <Button
+                                key={index}
+                                variant={link.active ? 'default' : 'outline'}
+                                size="sm"
+                                disabled={!link.url}
+                                asChild={!!link.url}
+                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
+                            >
+                                {link.url ? (
+                                    <a href={link.url} dangerouslySetInnerHTML={{ __html: link.label }} />
+                                ) : (
+                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                )}
+                            </Button>
+                        ))}
                     </div>
                 )}
-
-                <p className="text-sm text-muted-foreground">
-                    {terms.total} término(s) en total{terms.from && terms.to ? `, mostrando ${terms.from}–${terms.to}` : ''}
-                </p>
             </div>
         </AppLayout>
     );
 }
+

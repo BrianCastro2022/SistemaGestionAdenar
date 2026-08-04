@@ -11,9 +11,9 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class ScrapeGlossaryCommand extends Command
 {
-    protected $signature = 'glossary:scrape {--source= : ID o nombre de una fuente especifica}';
+    protected $signature = 'glossary:scrape {--source= : ID o nombre de una fuente específica}';
 
-    protected $description = 'Descarga y sincroniza terminos del glosario desde las fuentes web configuradas';
+    protected $description = 'Descarga y sincroniza términos del glosario desde las fuentes web configuradas';
 
     public function handle(): int
     {
@@ -61,6 +61,9 @@ class ScrapeGlossaryCommand extends Command
                     try {
                         $nombre = trim($node->text(''));
 
+                        // Toma el texto completo del elemento hermano siguiente
+                        // (normalmente un <div class="termino">), sin importar
+                        // si la definición está en uno o varios <p> anidados.
                         $definicion = null;
                         $sibling = $node->getNode(0)->nextSibling;
 
@@ -108,13 +111,11 @@ class ScrapeGlossaryCommand extends Command
                         }
                     } catch (\Throwable $e) {
                         $errors++;
-                        Log::error("Error procesando termino de {$source->nombre_fuente}: {$e->getMessage()}");
+                        Log::error("Error procesando término de {$source->nombre_fuente}: {$e->getMessage()}");
                     }
                 });
 
                 $source->update(['ultimo_scrape' => now()]);
-
-                usleep(500000); // Pausa de 0.5s entre fuentes para no saturar el sitio
             } catch (\Throwable $e) {
                 $errors++;
                 $this->error("Error descargando {$source->url}: {$e->getMessage()}");
