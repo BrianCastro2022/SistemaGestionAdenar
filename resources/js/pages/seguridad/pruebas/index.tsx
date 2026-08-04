@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,7 +191,7 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                     <TableCell>{prueba.responsable?.name ?? '—'}</TableCell>
                                     <TableCell>
                                         {prueba.firma_path ? (
-                                            <img
+                                            <SafeImage
                                                 src={`/storage/${prueba.firma_path}`}
                                                 alt="Firma"
                                                 className="h-8 w-16 rounded border border-sidebar-border/70 bg-white object-contain dark:border-sidebar-border"

@@ -6,7 +6,7 @@ import { SpotlightCard } from '@/components/spotlight-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { modules } from '@/data/modules';
+import { flattenSubmodules, modules } from '@/data/modules';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
@@ -102,7 +102,7 @@ export default function Welcome() {
     const bavaria = '#D4102A';
     const gold = '#E3A11E';
 
-    const totalProcesses = modules.reduce((total, module) => total + module.submodules.length, 0);
+    const totalProcesses = modules.reduce((total, module) => total + flattenSubmodules(module.submodules).length, 0);
 
     return (
         <>
@@ -350,7 +350,7 @@ export default function Welcome() {
                                                 <h3 className="mt-4 text-lg font-semibold text-foreground">{module.title}</h3>
 
                                                 <ul className="mt-4 flex flex-col gap-2.5">
-                                                    {module.submodules.map((submodule) => (
+                                                    {flattenSubmodules(module.submodules).map((submodule) => (
                                                         <li key={submodule.slug} className="flex items-center gap-2 text-sm text-muted-foreground">
                                                             <submodule.icon className="size-3.5 shrink-0" style={{ color: module.accent }} />
                                                             {submodule.title}

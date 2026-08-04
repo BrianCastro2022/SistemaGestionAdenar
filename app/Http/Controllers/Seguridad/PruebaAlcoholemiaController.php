@@ -307,6 +307,7 @@ class PruebaAlcoholemiaController extends Controller
         $pruebas = $this->filtrarPruebas($request)->latest('fecha_hora')->get();
 
         return Pdf::loadView('seguridad.pruebas-pdf', ['pruebas' => $pruebas])
+            ->setPaper('a4', 'landscape')
             ->download('pruebas-alcoholemia-'.now()->format('Y-m-d').'.pdf');
     }
 
@@ -325,7 +326,7 @@ class PruebaAlcoholemiaController extends Controller
         $filtros = $this->filtrosDesdeRequest($request);
 
         return PruebaAlcoholemia::query()
-            ->with(['colaborador:id,nombres,apellidos,cedula', 'alcoholimetro:id,codigo', 'responsable:id,name'])
+            ->with(['colaborador:id,nombres,apellidos,cedula', 'alcoholimetro:id,codigo', 'responsable:id,name', 'evidencias'])
             ->when($filtros['estado'] !== '', fn ($query) => $query->where('estado', $filtros['estado']))
             ->when($filtros['tipo'] !== '', fn ($query) => $query->where('tipo', $filtros['tipo']))
             ->when($filtros['fecha_desde'] !== '', fn ($query) => $query->whereDate('fecha_hora', '>=', $filtros['fecha_desde']))

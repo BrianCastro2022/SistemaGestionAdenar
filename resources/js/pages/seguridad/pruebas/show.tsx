@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
@@ -86,7 +87,7 @@ export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; q
                 {prueba.firma_path && (
                     <div className="max-w-xs">
                         <h2 className="mb-2 text-lg font-medium tracking-tight">Firma del colaborador</h2>
-                        <img
+                        <SafeImage
                             src={`/storage/${prueba.firma_path}`}
                             alt="Firma del colaborador"
                             className="rounded-lg border border-sidebar-border/70 bg-white dark:border-sidebar-border"
@@ -99,7 +100,7 @@ export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; q
                         <h2 className="mb-2 text-lg font-medium tracking-tight">Evidencias</h2>
                         <div className="flex flex-wrap gap-3">
                             {fotos.map((path) => (
-                                <img
+                                <SafeImage
                                     key={path}
                                     src={`/storage/${path}`}
                                     alt="Evidencia de la prueba"

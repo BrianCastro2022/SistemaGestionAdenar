@@ -1,6 +1,6 @@
 import { ModuleCard } from '@/components/module-card';
 import { Reveal } from '@/components/reveal';
-import { findModule } from '@/data/modules';
+import { findModule, flattenSubmodules } from '@/data/modules';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -33,7 +33,7 @@ export default function ModuleShow({ module }: { module: string }) {
                         </Reveal>
 
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                            {mod.submodules.map((sub, index) => (
+                            {flattenSubmodules(mod.submodules).map((sub, index) => (
                                 <Reveal key={sub.slug} delay={index * 80}>
                                     <ModuleCard title={sub.title} href={`/modules/${mod.slug}/${sub.slug}`} icon={sub.icon} color={mod.accent} />
                                 </Reveal>

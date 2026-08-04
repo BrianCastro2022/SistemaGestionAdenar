@@ -23,6 +23,7 @@ export default function CreateColaborador() {
         turno: 'manana',
         area: '',
         imagen: null,
+<<<<<<< HEAD
         documento_cedula: [],
         documento_licencia_conduccion: [],
         documento_carnet_manejo_defensivo: [],
@@ -31,6 +32,16 @@ export default function CreateColaborador() {
         documento_simit: [],
         documento_examen_medico_ocupacional: [],
         documento_recordatorio_vehiculo_licencia_conduccion: [],
+=======
+        documento_cedula: null,
+        documento_licencia_conduccion: null,
+        documento_carnet_manejo_defensivo: null,
+        documento_certificado_manejo_defensivo: null,
+        documento_carnet_ingreso_cd: null,
+        documento_simit: null,
+        documento_examen_medico_ocupacional: null,
+        documento_recordatorio_vehiculo_licencia_conduccion: null,
+>>>>>>> origin/brian
         is_active: true,
     });
 

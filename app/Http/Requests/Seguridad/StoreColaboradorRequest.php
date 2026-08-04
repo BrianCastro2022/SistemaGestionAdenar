@@ -18,7 +18,7 @@ class StoreColaboradorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cedula' => ['required', 'string', 'max:30', Rule::unique('colaboradores', 'cedula')->whereNull('deleted_at')],
+            'cedula' => ['required', 'string', 'max:30', Rule::unique('colaboradores', 'cedula')],
             'nombres' => ['required', 'string', 'max:100'],
             'apellidos' => ['required', 'string', 'max:100'],
             'cargo' => ['nullable', 'string', 'max:100'],

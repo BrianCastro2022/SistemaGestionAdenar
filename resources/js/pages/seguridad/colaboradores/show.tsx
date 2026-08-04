@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,6 +97,7 @@ export default function ColaboradorShow({
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
+<<<<<<< HEAD
                             {colaborador.imagen ? (
                                 <img
                                     src={`/storage/${colaborador.imagen}`}
@@ -132,6 +134,44 @@ export default function ColaboradorShow({
                             />
                         </div>
                     </div>
+=======
+                        {colaborador.imagen ? (
+                            <SafeImage
+                                src={`/storage/${colaborador.imagen}`}
+                                alt={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                className="h-24 w-24 rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                SIN
+                            </div>
+                        )}
+                        <div>
+                            <HeadingSmall
+                                title={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                description={`Cédula ${colaborador.cedula}${colaborador.cargo ? ` · ${colaborador.cargo}` : ''}`}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
+                                <ClipboardCheck className="mr-2 size-4" />
+                                Crear evaluación
+                            </Link>
+                        </Button>
+                        <CondicionSaludDialog
+                            colaboradorId={colaborador.id}
+                            trigger={
+                                <Button variant="outline">
+                                    <HeartPulse className="mr-2 size-4" />
+                                    Registrar condición de salud
+                                </Button>
+                            }
+                        />
+                    </div>
+                </div>
+>>>>>>> origin/brian
 
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">

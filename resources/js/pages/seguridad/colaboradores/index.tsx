@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -169,6 +170,12 @@ export default function ColaboradoresIndex({
                                                     <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
                                                 </Button>
                                                 <Button variant="outline" size="sm" asChild>
+<<<<<<< HEAD
+=======
+                                                    <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
+                                                </Button>
+                                                <Button variant="outline" size="sm" asChild>
+>>>>>>> origin/brian
                                                     <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
                                                 </Button>
                                                 <Dialog>
@@ -210,7 +217,11 @@ export default function ColaboradoresIndex({
                             <div key={colaborador.id} className="overflow-hidden rounded-2xl border border-sidebar-border/70 bg-background shadow-sm">
                                 <div className="flex h-48 items-center justify-center bg-muted/40 p-4">
                                     {colaborador.imagen ? (
+<<<<<<< HEAD
                                         <img
+=======
+                                        <SafeImage
+>>>>>>> origin/brian
                                             src={`/storage/${colaborador.imagen}`}
                                             alt={`${colaborador.nombres} ${colaborador.apellidos}`}
                                             className="h-full w-full rounded-xl object-cover"
@@ -243,6 +254,12 @@ export default function ColaboradoresIndex({
                                             <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>Evaluar</Link>
                                         </Button>
                                         <Button variant="outline" size="sm" asChild>
+<<<<<<< HEAD
+=======
+                                            <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
+                                        </Button>
+                                        <Button variant="outline" size="sm" asChild>
+>>>>>>> origin/brian
                                             <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
                                         </Button>
                                     </div>

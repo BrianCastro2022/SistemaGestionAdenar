@@ -20,7 +20,7 @@ class UpdateColaboradorRequest extends FormRequest
         return [
             'cedula' => [
                 'required', 'string', 'max:30',
-                Rule::unique('colaboradores', 'cedula')->ignore($this->route('colaborador'))->whereNull('deleted_at'),
+                Rule::unique('colaboradores', 'cedula')->ignore($this->route('colaborador')),
             ],
             'nombres' => ['required', 'string', 'max:100'],
             'apellidos' => ['required', 'string', 'max:100'],
