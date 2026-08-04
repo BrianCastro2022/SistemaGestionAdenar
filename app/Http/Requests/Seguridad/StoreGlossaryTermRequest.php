@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Seguridad;
 
+use App\Http\Controllers\Seguridad\GlossaryTermController;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,32 +13,22 @@ class StoreGlossaryTermRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function rules(): array
     {
-        $categories = [
-            'SEÑALIZACIÓN DE LA VÍA',
-            'CONDICIONES DEL PAVIMENTO',
-            'VISIBILIDAD Y CLIMA',
-            'COMPORTAMIENTO DEL CONDUCTOR',
-            'ESTADO DEL VEHÍCULO',
-            'SEÑALES DE TRÁNSITO',
-        ];
+        $termId = $this->route('glosario')?->id;
 
         return [
             'nombre' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('glossary_terms', 'nombre')
+                Rule::unique('glossary_terms')
                     ->where('categoria', $this->input('categoria'))
-                    ->whereNull('deleted_at')
-                    ->ignore($this->route('term')),
+                    ->ignore($termId)
+                    ->whereNull('deleted_at'),
             ],
             'definicion' => ['required', 'string', 'min:10', 'max:5000'],
-            'categoria' => ['required', 'string', Rule::in($categories)],
+            'categoria' => ['required', 'string', Rule::in(GlossaryTermController::CATEGORIES)],
             'pregunta_numero' => ['nullable', 'string', 'max:50'],
             'representacion' => ['nullable', 'string', 'max:2000'],
             'enlaces_de_interes' => ['nullable', 'url', 'max:2048'],
@@ -48,13 +39,12 @@ class StoreGlossaryTermRequest extends FormRequest
     {
         return [
             'nombre.required' => 'El nombre del término es obligatorio.',
-            'nombre.unique' => 'Este término ya existe en la categoría seleccionada.',
+            'nombre.unique' => 'Ya existe un término con este nombre en la misma categoría.',
             'definicion.required' => 'La definición es obligatoria.',
             'definicion.min' => 'La definición debe tener al menos 10 caracteres.',
-            'categoria.required' => 'Debes seleccionar una categoría.',
+            'categoria.required' => 'La categoría es obligatoria.',
             'categoria.in' => 'La categoría seleccionada no es válida.',
-            'enlaces_de_interes.url' => 'El enlace debe ser una URL válida.',
+            'enlaces_de_interes.url' => 'El enlace de interés debe ser una URL válida.',
         ];
     }
 }
-

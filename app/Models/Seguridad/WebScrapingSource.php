@@ -2,6 +2,7 @@
 
 namespace App\Models\Seguridad;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,21 +21,13 @@ class WebScrapingSource extends Model
         'ultimo_scrape',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'activo' => 'boolean',
-            'ultimo_scrape' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'deleted_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'activo' => 'boolean',
+        'ultimo_scrape' => 'datetime',
+    ];
 
-    // Scope para obtener solo fuentes activas
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('activo', true);
     }
 }
-

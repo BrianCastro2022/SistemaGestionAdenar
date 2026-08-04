@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Seguridad;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Seguridad\StoreGlossaryTermRequest;
 use App\Models\Seguridad\GlossaryTerm;
 use Illuminate\Http\RedirectResponse;
@@ -10,10 +9,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class GlossaryTermController extends Controller
+class GlossaryTermController
 {
-    // Categorías disponibles - centralizar aquí
-    private const CATEGORIES = [
+    public const CATEGORIES = [
         'SEÑALIZACIÓN DE LA VÍA',
         'CONDICIONES DEL PAVIMENTO',
         'VISIBILIDAD Y CLIMA',
@@ -24,22 +22,21 @@ class GlossaryTermController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = $request->string('search', '')->toString();
-        $categoria = $request->string('categoria', '')->toString();
+        $query = GlossaryTerm::query();
 
-        $terms = GlossaryTerm::query()
-            ->when($search, fn ($query) => $query->search($search))
-            ->when($categoria, fn ($query) => $query->byCategory($categoria))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+        if ($search = $request->input('search')) {
+            $query->search($search);
+        }
+
+        if ($categoria = $request->input('categoria')) {
+            $query->byCategory($categoria);
+        }
+
+        $terms = $query->orderBy('categoria')->orderBy('nombre')->paginate(15)->withQueryString();
 
         return Inertia::render('seguridad/glosario/index', [
             'terms' => $terms,
-            'filters' => [
-                'search' => $search,
-                'categoria' => $categoria,
-            ],
+            'filters' => $request->only('search', 'categoria'),
             'categories' => self::CATEGORIES,
         ]);
     }
@@ -60,41 +57,38 @@ class GlossaryTermController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
-        return redirect()->route('seguridad.glosario.index')
-            ->with('status', 'Término agregado exitosamente.');
+        return redirect()->route('seguridad.glosario.index')->with('success', 'Término creado correctamente.');
     }
 
-    public function show(GlossaryTerm $term): Response
+    public function show(GlossaryTerm $glosario): Response
     {
         return Inertia::render('seguridad/glosario/show', [
-            'term' => $term,
+            'term' => $glosario,
         ]);
     }
 
-    public function edit(GlossaryTerm $term): Response
+    public function edit(GlossaryTerm $glosario): Response
     {
         return Inertia::render('seguridad/glosario/create', [
-            'term' => $term,
+            'term' => $glosario,
             'categories' => self::CATEGORIES,
         ]);
     }
 
-    public function update(StoreGlossaryTermRequest $request, GlossaryTerm $term): RedirectResponse
+    public function update(StoreGlossaryTermRequest $request, GlossaryTerm $glosario): RedirectResponse
     {
-        $term->update([
+        $glosario->update([
             ...$request->validated(),
             'updated_by' => $request->user()->id,
         ]);
 
-        return redirect()->route('seguridad.glosario.index')
-            ->with('status', 'Término actualizado exitosamente.');
+        return redirect()->route('seguridad.glosario.index')->with('success', 'Término actualizado correctamente.');
     }
 
-    public function destroy(GlossaryTerm $term): RedirectResponse
+    public function destroy(GlossaryTerm $glosario): RedirectResponse
     {
-        $term->delete();
+        $glosario->delete();
 
-        return back()->with('status', 'Término eliminado exitosamente.');
+        return redirect()->route('seguridad.glosario.index')->with('success', 'Término eliminado correctamente.');
     }
 }
-

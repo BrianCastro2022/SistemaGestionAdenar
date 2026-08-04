@@ -7,8 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { CondicionSaludDialog } from '@/pages/seguridad/colaboradores/condicion-salud-dialog';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { HeartPulse } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { HeartPulse, ClipboardCheck } from 'lucide-react';
 
 interface ColaboradorDetalle {
     id: number;
@@ -18,6 +18,15 @@ interface ColaboradorDetalle {
     cargo: string | null;
     turno: string | null;
     area: string | null;
+    imagen: string | null;
+    documento_cedula: string | null;
+    documento_licencia_conduccion: string | null;
+    documento_carnet_manejo_defensivo: string | null;
+    documento_certificado_manejo_defensivo: string | null;
+    documento_carnet_ingreso_cd: string | null;
+    documento_simit: string | null;
+    documento_examen_medico_ocupacional: string | null;
+    documento_recordatorio_vehiculo_licencia_conduccion: string | null;
     is_active: boolean;
 }
 
@@ -53,6 +62,17 @@ const NIVEL_VARIANT: Record<IndiceRiesgo['nivel'], 'default' | 'secondary' | 'de
     Alto: 'destructive',
 };
 
+const DOCUMENTOS: { key: keyof ColaboradorDetalle; label: string }[] = [
+    { key: 'documento_cedula', label: 'Documento de cédula' },
+    { key: 'documento_licencia_conduccion', label: 'Documento licencia de conducción' },
+    { key: 'documento_carnet_manejo_defensivo', label: 'Documento carnet manejo defensivo' },
+    { key: 'documento_certificado_manejo_defensivo', label: 'Documento certificado manejo defensivo' },
+    { key: 'documento_carnet_ingreso_cd', label: 'Carnet ingreso CD' },
+    { key: 'documento_simit', label: 'Documento Simit' },
+    { key: 'documento_examen_medico_ocupacional', label: 'Documento examen médico ocupacional' },
+    { key: 'documento_recordatorio_vehiculo_licencia_conduccion', label: 'Documento recordatorio vehículo licencia de conducción' },
+];
+
 export default function ColaboradorShow({
     colaborador,
     indiceRiesgo,
@@ -76,7 +96,46 @@ export default function ColaboradorShow({
             <Head title={`${colaborador.nombres} ${colaborador.apellidos}`} />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                {colaborador.imagen ? (
+                    <div className="flex items-center gap-4">
+<<<<<<< HEAD
+                            {colaborador.imagen ? (
+                                <img
+                                    src={`/storage/${colaborador.imagen}`}
+                                    alt={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                    className="h-24 w-24 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                    SIN
+                                </div>
+                            )}
+                            <div>
+                                <HeadingSmall
+                                    title={`${colaborador.nombres} ${colaborador.apellidos}`}
+                                    description={`Cédula ${colaborador.cedula}${colaborador.cargo ? ` · ${colaborador.cargo}` : ''}`}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" asChild>
+                                <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
+                                    <ClipboardCheck className="mr-2 size-4" />
+                                    Crear evaluación
+                                </Link>
+                            </Button>
+                            <CondicionSaludDialog
+                                colaboradorId={colaborador.id}
+                                trigger={
+                                    <Button variant="outline">
+                                        <HeartPulse className="mr-2 size-4" />
+                                        Registrar condición de salud
+                                    </Button>
+                                }
+                            />
+                        </div>
+                    </div>
+=======
+                        {colaborador.imagen ? (
                             <SafeImage
                                 src={`/storage/${colaborador.imagen}`}
                                 alt={`${colaborador.nombres} ${colaborador.apellidos}`}
@@ -112,7 +171,7 @@ export default function ColaboradorShow({
                         />
                     </div>
                 </div>
-
+>>>>>>> origin/brian
 
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -122,6 +181,32 @@ export default function ColaboradorShow({
                     <CardContent className="text-muted-foreground text-sm">
                         Puntaje {indiceRiesgo.puntaje} — {indiceRiesgo.pruebas_positivas} prueba(s) positiva(s), {indiceRiesgo.salud_mala} episodio(s)
                         de salud "Malo".
+                    </CardContent>
+                </Card>
+
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Documentos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {DOCUMENTOS.some((doc) => colaborador[doc.key]) ? (
+                            <ul className="grid gap-2 text-sm sm:grid-cols-2">
+                                {DOCUMENTOS.filter((doc) => colaborador[doc.key]).map((doc) => (
+                                    <li key={doc.key}>
+                                        <a
+                                            href={`/storage/${colaborador[doc.key]}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-primary underline underline-offset-4"
+                                        >
+                                            {doc.label}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No se han cargado documentos.</p>
+                        )}
                     </CardContent>
                 </Card>
 

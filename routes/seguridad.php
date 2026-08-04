@@ -6,7 +6,6 @@ use App\Http\Controllers\Seguridad\AsignacionConductorController;
 use App\Http\Controllers\Seguridad\ColaboradorController;
 use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
-use App\Http\Controllers\Seguridad\GlossaryTermController;
 use App\Http\Controllers\Seguridad\PruebaAlcoholemiaController;
 use App\Http\Controllers\Seguridad\PublicVerificationController;
 use App\Http\Controllers\Seguridad\GlossaryTermController;
