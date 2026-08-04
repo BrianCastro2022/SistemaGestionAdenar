@@ -53,6 +53,11 @@ class Colaborador extends Model
         return $this->hasMany(Alerta::class);
     }
 
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(ColaboradorDocumento::class);
+    }
+
     public function getNombreCompletoAttribute(): string
     {
         return trim("{$this->nombres} {$this->apellidos}");

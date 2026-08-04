@@ -25,6 +25,8 @@ export default function CreateDispositivo() {
         valor_min: '0',
         valor_max: '4',
         estado: 'Disponible',
+        imagenes: [],
+        deleted_imagenes_indices: [],
     });
 
     const submit: FormEventHandler = (e) => {

@@ -53,18 +53,26 @@ class AlcoholimetroController extends Controller
     public function store(StoreAlcoholimetroRequest $request): RedirectResponse
     {
         $dispositivo = Alcoholimetro::create([
-            ...$request->safe()->except('documento'),
+            ...$request->safe()->except('documento', 'imagenes'),
             'documento_path' => $request->file('documento')?->store('dispositivos', 'public'),
         ]);
+
+        // Guardar imágenes
+        foreach ($request->file('imagenes', []) as $archivo) {
+            $dispositivo->imagenes()->create(['path' => $archivo->store('alcoholimetros', 'public')]);
+        }
 
         return to_route('seguridad.dispositivos.show', $dispositivo)->with('status', 'Dispositivo registrado correctamente.');
     }
 
     public function show(Alcoholimetro $dispositivo): Response
     {
+        $dispositoData = $dispositivo->toArray();
+        $dispositoData['imagenes_paths'] = $dispositivo->imagenes()->pluck('path')->map(fn($path) => '/storage/' . $path)->toArray();
+
         return Inertia::render('seguridad/dispositivos/show', [
             'dispositivo' => [
-                ...$dispositivo->toArray(),
+                ...$dispositoData,
                 'calibracion_proxima' => $dispositivo->calibracionProxima(),
             ],
             'mantenimientos' => $dispositivo->mantenimientos()->with('realizadoPor:id,name')->get(),
@@ -73,17 +81,38 @@ class AlcoholimetroController extends Controller
 
     public function edit(Alcoholimetro $dispositivo): Response
     {
+        $dispositoData = $dispositivo->toArray();
+        $dispositoData['imagenes_paths'] = $dispositivo->imagenes()->pluck('path')->map(fn($path) => '/storage/' . $path)->toArray();
+
         return Inertia::render('seguridad/dispositivos/edit', [
-            'dispositivo' => $dispositivo,
+            'dispositivo' => $dispositoData,
         ]);
     }
 
     public function update(UpdateAlcoholimetroRequest $request, Alcoholimetro $dispositivo): RedirectResponse
     {
         $dispositivo->update([
-            ...$request->safe()->except('documento'),
+            ...$request->safe()->except('documento', 'imagenes', 'deleted_imagenes_indices'),
             'documento_path' => $request->file('documento')?->store('dispositivos', 'public') ?? $dispositivo->documento_path,
         ]);
+
+        // Eliminar imágenes marcadas para eliminación
+        $deletedIndices = $request->input('deleted_imagenes_indices', []);
+        if (!empty($deletedIndices)) {
+            $imagenes = $dispositivo->imagenes()->get();
+            foreach ($deletedIndices as $index) {
+                if (isset($imagenes[$index])) {
+                    $imagen = $imagenes[$index];
+                    Storage::disk('public')->delete($imagen->path);
+                    $imagen->delete();
+                }
+            }
+        }
+
+        // Agregar nuevas imágenes
+        foreach ($request->file('imagenes', []) as $archivo) {
+            $dispositivo->imagenes()->create(['path' => $archivo->store('alcoholimetros', 'public')]);
+        }
 
         return to_route('seguridad.dispositivos.index')->with('status', 'Dispositivo actualizado correctamente.');
     }
