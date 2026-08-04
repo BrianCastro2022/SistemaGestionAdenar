@@ -3,6 +3,7 @@ import {
     AlertTriangle,
     Ban,
     BarChart3,
+    BookOpen,
     BellRing,
     Car,
     ClipboardCheck,
@@ -53,6 +54,7 @@ export const modules: ModuleDef[] = [
             { title: 'ACIS', slug: 'acis', icon: ShieldCheck },
             { title: 'Jornada Laboral', slug: 'jornada-laboral', icon: Timer },
             { title: 'Excesos en Curvas', slug: 'excesos-en-curvas', icon: AlertTriangle },
+            { title: 'Glosario', slug: 'glosario', icon: BookOpen },
         ],
     },
     {

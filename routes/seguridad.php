@@ -8,6 +8,7 @@ use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
 use App\Http\Controllers\Seguridad\PruebaAlcoholemiaController;
 use App\Http\Controllers\Seguridad\PublicVerificationController;
+use App\Http\Controllers\Seguridad\GlossaryTermController;
 use Illuminate\Support\Facades\Route;
 
 // HU037: verificación pública del QR — intencionalmente fuera del grupo `auth`.
@@ -40,4 +41,6 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
         Route::resource('asignaciones-conductores', AsignacionConductorController::class)->except(['show', 'update', 'destroy']);
 
         Route::get('indicador', [EstadoColaboradorController::class, 'index'])->name('indicador.index');
+
+        Route::resource('glosario', GlossaryTermController::class);
     });
