@@ -20,8 +20,11 @@ class Colaborador extends Model
         'turno',
         'area',
         'imagen',
+<<<<<<< HEAD
 
         // Información básica adicional
+=======
+>>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
         'expedido_en',
         'sexo',
         'fecha_nacimiento',
@@ -32,6 +35,7 @@ class Colaborador extends Model
         'celular_2',
         'correo',
         'estado_civil',
+<<<<<<< HEAD
 
         // Condiciones particulares
         'discapacidad',
@@ -44,15 +48,27 @@ class Colaborador extends Model
         'fecha_ultima_laboral',
 
         // Experiencia
+=======
+        'discapacidad',
+        'victima_conflicto',
+        'libreta_militar',
+        'ha_trabajado_antes',
+        'cargo_anterior',
+        'fecha_ultima_laboral',
+>>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
         'tiene_experiencia',
         'area_experiencia',
         'cargo_experiencia',
         'anios_experiencia',
+<<<<<<< HEAD
 
         // QR SKAP
         'codigo_qr_skap',
 
         // Documentos
+=======
+        'codigo_qr_skap',
+>>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
         'documento_cedula',
         'documento_licencia_conduccion',
         'documento_carnet_manejo_defensivo',
@@ -73,9 +89,14 @@ class Colaborador extends Model
     {
         return [
             'is_active' => 'boolean',
+<<<<<<< HEAD
             'fecha_nacimiento' => 'date',
             'fecha_ultima_laboral' => 'date',
             'anios_experiencia' => 'integer',
+=======
+            'fecha_nacimiento' => 'date:Y-m-d',
+            'fecha_ultima_laboral' => 'date:Y-m-d',
+>>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
         ];
     }
 
