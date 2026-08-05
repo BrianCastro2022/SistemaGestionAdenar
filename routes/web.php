@@ -19,6 +19,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         })->whereIn('module', ['seguridad', 'reparto', 'gente', 'flota'])->name('modules.show');
 
         Route::get('modules/{module}/{submodule}', function (string $module, string $submodule) {
+            if ($module === 'seguridad' && $submodule === 'rutas-criticas') {
+                return (new \App\Http\Controllers\Seguridad\RutaCriticaController)->index(
+                    app(\App\Services\Seguridad\RutasCriticasDatosAbiertosService::class)
+                );
+            }
             return Inertia::render('modules/submodule', ['module' => $module, 'submodule' => $submodule]);
         })->whereIn('module', ['seguridad', 'reparto', 'gente', 'flota'])->name('modules.submodule');
     });
