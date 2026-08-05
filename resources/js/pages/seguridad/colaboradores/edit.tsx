@@ -15,7 +15,6 @@ interface EditableColaborador {
     cargo: string | null;
     turno: string | null;
     area: string | null;
-<<<<<<< HEAD
     documento_cedula: DocumentInfo[];
     documento_licencia_conduccion: DocumentInfo[];
     documento_carnet_manejo_defensivo: DocumentInfo[];
@@ -24,16 +23,6 @@ interface EditableColaborador {
     documento_simit: DocumentInfo[];
     documento_examen_medico_ocupacional: DocumentInfo[];
     documento_recordatorio_vehiculo_licencia_conduccion: DocumentInfo[];
-=======
-    documento_cedula: string | null;
-    documento_licencia_conduccion: string | null;
-    documento_carnet_manejo_defensivo: string | null;
-    documento_certificado_manejo_defensivo: string | null;
-    documento_carnet_ingreso_cd: string | null;
-    documento_simit: string | null;
-    documento_examen_medico_ocupacional: string | null;
-    documento_recordatorio_vehiculo_licencia_conduccion: string | null;
->>>>>>> origin/brian
     is_active: boolean;
 }
 
@@ -53,7 +42,6 @@ export default function EditColaborador({ colaborador }: { colaborador: Editable
         turno: colaborador.turno ?? 'manana',
         area: colaborador.area ?? '',
         imagen: null,
-<<<<<<< HEAD
         documento_cedula: [],
         documento_licencia_conduccion: [],
         documento_carnet_manejo_defensivo: [],
@@ -62,16 +50,6 @@ export default function EditColaborador({ colaborador }: { colaborador: Editable
         documento_simit: [],
         documento_examen_medico_ocupacional: [],
         documento_recordatorio_vehiculo_licencia_conduccion: [],
-=======
-        documento_cedula: null,
-        documento_licencia_conduccion: null,
-        documento_carnet_manejo_defensivo: null,
-        documento_certificado_manejo_defensivo: null,
-        documento_carnet_ingreso_cd: null,
-        documento_simit: null,
-        documento_examen_medico_ocupacional: null,
-        documento_recordatorio_vehiculo_licencia_conduccion: null,
->>>>>>> origin/brian
         is_active: colaborador.is_active,
     });
 
@@ -87,11 +65,7 @@ export default function EditColaborador({ colaborador }: { colaborador: Editable
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <HeadingSmall title="Editar colaborador" description="Actualiza los datos del colaborador." />
 
-<<<<<<< HEAD
                 <form onSubmit={submit} className="w-full min-w-0 space-y-6">
-=======
-                <form onSubmit={submit} className="max-w-2xl space-y-6">
->>>>>>> origin/brian
                     <ColaboradorFormFields
                         data={data}
                         setData={setData}

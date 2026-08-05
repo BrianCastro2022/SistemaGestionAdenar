@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileSpreadsheet, FileText, Plus, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useEffect, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export interface ColaboradorFormData {
     cedula: string;
@@ -217,7 +218,37 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                     <InputError message={errors.cargo} />
                 </div>
             </div>
-
+<div className="grid gap-2">
+                <Label htmlFor="imagen">Imagen</Label>
+                <input ref={imagenInputRef} id="imagen" type="file" accept="image/*" className="hidden" onChange={handleImagenChange} />
+                <InputError message={errors.imagen} />
+                <div className="flex flex-col items-start gap-4">
+                    {previewImagen && (
+                        <div className="relative group w-32 h-32 flex-shrink-0">
+                            <img
+                                src={previewImagen}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded-lg border border-blue-300"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowDeleteDialog(true)}
+                                className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => imagenInputRef.current?.click()}
+                        className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 flex flex-col items-center justify-center text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0"
+                    >
+                        <span className="text-3xl font-light leading-none">+</span>
+                        <span className="text-xs mt-1">Agregar</span>
+                    </button>
+                </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                     <Label htmlFor="nombres">Nombres</Label>
@@ -261,37 +292,7 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                 </div>
             </div>
 
-            <div className="grid gap-2">
-                <Label htmlFor="imagen">Imagen</Label>
-                <input ref={imagenInputRef} id="imagen" type="file" accept="image/*" className="hidden" onChange={handleImagenChange} />
-                <InputError message={errors.imagen} />
-                <div className="flex gap-4">
-                    {previewImagen && (
-                        <div className="relative group w-32 h-32 flex-shrink-0">
-                            <img
-                                src={previewImagen}
-                                alt="Preview"
-                                className="w-full h-full object-cover rounded-lg border border-blue-300"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowDeleteDialog(true)}
-                                className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => imagenInputRef.current?.click()}
-                        className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 flex flex-col items-center justify-center text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0"
-                    >
-                        <span className="text-3xl font-light leading-none">+</span>
-                        <span className="text-xs mt-1">Agregar</span>
-                    </button>
-                </div>
-            </div>
+            
 
             <input
                 ref={documentoInputRef}

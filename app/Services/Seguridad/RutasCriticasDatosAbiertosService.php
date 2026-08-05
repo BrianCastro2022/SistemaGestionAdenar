@@ -32,13 +32,12 @@ class RutasCriticasDatosAbiertosService
      */
     public function obtenerAfectacionesVia(): array
     {
-        return Cache::remember('seguridad.rutas-criticas.afectaciones-vias', self::CACHE_TTL_SEGUNDOS, function () {
-            return $this->consultar(self::DATASET_ESTADO_VIAS, [
+        return $this->consultarConCache('seguridad.rutas-criticas.afectaciones-vias.v2', self::DATASET_ESTADO_VIAS, [
                 'departamento' => 'Nariño',
                 '$order' => 'fecha DESC',
                 '$limit' => 30,
             ]);
-        });
+        ]);
     }
 
     /**
@@ -46,13 +45,36 @@ class RutasCriticasDatosAbiertosService
      */
     public function obtenerSectoresCriticos(): array
     {
-        return Cache::remember('seguridad.rutas-criticas.sectores-criticos', self::CACHE_TTL_SEGUNDOS, function () {
-            return $this->consultar(self::DATASET_SECTORES_CRITICOS, [
+        return $this->consultarConCache('seguridad.rutas-criticas.sectores-criticos.v2', self::DATASET_SECTORES_CRITICOS, [
                 'departamento' => 'NARIÑO',
                 '$order' => 'fallecidos DESC',
                 '$limit' => 30,
             ]);
-        });
+        ]);
+    }
+
+    /**
+     * Conserva solamente respuestas utiles. Cachear un error de red como []
+     * deja la pantalla sin datos durante todo el TTL.
+     *
+     * @param  array<string, string|int>  $parametros
+     * @return array<int, array<string, mixed>>
+     */
+    private function consultarConCache(string $clave, string $dataset, array $parametros): array
+    {
+        $datosEnCache = Cache::get($clave);
+
+        if (is_array($datosEnCache) && $datosEnCache !== []) {
+            return $datosEnCache;
+        }
+
+        $datos = $this->consultar($dataset, $parametros);
+
+        if ($datos !== []) {
+            Cache::put($clave, $datos, self::CACHE_TTL_SEGUNDOS);
+        }
+
+        return $datos;
     }
 
     /**
@@ -61,9 +83,17 @@ class RutasCriticasDatosAbiertosService
     private function consultar(string $dataset, array $parametros): array
     {
         try {
-            $response = Http::timeout(8)->get(self::BASE_URL."/{$dataset}.json", $parametros);
+            $response = Http::acceptJson()
+                ->timeout(8)
+                ->retry(2, 250)
+                ->get(self::BASE_URL."/{$dataset}.json", $parametros);
 
             if (! $response->successful()) {
+                Log::warning("Datos Abiertos Colombia devolvio un error para el dataset {$dataset}", [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
                 return [];
             }
 

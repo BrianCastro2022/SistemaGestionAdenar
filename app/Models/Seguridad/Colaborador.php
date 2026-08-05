@@ -20,6 +20,39 @@ class Colaborador extends Model
         'turno',
         'area',
         'imagen',
+
+        // Información básica adicional
+        'expedido_en',
+        'sexo',
+        'fecha_nacimiento',
+        'ciudad_residencia',
+        'direccion',
+        'estrato',
+        'celular_1',
+        'celular_2',
+        'correo',
+        'estado_civil',
+
+        // Condiciones particulares
+        'discapacidad',
+        'victima_conflicto',
+        'libreta_militar',
+
+        // Antecedentes en la empresa
+        'ha_trabajado_antes',
+        'cargo_anterior',
+        'fecha_ultima_laboral',
+
+        // Experiencia
+        'tiene_experiencia',
+        'area_experiencia',
+        'cargo_experiencia',
+        'anios_experiencia',
+
+        // QR SKAP
+        'codigo_qr_skap',
+
+        // Documentos
         'documento_cedula',
         'documento_licencia_conduccion',
         'documento_carnet_manejo_defensivo',
@@ -28,6 +61,11 @@ class Colaborador extends Model
         'documento_simit',
         'documento_examen_medico_ocupacional',
         'documento_recordatorio_vehiculo_licencia_conduccion',
+        'documento_eps',
+        'documento_pension',
+        'documento_titulo_bachiller',
+        'documento_titulo_academico',
+
         'is_active',
     ];
 
@@ -35,6 +73,9 @@ class Colaborador extends Model
     {
         return [
             'is_active' => 'boolean',
+            'fecha_nacimiento' => 'date',
+            'fecha_ultima_laboral' => 'date',
+            'anios_experiencia' => 'integer',
         ];
     }
 
@@ -61,5 +102,10 @@ class Colaborador extends Model
     public function getNombreCompletoAttribute(): string
     {
         return trim("{$this->nombres} {$this->apellidos}");
+    }
+
+    public function getEdadAttribute(): ?int
+    {
+        return $this->fecha_nacimiento?->age;
     }
 }
