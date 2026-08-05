@@ -8,8 +8,10 @@ use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
 use App\Http\Controllers\Seguridad\PruebaAlcoholemiaController;
 use App\Http\Controllers\Seguridad\PublicVerificationController;
+use App\Http\Controllers\Seguridad\RutaCriticaController;
 use App\Http\Controllers\Seguridad\GlossaryTermController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Seguridad\RutaCriticaController;
 
 // HU037: verificación pública del QR — intencionalmente fuera del grupo `auth`.
 Route::get('verificar-prueba/{prueba}/{token}', [PublicVerificationController::class, 'show'])->name('seguridad.verificacion');
@@ -41,6 +43,14 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
         Route::resource('asignaciones-conductores', AsignacionConductorController::class)->except(['show', 'update', 'destroy']);
 
         Route::get('indicador', [EstadoColaboradorController::class, 'index'])->name('indicador.index');
+Route::resource('glosario', GlossaryTermController::class);
 
+<<<<<<< HEAD
+Route::get('rutas-criticas', [RutaCriticaController::class, 'index'])->name('rutas-criticas.index');
+=======
         Route::resource('glosario', GlossaryTermController::class);
+
+        Route::get('rutas-criticas', [RutaCriticaController::class, 'index'])
+            ->name('rutas-criticas.index');
+>>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
     });
