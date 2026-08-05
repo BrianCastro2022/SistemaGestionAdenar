@@ -19,7 +19,6 @@ class ColaboradorController extends Controller
      * Campos de documentos (PDF/Excel) almacenados en colaboradores/documentos.
      */
     private const DOCUMENTO_FIELDS = [
-<<<<<<< HEAD
         // Personales
     'documento_cedula',
     // Tránsito
@@ -37,20 +36,6 @@ class ColaboradorController extends Controller
     // Académicos
     'documento_titulo_bachiller',
     'documento_titulo_academico',
-=======
-        'documento_cedula',
-        'documento_licencia_conduccion',
-        'documento_carnet_manejo_defensivo',
-        'documento_certificado_manejo_defensivo',
-        'documento_carnet_ingreso_cd',
-        'documento_simit',
-        'documento_examen_medico_ocupacional',
-        'documento_recordatorio_vehiculo_licencia_conduccion',
-        'documento_eps',
-        'documento_pension',
-        'documento_titulo_bachiller',
-        'documento_titulo_academico',
->>>>>>> a5e4efd (Formulario de los colaboradores y base de datos)
     ];
 
     public function index(Request $request): Response
