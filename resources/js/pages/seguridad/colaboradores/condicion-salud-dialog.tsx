@@ -1,15 +1,28 @@
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useForm } from '@inertiajs/react';
+import { HeartPulse } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 const ESTADOS = [
-    { value: 'Bueno', className: 'border-emerald-500 text-emerald-600 data-[selected=true]:bg-emerald-500 data-[selected=true]:text-white' },
-    { value: 'Regular', className: 'border-amber-500 text-amber-600 data-[selected=true]:bg-amber-500 data-[selected=true]:text-white' },
-    { value: 'Malo', className: 'border-red-500 text-red-600 data-[selected=true]:bg-red-500 data-[selected=true]:text-white' },
+    {
+        value: 'Bueno',
+        className:
+            'border-emerald-300 text-emerald-700 data-[selected=true]:border-emerald-500 data-[selected=true]:bg-emerald-500 data-[selected=true]:text-white dark:border-emerald-500/30 dark:text-emerald-300 dark:data-[selected=true]:border-emerald-500',
+    },
+    {
+        value: 'Regular',
+        className:
+            'border-amber-300 text-amber-700 data-[selected=true]:border-amber-500 data-[selected=true]:bg-amber-500 data-[selected=true]:text-white dark:border-amber-500/30 dark:text-amber-300 dark:data-[selected=true]:border-amber-500',
+    },
+    {
+        value: 'Malo',
+        className:
+            'border-red-300 text-red-700 data-[selected=true]:border-red-500 data-[selected=true]:bg-red-500 data-[selected=true]:text-white dark:border-red-500/30 dark:text-red-300 dark:data-[selected=true]:border-red-500',
+    },
 ];
 
 interface CondicionSaludForm {
@@ -42,8 +55,13 @@ export function CondicionSaludDialog({ colaboradorId, trigger }: { colaboradorId
         <Dialog>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent>
-                <DialogTitle>Registrar condición de salud</DialogTitle>
-                <DialogDescription>Selecciona el momento y el estado del colaborador.</DialogDescription>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <HeartPulse className="size-5 text-emerald-600 dark:text-emerald-400" />
+                        Registrar condición de salud
+                    </DialogTitle>
+                    <DialogDescription>Selecciona el momento y el estado del colaborador.</DialogDescription>
+                </DialogHeader>
                 <form className="space-y-4" onSubmit={submit}>
                     <div className="grid gap-2">
                         <Label>Momento</Label>
@@ -54,7 +72,7 @@ export function CondicionSaludDialog({ colaboradorId, trigger }: { colaboradorId
                                     type="button"
                                     data-selected={data.momento === momento}
                                     onClick={() => setData('momento', momento)}
-                                    className="flex-1 rounded-md border px-3 py-2 text-sm capitalize data-[selected=true]:border-primary data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground"
+                                    className="flex-1 rounded-md border px-3 py-2 text-sm capitalize transition-colors data-[selected=true]:border-primary data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground"
                                 >
                                     {momento}
                                 </button>
@@ -71,7 +89,7 @@ export function CondicionSaludDialog({ colaboradorId, trigger }: { colaboradorId
                                     type="button"
                                     data-selected={data.estado === estado.value}
                                     onClick={() => setData('estado', estado.value)}
-                                    className={cn('flex-1 rounded-md border px-3 py-2 text-sm font-medium', estado.className)}
+                                    className={cn('flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors', estado.className)}
                                 >
                                     {estado.value}
                                 </button>

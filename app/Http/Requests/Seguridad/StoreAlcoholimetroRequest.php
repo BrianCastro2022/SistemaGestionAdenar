@@ -24,6 +24,8 @@ class StoreAlcoholimetroRequest extends FormRequest
             'fecha_calibracion' => ['nullable', 'date'],
             'fecha_vencimiento_certificado' => ['nullable', 'date'],
             'documento' => ['nullable', 'file', 'max:5120'],
+            'documentos' => ['nullable', 'array'],
+            'documentos.*' => ['file', 'mimes:pdf,xls,xlsx,doc,docx', 'max:5120'],
             'imagenes' => ['nullable', 'array'],
             'imagenes.*' => ['image', 'max:2048'],
             'valor_min' => ['required', 'numeric', 'min:0'],

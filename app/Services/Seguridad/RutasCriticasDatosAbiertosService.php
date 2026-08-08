@@ -37,7 +37,6 @@ class RutasCriticasDatosAbiertosService
                 '$order' => 'fecha DESC',
                 '$limit' => 30,
             ]);
-        ]);
     }
 
     /**
@@ -50,7 +49,6 @@ class RutasCriticasDatosAbiertosService
                 '$order' => 'fallecidos DESC',
                 '$limit' => 30,
             ]);
-        ]);
     }
 
     /**

@@ -45,6 +45,11 @@ class Alcoholimetro extends Model
         return $this->hasMany(AlcoholimetroImagen::class);
     }
 
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(AlcoholimetroDocumento::class);
+    }
+
     public function pruebasAlcoholemia(): HasMany
     {
         return $this->hasMany(PruebaAlcoholemia::class);

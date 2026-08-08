@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { ExternalLink, Pencil, Trash2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface GlossaryTerm {
     id: number;
@@ -44,6 +45,8 @@ export default function GlosarioIndex({
     categories: string[];
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const debouncedSearch = useDebouncedValue(search);
+    const isFirstRender = useRef(true);
 
     const applyFilter = useCallback(
         (params: Record<string, string>) => {
@@ -51,6 +54,15 @@ export default function GlosarioIndex({
         },
         [filters],
     );
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        applyFilter({ search: debouncedSearch, page: '1' });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSearch]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();

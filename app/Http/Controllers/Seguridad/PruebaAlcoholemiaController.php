@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Seguridad\StorePruebaAlcoholemiaRequest;
 use App\Models\Seguridad\Alcoholimetro;
 use App\Models\Seguridad\Colaborador;
-use App\Models\Seguridad\CondicionSalud;
 use App\Models\Seguridad\PruebaAlcoholemia;
 use App\Services\Seguridad\QrCodeGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -43,6 +42,7 @@ class PruebaAlcoholemiaController extends Controller
 
         return Inertia::render('seguridad/pruebas/create', [
             'colaboradores' => Colaborador::query()
+                ->completos()
                 ->where('is_active', true)
                 ->when($turno !== '', fn ($query) => $query->where('turno', $turno))
                 ->orderBy('nombres')
@@ -84,28 +84,6 @@ class PruebaAlcoholemiaController extends Controller
         foreach ($request->file('evidencias', []) as $archivo) {
             $prueba->evidencias()->create(['path' => $archivo->store('evidencias', 'public')]);
         }
-        if ($request->boolean('condiciones_salud_habilitadas')) {
-            $tipo = $request->input('tipo');
-            if ($tipo === 'entrada') {
-                CondicionSalud::create([
-                    'colaborador_id' => $request->input('colaborador_id'),
-                    'momento' => 'ingreso',
-                    'estado' => $request->input('estado_ingreso'),
-                    'observacion' => $request->input('observacion_entrada'),
-                    'responsable_id' => $request->user()->id,
-                    'fecha_hora' => Carbon::now(),
-                ]);
-            } elseif ($tipo === 'salida') {
-                CondicionSalud::create([
-                    'colaborador_id' => $request->input('colaborador_id'),
-                    'momento' => 'salida',
-                    'estado' => $request->input('estado_salida'),
-                    'observacion' => $request->input('observacion_salida'),
-                    'responsable_id' => $request->user()->id,
-                    'fecha_hora' => Carbon::now(),
-                ]);
-            }
-        }
 
         return to_route('seguridad.pruebas.index')->with(
             'status',
@@ -128,17 +106,6 @@ class PruebaAlcoholemiaController extends Controller
             ->orderBy('codigo')
             ->get(['id', 'codigo', 'valor_min', 'valor_max']);
 
-        // Cargar condiciones de salud si existen
-        $condicionIngreso = CondicionSalud::where('colaborador_id', $prueba->colaborador_id)
-            ->where('momento', 'ingreso')
-            ->latest('fecha_hora')
-            ->first();
-        
-        $condicionSalida = CondicionSalud::where('colaborador_id', $prueba->colaborador_id)
-            ->where('momento', 'salida')
-            ->latest('fecha_hora')
-            ->first();
-
         $pruebaData = $prueba->load(['colaborador', 'alcoholimetro', 'responsable'])->toArray();
         
         // Agregar rutas de evidencias con /storage/
@@ -146,20 +113,10 @@ class PruebaAlcoholemiaController extends Controller
             $pruebaData['evidencia_path'] = '/storage/' . $prueba->evidencia_path;
         }
         $pruebaData['evidencias_paths'] = $prueba->evidencias()->pluck('path')->map(fn($path) => '/storage/' . $path)->toArray();
-        
-        // Agregar datos de condiciones de salud
-        if ($prueba->tipo === 'entrada' && $condicionIngreso) {
-            $pruebaData['condiciones_salud_habilitadas'] = true;
-            $pruebaData['estado_ingreso'] = $condicionIngreso->estado;
-            $pruebaData['observacion_entrada'] = $condicionIngreso->observacion;
-        } elseif ($prueba->tipo === 'salida' && $condicionSalida) {
-            $pruebaData['condiciones_salud_habilitadas'] = true;
-            $pruebaData['estado_salida'] = $condicionSalida->estado;
-            $pruebaData['observacion_salida'] = $condicionSalida->observacion;
-        }
 
         return Inertia::render('seguridad/pruebas/create', [
             'colaboradores' => Colaborador::query()
+                ->completos()
                 ->where('is_active', true)
                 ->when($turno !== '', fn ($query) => $query->where('turno', $turno))
                 ->orderBy('nombres')
@@ -221,38 +178,6 @@ class PruebaAlcoholemiaController extends Controller
         }
 
         $prueba->save();
-
-        // Actualizar o crear condiciones de salud
-        if ($request->boolean('condiciones_salud_habilitadas')) {
-            $tipo = $request->input('tipo');
-            if ($tipo === 'entrada') {
-                CondicionSalud::updateOrCreate(
-                    [
-                        'colaborador_id' => $request->input('colaborador_id'),
-                        'momento' => 'ingreso',
-                    ],
-                    [
-                        'estado' => $request->input('estado_ingreso'),
-                        'observacion' => $request->input('observacion_entrada'),
-                        'responsable_id' => $request->user()->id,
-                        'fecha_hora' => Carbon::now(),
-                    ]
-                );
-            } elseif ($tipo === 'salida') {
-                CondicionSalud::updateOrCreate(
-                    [
-                        'colaborador_id' => $request->input('colaborador_id'),
-                        'momento' => 'salida',
-                    ],
-                    [
-                        'estado' => $request->input('estado_salida'),
-                        'observacion' => $request->input('observacion_salida'),
-                        'responsable_id' => $request->user()->id,
-                        'fecha_hora' => Carbon::now(),
-                    ]
-                );
-            }
-        }
 
         return to_route('seguridad.pruebas.index')->with(
             'status',

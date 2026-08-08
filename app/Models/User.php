@@ -3,7 +3,9 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Seguridad\Colaborador;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -62,5 +64,10 @@ class User extends Authenticatable
                 $user->name = trim("{$user->first_name} {$user->last_name}");
             }
         });
+    }
+
+    public function colaborador(): HasOne
+    {
+        return $this->hasOne(Colaborador::class);
     }
 }

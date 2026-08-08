@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { CalendarDays, FileSpreadsheet, FileText, Plus } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -52,6 +53,18 @@ interface Filters {
 
 export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPaginator; filters: Filters }) {
     const [form, setForm] = useState(filters);
+    const debouncedColaborador = useDebouncedValue(form.colaborador);
+    const isFirstRender = useRef(true);
+    const formRef = useRef(form);
+    formRef.current = form;
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        router.get(route('seguridad.pruebas.index'), { ...formRef.current, colaborador: debouncedColaborador }, { preserveState: true, replace: true });
+    }, [debouncedColaborador]);
 
     const submitFilters: FormEventHandler = (e) => {
         e.preventDefault();

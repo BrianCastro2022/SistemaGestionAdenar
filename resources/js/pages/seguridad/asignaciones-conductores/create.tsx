@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { LoaderCircle, Search } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -68,6 +68,7 @@ interface AsignacionConductorFormData {
     rutas_cd: string;
     criticidad_matriz_rutas: string;
     observaciones: string;
+    [key: string]: string | number | null;
 }
 
 export default function CreateAsignacionConductor({ colaborador, asignacion, alcoholUsageHint, positiveTests = [] }: { colaborador: ColaboradorOption | null; asignacion?: Record<string, any> | null; alcoholUsageHint?: string | null; positiveTests?: PositiveTestHistory[] }) {

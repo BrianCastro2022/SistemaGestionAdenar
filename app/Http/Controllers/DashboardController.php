@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
+use App\Http\Controllers\Colaborador\PortalController;
 use App\Models\User;
+use App\Services\Seguridad\EvaluacionCalculator;
+use App\Services\Seguridad\IndiceRiesgoCalculator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +32,14 @@ class DashboardController extends Controller
                         ->values(),
                 ],
             ]);
+        }
+
+        if ($user->hasRole(Role::Colaborador->value)) {
+            return app(PortalController::class)->index(
+                $request,
+                app(EvaluacionCalculator::class),
+                app(IndiceRiesgoCalculator::class),
+            );
         }
 
         $modules = collect(Role::moduleRoles())

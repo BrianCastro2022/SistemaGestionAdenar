@@ -18,6 +18,7 @@ class GlossaryTermController
         'COMPORTAMIENTO DEL CONDUCTOR',
         'ESTADO DEL VEHÍCULO',
         'SEÑALES DE TRÁNSITO',
+        'GLOSARIO TÉCNICO INVÍAS',
     ];
 
     public function index(Request $request): Response

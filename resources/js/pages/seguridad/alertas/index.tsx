@@ -19,6 +19,7 @@ const TIPO_LABELS: Record<string, string> = {
     no_apto: 'No apto para laborar',
     calibracion_proxima: 'Calibración próxima',
     certificado_vencido: 'Certificado por vencer',
+    contrato_proximo_vencer: 'Contrato próximo a vencer',
 };
 
 interface AlertaRow {

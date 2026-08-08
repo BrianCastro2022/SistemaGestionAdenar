@@ -1,7 +1,7 @@
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { DispositivoFormData, DispositivoFormFields } from '@/pages/seguridad/dispositivos/dispositivo-form-fields';
+import { DispositivoFormData, DispositivoFormFields, type SavedDocumento } from '@/pages/seguridad/dispositivos/dispositivo-form-fields';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
@@ -17,6 +17,9 @@ interface EditableDispositivo {
     valor_min: string;
     valor_max: string;
     estado: string;
+    imagenes_paths?: string[];
+    documentos_paths?: SavedDocumento[];
+    documento_path: string | null;
 }
 
 export default function EditDispositivo({ dispositivo }: { dispositivo: EditableDispositivo }) {
@@ -39,6 +42,8 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
         estado: dispositivo.estado,
         imagenes: [],
         deleted_imagenes_indices: [],
+        documentos: [],
+        deleted_documentos_indices: [],
     });
 
     const submit: FormEventHandler = (e) => {
@@ -55,12 +60,14 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
                 <HeadingSmall title="Editar dispositivo" description="Actualiza la información técnica del alcoholímetro." />
 
                 <form onSubmit={submit} className="max-w-2xl space-y-6">
-                    <DispositivoFormFields 
-                        data={data} 
-                        setData={setData} 
-                        errors={errors} 
+                    <DispositivoFormFields
+                        data={data}
+                        setData={setData}
+                        errors={errors}
                         processing={processing}
                         savedImagenes={dispositivo.imagenes_paths ?? []}
+                        savedDocumentos={dispositivo.documentos_paths ?? []}
+                        documentoLegado={dispositivo.documento_path ? `/storage/${dispositivo.documento_path}` : null}
                     />
 
                     <Button type="submit" disabled={processing}>

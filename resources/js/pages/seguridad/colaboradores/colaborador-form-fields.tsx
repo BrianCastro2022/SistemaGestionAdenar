@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Award,
     Briefcase,
@@ -21,13 +22,20 @@ import {
     QrCode,
     ShieldCheck,
     User,
+    UserCog,
     X,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { type InertiaFormProps } from '@inertiajs/react';
+import { type WizardCatalogos } from '@/pages/seguridad/colaboradores/wizard/catalogos';
+import { DepartamentoCiudadSelect } from '@/pages/seguridad/colaboradores/wizard/components/departamento-ciudad-select';
+
+const HOY_ISO = new Date().toISOString().slice(0, 10);
 
 export interface ColaboradorFormData {
+    user_id: string;
     cedula: string;
     nombres: string;
     apellidos: string;
@@ -48,10 +56,32 @@ export interface ColaboradorFormData {
     correo: string;
     estado_civil: string;
 
+    tipo_documento: string;
+    tipo_documento_otro_label: string;
+
     // Condiciones particulares
     discapacidad: 'no_aplica' | 'aplica' | '';
+    discapacidad_tipo: string;
+    discapacidad_observaciones: string;
     victima_conflicto: 'si' | 'no' | '';
+    victima_conflicto_observaciones: string;
     libreta_militar: 'no_aplica' | 'aplica' | '';
+    runt_aplica: 'no_aplica' | 'aplica' | '';
+
+    // Seguridad social
+    eps: string;
+    eps_otro: string;
+    afp: string;
+    afp_otro: string;
+    arl: string;
+    arl_otro: string;
+
+    // Información aprendiz SENA
+    sena_especialidad: string;
+    sena_numero_grupo: string;
+    sena_institucion: string;
+    sena_nit: string;
+    sena_centro_formacion: string;
 
     // Antecedentes en la empresa
     ha_trabajado_antes: 'si' | 'no' | '';
@@ -63,30 +93,91 @@ export interface ColaboradorFormData {
     area_experiencia: string;
     cargo_experiencia: string;
     anios_experiencia: string;
+    manejo_defensivo_aplica: 'no_aplica' | 'aplica' | '';
+    conduccion_carga_pesada_aplica: 'no_aplica' | 'aplica' | '';
+    experiencia_terreno_plano: 'si' | 'no' | '';
+    experiencia_terreno_montanoso: 'si' | 'no' | '';
+
+    // Información del puesto de trabajo
+    cargo_fecha_inicio: string;
+    centro: string;
+    centro_trabajo: string;
+    fecha_ingreso_empresa: string;
+    fecha_retiro_empresa: string;
+    motivo_retiro: string;
+    tipo_contrato: string;
+    contrato_fecha_desde: string;
+    contrato_fecha_hasta: string;
+    vacaciones_aplica: 'no_aplica' | 'aplica' | '';
+    vacaciones_fecha_desde: string;
+    vacaciones_fecha_hasta: string;
+    vacaciones_pagadas_fecha_desde: string;
+    vacaciones_pagadas_fecha_hasta: string;
+
+    // Plan padrino
+    es_padrino: 'no_aplica' | 'aplica' | '';
+    tipo_padrino: 'padrino' | 'plan_padrino_personal_nuevo' | '';
+    licencia_conduccion_categorias: string[];
 
     // QR SKAP
     codigo_qr_skap: string;
 
     // Documentos — personales
     documento_cedula: File[];
+    documento_tipo_identificacion: File[];
+    documento_hoja_vida: File[];
+    documento_libreta_militar: File[];
+    documento_antecedentes_procuraduria: File[];
+    documento_antecedentes_contraloria: File[];
+    documento_antecedentes_policia: File[];
+    documento_certificado_bancario: File[];
+    documento_runt: File[];
     // Documentos — tránsito
     documento_licencia_conduccion: File[];
+    documento_licencia_a1: File[];
+    documento_licencia_a2: File[];
+    documento_licencia_b1: File[];
+    documento_licencia_b2: File[];
+    documento_licencia_b3: File[];
+    documento_licencia_c1: File[];
+    documento_licencia_c2: File[];
+    documento_licencia_c3: File[];
     documento_carnet_manejo_defensivo: File[];
     documento_certificado_manejo_defensivo: File[];
+    documento_certificado_carga_pesada: File[];
     documento_simit: File[];
     documento_recordatorio_vehiculo_licencia_conduccion: File[];
     // Documentos — salud
     documento_eps: File[];
     documento_pension: File[];
+    documento_arl: File[];
     documento_examen_medico_ocupacional: File[];
+    documento_certificado_comfamiliar: File[];
+    documento_afiliacion_comfamiliar: File[];
     // Documentos — empresariales
     documento_carnet_ingreso_cd: File[];
+    documento_contrato: File[];
+    documento_preaviso_terminacion: File[];
+    documento_prorroga: File[];
     // Documentos — académicos
     documento_titulo_bachiller: File[];
+    documento_titulo_tecnico: File[];
+    documento_titulo_tecnologo: File[];
+    documento_titulo_profesional: File[];
     documento_titulo_academico: File[];
+    // Documentos — aprendiz / People / plan padrino / disciplinarios / aprendizaje
+    documento_sena_carta_presentacion: File[];
+    documento_induccion: File[];
+    documento_reinduccion: File[];
+    documento_induccion_pilares: File[];
+    documento_plan_padrino: File[];
+    documento_llamado_atencion: File[];
+    documento_compromisos: File[];
+    documento_escuela_pilotos: File[];
+    documento_certificado_brigadista: File[];
 
     is_active: boolean;
-    [key: string]: string | boolean | File | File[] | null;
+    [key: string]: string | string[] | boolean | File | File[] | null;
 }
 
 export type DocumentInfo = {
@@ -101,13 +192,21 @@ type ExcelPreview = {
 
 type DocumentKey = Extract<keyof ColaboradorFormData, string>;
 
+interface ColaboradorFormFieldsProps extends Pick<InertiaFormProps<ColaboradorFormData>, 'data' | 'setData' | 'errors' | 'processing'> {
+    readonlyCedula?: boolean;
+    existingDocumentos?: Partial<Record<DocumentKey, DocumentInfo[]>>;
+    usuarios?: { id: number; name: string; identification_number: string }[];
+    catalogos?: WizardCatalogos;
+    historialCargos?: { id: number; cargo: string; fecha_inicio: string; fecha_fin: string | null; estado: 'ACTIVO' | 'INACTIVO' }[];
+}
+
 const TURNOS = [
     { value: 'manana', label: 'Mañana' },
     { value: 'tarde', label: 'Tarde' },
     { value: 'noche', label: 'Noche' },
 ];
 
-const ESTADOS_CIVILES = [
+export const ESTADOS_CIVILES = [
     { value: 'soltero', label: 'Soltero(a)' },
     { value: 'union_libre', label: 'Unión libre' },
     { value: 'casado', label: 'Casado(a)' },
@@ -117,36 +216,97 @@ const ESTADOS_CIVILES = [
 
 const ESTRATOS = ['1', '2', '3', '4', '5', '6'];
 
-const CARGOS_ANTERIORES = [
+export const CARGOS_ANTERIORES = [
     { value: 'conductor', label: 'Conductor' },
     { value: 'auxiliar_logistico', label: 'Auxiliar logístico' },
     { value: 'supervisor_ruta', label: 'Supervisor de ruta' },
 ];
 
-type DocumentGroup = 'Documentos personales' | 'Documentos de tránsito' | 'Documentos de salud' | 'Documentos empresariales' | 'Documentos académicos';
+export type DocumentGroup =
+    | 'Documentos personales'
+    | 'Documentos de tránsito'
+    | 'Documentos de salud'
+    | 'Documentos empresariales'
+    | 'Documentos académicos'
+    | 'Documentos aprendiz'
+    | 'Documentos People'
+    | 'Documentos plan padrino'
+    | 'Documentos disciplinarios'
+    | 'Documentos de aprendizaje';
 
-const DOCUMENTO_FIELDS: { key: Extract<keyof ColaboradorFormData, string>; label: string; grupo: DocumentGroup }[] = [
+export const DOCUMENTO_FIELDS: { key: Extract<keyof ColaboradorFormData, string>; label: string; grupo: DocumentGroup }[] = [
     { key: 'documento_cedula', label: 'Documento de cédula', grupo: 'Documentos personales' },
+    { key: 'documento_tipo_identificacion', label: 'Archivo del tipo de documento', grupo: 'Documentos personales' },
+    { key: 'documento_hoja_vida', label: 'Hoja de vida', grupo: 'Documentos personales' },
+    { key: 'documento_libreta_militar', label: 'Libreta militar', grupo: 'Documentos personales' },
+    { key: 'documento_antecedentes_procuraduria', label: 'Antecedentes — Procuraduría', grupo: 'Documentos personales' },
+    { key: 'documento_antecedentes_contraloria', label: 'Antecedentes — Contraloría', grupo: 'Documentos personales' },
+    { key: 'documento_antecedentes_policia', label: 'Antecedentes — Policía Nacional', grupo: 'Documentos personales' },
+    { key: 'documento_certificado_bancario', label: 'Certificado bancario', grupo: 'Documentos personales' },
+    { key: 'documento_runt', label: 'RUNT', grupo: 'Documentos personales' },
 
     { key: 'documento_licencia_conduccion', label: 'Licencia de conducción', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_a1', label: 'Licencia — A1', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_a2', label: 'Licencia — A2', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_b1', label: 'Licencia — B1', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_b2', label: 'Licencia — B2', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_b3', label: 'Licencia — B3', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_c1', label: 'Licencia — C1', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_c2', label: 'Licencia — C2', grupo: 'Documentos de tránsito' },
+    { key: 'documento_licencia_c3', label: 'Licencia — C3', grupo: 'Documentos de tránsito' },
     { key: 'documento_carnet_manejo_defensivo', label: 'Carnet manejo defensivo', grupo: 'Documentos de tránsito' },
     { key: 'documento_certificado_manejo_defensivo', label: 'Certificado manejo defensivo', grupo: 'Documentos de tránsito' },
+    { key: 'documento_certificado_carga_pesada', label: 'Certificado conducción de carga pesada', grupo: 'Documentos de tránsito' },
     { key: 'documento_simit', label: 'Documento Simit', grupo: 'Documentos de tránsito' },
     { key: 'documento_recordatorio_vehiculo_licencia_conduccion', label: 'Recordatorio vehículo / licencia', grupo: 'Documentos de tránsito' },
 
     { key: 'documento_eps', label: 'Documento EPS', grupo: 'Documentos de salud' },
-    { key: 'documento_pension', label: 'Documento pensión', grupo: 'Documentos de salud' },
+    { key: 'documento_pension', label: 'Documento AFP / pensión', grupo: 'Documentos de salud' },
+    { key: 'documento_arl', label: 'Documento ARL', grupo: 'Documentos de salud' },
     { key: 'documento_examen_medico_ocupacional', label: 'Examen médico ocupacional', grupo: 'Documentos de salud' },
+    { key: 'documento_certificado_comfamiliar', label: 'Certificado Comfamiliar', grupo: 'Documentos de salud' },
+    { key: 'documento_afiliacion_comfamiliar', label: 'Afiliación Comfamiliar', grupo: 'Documentos de salud' },
 
     { key: 'documento_carnet_ingreso_cd', label: 'Carnet ingreso CD', grupo: 'Documentos empresariales' },
+    { key: 'documento_contrato', label: 'Contrato', grupo: 'Documentos empresariales' },
+    { key: 'documento_preaviso_terminacion', label: 'Preaviso de terminación', grupo: 'Documentos empresariales' },
+    { key: 'documento_prorroga', label: 'Prórroga', grupo: 'Documentos empresariales' },
 
     { key: 'documento_titulo_bachiller', label: 'Título de bachiller', grupo: 'Documentos académicos' },
-    { key: 'documento_titulo_academico', label: 'Información académica (agrega los que necesites)', grupo: 'Documentos académicos' },
+    { key: 'documento_titulo_tecnico', label: 'Título técnico', grupo: 'Documentos académicos' },
+    { key: 'documento_titulo_tecnologo', label: 'Título tecnólogo', grupo: 'Documentos académicos' },
+    { key: 'documento_titulo_profesional', label: 'Título profesional', grupo: 'Documentos académicos' },
+    { key: 'documento_titulo_academico', label: 'Título — otro', grupo: 'Documentos académicos' },
+
+    { key: 'documento_sena_carta_presentacion', label: 'Carta de presentación (Aprendiz SENA)', grupo: 'Documentos aprendiz' },
+
+    { key: 'documento_induccion', label: 'Inducción', grupo: 'Documentos People' },
+    { key: 'documento_reinduccion', label: 'Reinducción', grupo: 'Documentos People' },
+    { key: 'documento_induccion_pilares', label: 'Inducción pilares', grupo: 'Documentos People' },
+
+    { key: 'documento_plan_padrino', label: 'Plan padrino personal nuevo', grupo: 'Documentos plan padrino' },
+
+    { key: 'documento_llamado_atencion', label: 'Llamado de atención', grupo: 'Documentos disciplinarios' },
+    { key: 'documento_compromisos', label: 'Compromisos', grupo: 'Documentos disciplinarios' },
+
+    { key: 'documento_escuela_pilotos', label: 'Certificado escuela de pilotos', grupo: 'Documentos de aprendizaje' },
+    { key: 'documento_certificado_brigadista', label: 'Certificado de Brigadista', grupo: 'Documentos de aprendizaje' },
 ];
 
-const DOCUMENT_GROUPS: DocumentGroup[] = ['Documentos personales', 'Documentos de tránsito', 'Documentos de salud', 'Documentos empresariales', 'Documentos académicos'];
+export const DOCUMENT_GROUPS: DocumentGroup[] = [
+    'Documentos personales',
+    'Documentos de tránsito',
+    'Documentos de salud',
+    'Documentos empresariales',
+    'Documentos académicos',
+    'Documentos aprendiz',
+    'Documentos People',
+    'Documentos plan padrino',
+    'Documentos disciplinarios',
+    'Documentos de aprendizaje',
+];
 
-function calcularEdad(fechaNacimiento: string): string {
+export function calcularEdad(fechaNacimiento: string): string {
     if (!fechaNacimiento) return '—';
     const nacimiento = new Date(fechaNacimiento);
     if (Number.isNaN(nacimiento.getTime())) return '—';
@@ -157,7 +317,26 @@ function calcularEdad(fechaNacimiento: string): string {
     return edad >= 0 ? `${edad} años` : '—';
 }
 
-function PillToggle<T extends string>({
+/** Tiempo trabajado en la empresa desde la fecha de ingreso (tarjeta con foto, HU06). */
+export function calcularTiempoTrabajado(fechaIngreso: string | null): string {
+    if (!fechaIngreso) return '—';
+    const ingreso = new Date(fechaIngreso);
+    if (Number.isNaN(ingreso.getTime())) return '—';
+
+    const hoy = new Date();
+    let meses = (hoy.getFullYear() - ingreso.getFullYear()) * 12 + (hoy.getMonth() - ingreso.getMonth());
+    if (hoy.getDate() < ingreso.getDate()) meses -= 1;
+    if (meses < 0) return '—';
+
+    const anios = Math.floor(meses / 12);
+    const mesesRestantes = meses % 12;
+
+    if (anios === 0) return `${mesesRestantes} mes${mesesRestantes === 1 ? '' : 'es'}`;
+    if (mesesRestantes === 0) return `${anios} año${anios === 1 ? '' : 's'}`;
+    return `${anios} año${anios === 1 ? '' : 's'} ${mesesRestantes} mes${mesesRestantes === 1 ? '' : 'es'}`;
+}
+
+export function PillToggle<T extends string>({
     label,
     value,
     options,
@@ -212,7 +391,7 @@ const TONOS = {
     },
 } as const;
 
-function SeccionCard({
+export function SeccionCard({
     icon: Icon,
     titulo,
     subtitulo,
@@ -265,7 +444,30 @@ function CampoConIcono({ icon: Icon, children }: { icon: LucideIcon; children: R
     );
 }
 
-export function ColaboradorFormFields({ data, setData, errors, processing, readonlyCedula, existingDocumentos }: ColaboradorFormFieldsProps) {
+const DEFAULT_CATALOGOS: WizardCatalogos = {
+    tiposDocumento: ['Tarjeta de identidad', 'Cédula'],
+    epsOpciones: ['EMSSANAR', 'SANITAS', 'FAMISANAR', 'NUEVA EPS', 'MALLAMAS'],
+    afpOpciones: ['PORVENIR', 'PROTECCIÓN', 'COLPENSIONES', 'FONDO NACIONAL DEL AHORRO'],
+    arlOpciones: ['ARL Positiva', 'ARL SURA', 'Riesgos Laborales Colmena', 'Seguros Bolívar', 'AXA Colpatria', 'MAPFRE Colombia'],
+    cargos: [],
+    centros: ['UC', 'SUR', 'JL', 'MOVILIZADOR', 'INCAPACIDAD JL'],
+    centrosTrabajo: ['Sura riesgo I', 'Sura riesgo IV'],
+    tiposContrato: [],
+    motivosRetiro: [],
+    licenciaCategorias: ['A1', 'A2', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'],
+};
+
+export function ColaboradorFormFields({
+    data,
+    setData,
+    errors,
+    processing,
+    readonlyCedula,
+    existingDocumentos,
+    usuarios,
+    catalogos = DEFAULT_CATALOGOS,
+    historialCargos = [],
+}: ColaboradorFormFieldsProps) {
     const imagenInputRef = useRef<HTMLInputElement>(null);
     const documentoInputRef = useRef<HTMLInputElement>(null);
     const [previewImagen, setPreviewImagen] = useState<string | null>(null);
@@ -437,7 +639,33 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                     <div className="order-2 grid gap-4 lg:order-1">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="grid gap-2">
-                                <Label htmlFor="cedula">Cédula</Label>
+                                <Label htmlFor="tipo_documento">Tipo de documento</Label>
+                                <Select value={data.tipo_documento} onValueChange={(value) => setData('tipo_documento', value)} disabled={processing}>
+                                    <SelectTrigger id="tipo_documento">
+                                        <SelectValue placeholder="Selecciona el tipo de documento" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {catalogos.tiposDocumento.map((tipo) => (
+                                            <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                                        ))}
+                                        <SelectItem value="Otro">Otro</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.tipo_documento} />
+                            </div>
+                            {data.tipo_documento === 'Otro' && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="tipo_documento_otro_label">¿Cuál?</Label>
+                                    <Input id="tipo_documento_otro_label" value={data.tipo_documento_otro_label} onChange={(e) => setData('tipo_documento_otro_label', e.target.value)} disabled={processing} />
+                                    <InputError message={errors.tipo_documento_otro_label} />
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="cedula">
+                                    Número de documento <span className="text-red-600">*</span>
+                                </Label>
                                 {readonlyCedula ? (
                                     <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
                                         {data.cedula}
@@ -449,25 +677,29 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                                 )}
                                 <InputError message={errors.cedula} />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="expedido_en">Expedido en</Label>
-                                <CampoConIcono icon={MapPin}>
-                                    <Input id="expedido_en" className="pl-9" placeholder="Ciudad de expedición" value={data.expedido_en} onChange={(e) => setData('expedido_en', e.target.value)} disabled={processing} />
-                                </CampoConIcono>
-                                <InputError message={errors.expedido_en} />
-                            </div>
+                            <DepartamentoCiudadSelect
+                                label="Expedido en"
+                                value={data.expedido_en}
+                                onValueChange={(value) => setData('expedido_en', value)}
+                                error={errors.expedido_en}
+                                disabled={processing}
+                            />
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="grid gap-2">
-                                <Label htmlFor="nombres">Nombres</Label>
+                                <Label htmlFor="nombres">
+                                    Nombres <span className="text-red-600">*</span>
+                                </Label>
                                 <CampoConIcono icon={User}>
                                     <Input id="nombres" className="pl-9" value={data.nombres} onChange={(e) => setData('nombres', e.target.value)} disabled={processing} required />
                                 </CampoConIcono>
                                 <InputError message={errors.nombres} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="apellidos">Apellidos</Label>
+                                <Label htmlFor="apellidos">
+                                    Apellidos <span className="text-red-600">*</span>
+                                </Label>
                                 <CampoConIcono icon={User}>
                                     <Input id="apellidos" className="pl-9" value={data.apellidos} onChange={(e) => setData('apellidos', e.target.value)} disabled={processing} required />
                                 </CampoConIcono>
@@ -503,13 +735,13 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
             {/* Contacto y ubicación */}
             <SeccionCard icon={MapPin} titulo="Contacto y ubicación" subtitulo="Información de contacto y residencia" paso="Paso 2 de 4" tono="azul">
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="grid gap-2">
-                        <Label htmlFor="ciudad_residencia">Ciudad de residencia</Label>
-                        <CampoConIcono icon={MapPin}>
-                            <Input id="ciudad_residencia" className="pl-9" value={data.ciudad_residencia} onChange={(e) => setData('ciudad_residencia', e.target.value)} disabled={processing} />
-                        </CampoConIcono>
-                        <InputError message={errors.ciudad_residencia} />
-                    </div>
+                    <DepartamentoCiudadSelect
+                        label="Ciudad de residencia"
+                        value={data.ciudad_residencia}
+                        onValueChange={(value) => setData('ciudad_residencia', value)}
+                        error={errors.ciudad_residencia}
+                        disabled={processing}
+                    />
                     <div className="grid gap-2">
                         <Label htmlFor="estrato">Estrato</Label>
                         <Select value={data.estrato} onValueChange={(value) => setData('estrato', value)} disabled={processing}>
@@ -573,19 +805,52 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                         <InputError message={errors.turno} />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="area">Área / Ruta</Label>
-                        <CampoConIcono icon={MapPin}>
-                            <Input id="area" className="pl-9" value={data.area} onChange={(e) => setData('area', e.target.value)} disabled={processing} />
-                        </CampoConIcono>
+                        <Label htmlFor="area">Área</Label>
+                        <Select value={data.area} onValueChange={(value) => setData('area', value)} disabled={processing}>
+                            <SelectTrigger id="area">
+                                <SelectValue placeholder="Selecciona el área" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Administrativa">Administrativa</SelectItem>
+                                <SelectItem value="Operativa">Operativa</SelectItem>
+                            </SelectContent>
+                        </Select>
                         <InputError message={errors.area} />
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="cargo">Cargo</Label>
-                        <CampoConIcono icon={Briefcase}>
-                            <Input id="cargo" className="pl-9" value={data.cargo} onChange={(e) => setData('cargo', e.target.value)} disabled={processing} />
-                        </CampoConIcono>
+                        <Select value={data.cargo} onValueChange={(value) => setData('cargo', value)} disabled={processing}>
+                            <SelectTrigger id="cargo">
+                                <SelectValue placeholder="Selecciona el cargo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalogos.cargos.map((cargo) => (
+                                    <SelectItem key={cargo} value={cargo}>{cargo}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <InputError message={errors.cargo} />
                     </div>
+                    {data.cargo !== '' && data.cargo !== historialCargos.find((h) => h.estado === 'ACTIVO')?.cargo && (
+                        <div className="grid gap-2 sm:col-span-2 border-l-2 border-emerald-300 pl-3 dark:border-emerald-500/30">
+                            <Label htmlFor="cargo_fecha_inicio">Fecha de inicio del nuevo cargo</Label>
+                            <Input id="cargo_fecha_inicio" type="date" value={data.cargo_fecha_inicio} onChange={(e) => setData('cargo_fecha_inicio', e.target.value)} disabled={processing} />
+                            <InputError message={errors.cargo_fecha_inicio} />
+                            <p className="text-xs text-muted-foreground">El cargo activo actual (si existe) se cerrará automáticamente un día antes de esta fecha.</p>
+                        </div>
+                    )}
+                    {historialCargos.length > 0 && (
+                        <div className="sm:col-span-2 grid gap-1.5">
+                            <p className="text-xs font-semibold text-muted-foreground">Historial de cargos</p>
+                            {historialCargos.map((h) => (
+                                <div key={h.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs">
+                                    <span className="font-medium text-foreground">{h.cargo}</span>
+                                    <span className="text-muted-foreground">{h.fecha_inicio} — {h.fecha_fin ?? 'actual'}</span>
+                                    <span className={h.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-muted-foreground'}>{h.estado}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div className="grid gap-2">
                         <Label htmlFor="estado_civil">Estado civil</Label>
                         <Select value={data.estado_civil} onValueChange={(value) => setData('estado_civil', value)} disabled={processing}>
@@ -600,26 +865,193 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                         </Select>
                         <InputError message={errors.estado_civil} />
                     </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="centro">Centro</Label>
+                        <Select value={data.centro} onValueChange={(value) => setData('centro', value)} disabled={processing}>
+                            <SelectTrigger id="centro">
+                                <SelectValue placeholder="Selecciona el centro" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalogos.centros.map((centro) => (
+                                    <SelectItem key={centro} value={centro}>{centro}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.centro} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="centro_trabajo">Centro de trabajo</Label>
+                        <Select value={data.centro_trabajo} onValueChange={(value) => setData('centro_trabajo', value)} disabled={processing}>
+                            <SelectTrigger id="centro_trabajo">
+                                <SelectValue placeholder="Selecciona el centro de trabajo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalogos.centrosTrabajo.map((centro) => (
+                                    <SelectItem key={centro} value={centro}>{centro}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.centro_trabajo} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="fecha_ingreso_empresa">Fecha de ingreso a la empresa</Label>
+                        <Input id="fecha_ingreso_empresa" type="date" value={data.fecha_ingreso_empresa} onChange={(e) => setData('fecha_ingreso_empresa', e.target.value)} disabled={processing} />
+                        <InputError message={errors.fecha_ingreso_empresa} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="fecha_retiro_empresa">Fecha de retiro de la empresa</Label>
+                        <Input
+                            id="fecha_retiro_empresa"
+                            type="date"
+                            min={HOY_ISO}
+                            value={data.fecha_retiro_empresa}
+                            onChange={(e) => setData('fecha_retiro_empresa', e.target.value)}
+                            disabled={processing}
+                        />
+                        <InputError message={errors.fecha_retiro_empresa} />
+                    </div>
+                    {data.fecha_retiro_empresa && (
+                        <div className="grid gap-2 sm:col-span-2">
+                            <Label htmlFor="motivo_retiro">Motivo de retiro</Label>
+                            <Select value={data.motivo_retiro} onValueChange={(value) => setData('motivo_retiro', value)} disabled={processing}>
+                                <SelectTrigger id="motivo_retiro">
+                                    <SelectValue placeholder="Selecciona el motivo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {catalogos.motivosRetiro.map((motivo) => (
+                                        <SelectItem key={motivo} value={motivo}>{motivo}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.motivo_retiro} />
+                        </div>
+                    )}
+                    <div className="grid gap-2 sm:col-span-2">
+                        <Label htmlFor="tipo_contrato">Tipo de contrato</Label>
+                        <Select value={data.tipo_contrato} onValueChange={(value) => setData('tipo_contrato', value)} disabled={processing}>
+                            <SelectTrigger id="tipo_contrato">
+                                <SelectValue placeholder="Selecciona el tipo de contrato" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {catalogos.tiposContrato.map((tipo) => (
+                                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.tipo_contrato} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="contrato_fecha_desde">Tiempo de contrato — desde</Label>
+                        <Input id="contrato_fecha_desde" type="date" value={data.contrato_fecha_desde} onChange={(e) => setData('contrato_fecha_desde', e.target.value)} disabled={processing} />
+                        <InputError message={errors.contrato_fecha_desde} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="contrato_fecha_hasta">Tiempo de contrato — hasta</Label>
+                        <Input id="contrato_fecha_hasta" type="date" min={HOY_ISO} value={data.contrato_fecha_hasta} onChange={(e) => setData('contrato_fecha_hasta', e.target.value)} disabled={processing} />
+                        <InputError message={errors.contrato_fecha_hasta} />
+                    </div>
                 </div>
             </SeccionCard>
 
-            {/* Condiciones particulares */}
-            <SeccionCard icon={ShieldCheck} titulo="Condiciones particulares" subtitulo="Marca lo que aplique al colaborador" tono="verde">
-                <div className="grid gap-4 sm:grid-cols-3">
+            {/* Vacaciones */}
+            <SeccionCard icon={QrCode} titulo="Vacaciones" tono="azul">
+                <div className="grid gap-4">
                     <PillToggle
-                        label="Discapacidad"
-                        value={data.discapacidad}
-                        onChange={(value) => setData('discapacidad', value)}
+                        label="Vacaciones"
+                        value={data.vacaciones_aplica}
+                        onChange={(value) => setData('vacaciones_aplica', value)}
                         disabled={processing}
                         options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Aplica' }]}
                     />
-                    <PillToggle
-                        label="Víctima del conflicto"
-                        value={data.victima_conflicto}
-                        onChange={(value) => setData('victima_conflicto', value)}
-                        disabled={processing}
-                        options={[{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]}
-                    />
+                    {data.vacaciones_aplica === 'aplica' && (
+                        <div className="grid gap-4 border-l-2 border-emerald-300 pl-4 sm:grid-cols-2 dark:border-emerald-500/30">
+                            <div className="grid gap-2">
+                                <Label htmlFor="vacaciones_fecha_desde">Fecha desde</Label>
+                                <Input id="vacaciones_fecha_desde" type="date" min={HOY_ISO} value={data.vacaciones_fecha_desde} onChange={(e) => setData('vacaciones_fecha_desde', e.target.value)} disabled={processing} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="vacaciones_fecha_hasta">Fecha hasta</Label>
+                                <Input id="vacaciones_fecha_hasta" type="date" min={HOY_ISO} value={data.vacaciones_fecha_hasta} onChange={(e) => setData('vacaciones_fecha_hasta', e.target.value)} disabled={processing} />
+                            </div>
+                        </div>
+                    )}
+                    <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="vacaciones_pagadas_fecha_desde">Vacaciones pagadas — desde</Label>
+                            <Input id="vacaciones_pagadas_fecha_desde" type="date" min={HOY_ISO} value={data.vacaciones_pagadas_fecha_desde} onChange={(e) => setData('vacaciones_pagadas_fecha_desde', e.target.value)} disabled={processing} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="vacaciones_pagadas_fecha_hasta">Vacaciones pagadas — hasta</Label>
+                            <Input id="vacaciones_pagadas_fecha_hasta" type="date" min={HOY_ISO} value={data.vacaciones_pagadas_fecha_hasta} onChange={(e) => setData('vacaciones_pagadas_fecha_hasta', e.target.value)} disabled={processing} />
+                        </div>
+                    </div>
+                </div>
+            </SeccionCard>
+
+            {/* Usuario del sistema (solo en edición: al crear, la cuenta se aprovisiona automáticamente con cédula como usuario y contraseña) */}
+            {usuarios && (
+                <SeccionCard
+                    icon={UserCog}
+                    titulo="Usuario del sistema"
+                    subtitulo="Corrige el vínculo con la cuenta del portal si es necesario"
+                    tono="azul"
+                >
+                    <div className="grid gap-2 sm:max-w-md">
+                        <Label htmlFor="user_id">Cuenta de colaborador</Label>
+                        <Select
+                            value={data.user_id || 'none'}
+                            onValueChange={(value) => setData('user_id', value === 'none' ? '' : value)}
+                            disabled={processing}
+                        >
+                            <SelectTrigger id="user_id">
+                                <SelectValue placeholder="Sin vincular" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Sin vincular</SelectItem>
+                                {usuarios.map((usuario) => (
+                                    <SelectItem key={usuario.id} value={String(usuario.id)}>
+                                        {usuario.name} · {usuario.identification_number}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.user_id} />
+                    </div>
+                </SeccionCard>
+            )}
+
+            {/* Condiciones particulares */}
+            <SeccionCard icon={ShieldCheck} titulo="Condiciones particulares" subtitulo="Marca lo que aplique al colaborador" tono="verde">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-3">
+                        <PillToggle
+                            label="Discapacidad"
+                            value={data.discapacidad}
+                            onChange={(value) => setData('discapacidad', value)}
+                            disabled={processing}
+                            options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Aplica' }]}
+                        />
+                        {data.discapacidad === 'aplica' && (
+                            <div className="grid gap-2 border-l-2 border-emerald-300 pl-3 dark:border-emerald-500/30">
+                                <Input placeholder="Tipo de discapacidad" value={data.discapacidad_tipo} onChange={(e) => setData('discapacidad_tipo', e.target.value)} disabled={processing} />
+                                <Textarea placeholder="Observaciones" value={data.discapacidad_observaciones} onChange={(e) => setData('discapacidad_observaciones', e.target.value)} disabled={processing} />
+                            </div>
+                        )}
+                    </div>
+                    <div className="grid gap-3">
+                        <PillToggle
+                            label="Víctima de conflicto"
+                            value={data.victima_conflicto}
+                            onChange={(value) => setData('victima_conflicto', value)}
+                            disabled={processing}
+                            options={[{ value: 'no', label: 'No aplica' }, { value: 'si', label: 'Aplica' }]}
+                        />
+                        {data.victima_conflicto === 'si' && (
+                            <div className="grid gap-2 border-l-2 border-emerald-300 pl-3 dark:border-emerald-500/30">
+                                <Textarea placeholder="Observaciones" value={data.victima_conflicto_observaciones} onChange={(e) => setData('victima_conflicto_observaciones', e.target.value)} disabled={processing} />
+                            </div>
+                        )}
+                    </div>
                     <PillToggle
                         label="Libreta militar"
                         value={data.libreta_militar}
@@ -627,6 +1059,170 @@ export function ColaboradorFormFields({ data, setData, errors, processing, reado
                         disabled={processing}
                         options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Aplica' }]}
                     />
+                    <PillToggle
+                        label="RUNT"
+                        value={data.runt_aplica}
+                        onChange={(value) => setData('runt_aplica', value)}
+                        disabled={processing}
+                        options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Aplica' }]}
+                    />
+                </div>
+            </SeccionCard>
+
+            {/* Seguridad social */}
+            <SeccionCard icon={ShieldCheck} titulo="Seguridad social" subtitulo="EPS, AFP y ARL" tono="azul">
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-2">
+                        <Label htmlFor="eps">EPS</Label>
+                        <Select value={data.eps} onValueChange={(value) => setData('eps', value)} disabled={processing}>
+                            <SelectTrigger id="eps"><SelectValue placeholder="Selecciona EPS" /></SelectTrigger>
+                            <SelectContent>
+                                {catalogos.epsOpciones.map((eps) => <SelectItem key={eps} value={eps}>{eps}</SelectItem>)}
+                                <SelectItem value="Otro">Otro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {data.eps === 'Otro' && <Input placeholder="Nombre de la EPS" value={data.eps_otro} onChange={(e) => setData('eps_otro', e.target.value)} disabled={processing} />}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="afp">AFP</Label>
+                        <Select value={data.afp} onValueChange={(value) => setData('afp', value)} disabled={processing}>
+                            <SelectTrigger id="afp"><SelectValue placeholder="Selecciona AFP" /></SelectTrigger>
+                            <SelectContent>
+                                {catalogos.afpOpciones.map((afp) => <SelectItem key={afp} value={afp}>{afp}</SelectItem>)}
+                                <SelectItem value="Otro">Otro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {data.afp === 'Otro' && <Input placeholder="Nombre de la AFP" value={data.afp_otro} onChange={(e) => setData('afp_otro', e.target.value)} disabled={processing} />}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="arl">ARL</Label>
+                        <Select value={data.arl} onValueChange={(value) => setData('arl', value)} disabled={processing}>
+                            <SelectTrigger id="arl"><SelectValue placeholder="Selecciona ARL" /></SelectTrigger>
+                            <SelectContent>
+                                {catalogos.arlOpciones.map((arl) => <SelectItem key={arl} value={arl}>{arl}</SelectItem>)}
+                                <SelectItem value="Otro">Otro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {data.arl === 'Otro' && <Input placeholder="Nombre de la ARL" value={data.arl_otro} onChange={(e) => setData('arl_otro', e.target.value)} disabled={processing} />}
+                    </div>
+                </div>
+            </SeccionCard>
+
+            {/* Información aprendiz SENA */}
+            {data.cargo === 'APRENDIZ SENA' && (
+                <SeccionCard titulo="Información aprendiz SENA" tono="verde">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="sena_especialidad">Especialidad o programa de formación</Label>
+                            <Input id="sena_especialidad" value={data.sena_especialidad} onChange={(e) => setData('sena_especialidad', e.target.value)} disabled={processing} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="sena_numero_grupo">Número de grupo</Label>
+                            <Input id="sena_numero_grupo" type="number" value={data.sena_numero_grupo} onChange={(e) => setData('sena_numero_grupo', e.target.value)} disabled={processing} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="sena_institucion">Institución de formación</Label>
+                            <Input id="sena_institucion" value={data.sena_institucion} onChange={(e) => setData('sena_institucion', e.target.value)} disabled={processing} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="sena_nit">NIT</Label>
+                            <Input id="sena_nit" value={data.sena_nit} onChange={(e) => setData('sena_nit', e.target.value)} disabled={processing} />
+                        </div>
+                        <div className="grid gap-2 sm:col-span-2">
+                            <Label htmlFor="sena_centro_formacion">Centro de formación</Label>
+                            <Input id="sena_centro_formacion" value={data.sena_centro_formacion} onChange={(e) => setData('sena_centro_formacion', e.target.value)} disabled={processing} />
+                        </div>
+                    </div>
+                </SeccionCard>
+            )}
+
+            {/* Requisitos del cargo */}
+            <SeccionCard icon={Award} titulo="Requisitos del cargo" tono="azul">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <PillToggle
+                        label="Manejo defensivo y preventivo"
+                        value={data.manejo_defensivo_aplica}
+                        onChange={(value) => setData('manejo_defensivo_aplica', value)}
+                        disabled={processing}
+                        options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Sí aplica' }]}
+                    />
+                    <PillToggle
+                        label="Certificado de conducción de carga pesada"
+                        value={data.conduccion_carga_pesada_aplica}
+                        onChange={(value) => setData('conduccion_carga_pesada_aplica', value)}
+                        disabled={processing}
+                        options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Sí aplica' }]}
+                    />
+                    <PillToggle
+                        label="Experiencia en terreno plano"
+                        value={data.experiencia_terreno_plano}
+                        onChange={(value) => setData('experiencia_terreno_plano', value)}
+                        disabled={processing}
+                        options={[{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]}
+                    />
+                    <PillToggle
+                        label="Experiencia en terreno montañoso / curvas"
+                        value={data.experiencia_terreno_montanoso}
+                        onChange={(value) => setData('experiencia_terreno_montanoso', value)}
+                        disabled={processing}
+                        options={[{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]}
+                    />
+                </div>
+            </SeccionCard>
+
+            {/* Plan padrino y licencia de conducción */}
+            <SeccionCard titulo="Plan padrino y licencia de conducción" tono="verde">
+                <div className="grid gap-4">
+                    <PillToggle
+                        label="¿Es padrino?"
+                        value={data.es_padrino}
+                        onChange={(value) => setData('es_padrino', value)}
+                        disabled={processing}
+                        options={[{ value: 'no_aplica', label: 'No aplica' }, { value: 'aplica', label: 'Aplica' }]}
+                    />
+                    {data.es_padrino === 'aplica' && (
+                        <div className="grid gap-2 max-w-xs border-l-2 border-emerald-300 pl-3 dark:border-emerald-500/30">
+                            <Label htmlFor="tipo_padrino">Tipo</Label>
+                            <Select value={data.tipo_padrino} onValueChange={(value) => setData('tipo_padrino', value as ColaboradorFormData['tipo_padrino'])} disabled={processing}>
+                                <SelectTrigger id="tipo_padrino"><SelectValue placeholder="Selecciona el tipo" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="padrino">Padrino</SelectItem>
+                                    <SelectItem value="plan_padrino_personal_nuevo">Plan padrino personal nuevo</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    <div className="grid gap-2 border-t border-border pt-4">
+                        <Label>Licencia de conducción — categorías</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {catalogos.licenciaCategorias.map((categoria) => {
+                                const activa = data.licencia_conduccion_categorias.includes(categoria);
+                                return (
+                                    <button
+                                        key={categoria}
+                                        type="button"
+                                        disabled={processing}
+                                        onClick={() =>
+                                            setData(
+                                                'licencia_conduccion_categorias',
+                                                activa
+                                                    ? data.licencia_conduccion_categorias.filter((c) => c !== categoria)
+                                                    : [...data.licencia_conduccion_categorias, categoria],
+                                            )
+                                        }
+                                        className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                                            activa
+                                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+                                                : 'border-input text-muted-foreground hover:border-emerald-200 hover:text-foreground'
+                                        }`}
+                                    >
+                                        {categoria}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="text-xs text-muted-foreground">El archivo de cada categoría marcada se sube en la sección de Documentos, más abajo.</p>
+                    </div>
                 </div>
             </SeccionCard>
 

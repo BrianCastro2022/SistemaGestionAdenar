@@ -2,11 +2,15 @@
 
 namespace App\Http\Requests\Seguridad;
 
+use App\Http\Requests\Seguridad\Concerns\ValidatesColaboradorDocumentos;
+use App\Support\Seguridad\ColaboradorDocumentoCampos;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateColaboradorRequest extends FormRequest
 {
+    use ValidatesColaboradorDocumentos;
+
     public function authorize(): bool
     {
         return true;
@@ -18,62 +22,90 @@ class UpdateColaboradorRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id' => [
+                'nullable', 'integer', Rule::exists('users', 'id'),
+                Rule::unique('colaboradores', 'user_id')->ignore($this->route('colaborador')),
+            ],
             'cedula' => [
                 'required', 'string', 'max:30',
                 Rule::unique('colaboradores', 'cedula')->ignore($this->route('colaborador')),
             ],
             'nombres' => ['required', 'string', 'max:100'],
             'apellidos' => ['required', 'string', 'max:100'],
-            'cargo' => ['nullable', 'string', 'max:100'],
             'turno' => ['nullable', Rule::in(['manana', 'tarde', 'noche'])],
-            'area' => ['nullable', 'string', 'max:100'],
+            'imagen' => ['nullable', 'image', 'max:2048'],
+
+            // Paso 1
+            'tipo_documento' => ['nullable', Rule::in([...config('seguridad.colaboradores.tipos_documento'), 'Otro'])],
+            'tipo_documento_otro_label' => ['nullable', 'required_if:tipo_documento,Otro', 'string', 'max:100'],
             'expedido_en' => ['nullable', 'string', 'max:100'],
             'sexo' => ['nullable', Rule::in(['femenino', 'masculino'])],
             'fecha_nacimiento' => ['nullable', 'date'],
             'ciudad_residencia' => ['nullable', 'string', 'max:100'],
             'direccion' => ['nullable', 'string', 'max:255'],
             'estrato' => ['nullable', Rule::in(['1', '2', '3', '4', '5', '6'])],
-            'celular_1' => ['nullable', 'string', 'max:30'],
-            'celular_2' => ['nullable', 'string', 'max:30'],
+            'celular_1' => ['nullable', 'digits_between:1,10'],
+            'celular_2' => ['nullable', 'digits_between:1,10'],
             'correo' => ['nullable', 'email', 'max:255'],
             'estado_civil' => ['nullable', Rule::in(['soltero', 'union_libre', 'casado', 'divorciado', 'viudo'])],
             'discapacidad' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'discapacidad_tipo' => ['nullable', 'required_if:discapacidad,aplica', 'string', 'max:150'],
+            'discapacidad_observaciones' => ['nullable', 'required_if:discapacidad,aplica', 'string', 'max:2000'],
             'victima_conflicto' => ['nullable', Rule::in(['si', 'no'])],
+            'victima_conflicto_observaciones' => ['nullable', 'required_if:victima_conflicto,si', 'string', 'max:2000'],
             'libreta_militar' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'runt_aplica' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'eps' => ['nullable', 'string', 'max:100'],
+            'eps_otro' => ['nullable', 'required_if:eps,Otro', 'string', 'max:100'],
+            'afp' => ['nullable', 'string', 'max:100'],
+            'afp_otro' => ['nullable', 'required_if:afp,Otro', 'string', 'max:100'],
+            'arl' => ['nullable', 'string', 'max:100'],
+            'arl_otro' => ['nullable', 'required_if:arl,Otro', 'string', 'max:100'],
+            'sena_especialidad' => ['nullable', 'string', 'max:150'],
+            'sena_numero_grupo' => ['nullable', 'integer'],
+            'sena_institucion' => ['nullable', 'string', 'max:150'],
+            'sena_nit' => ['nullable', 'string', 'max:30'],
+            'sena_centro_formacion' => ['nullable', 'string', 'max:150'],
+
+            // Paso 2
             'ha_trabajado_antes' => ['nullable', Rule::in(['si', 'no'])],
             'cargo_anterior' => ['nullable', 'string', 'max:100'],
             'fecha_ultima_laboral' => ['nullable', 'date'],
             'tiene_experiencia' => ['nullable', Rule::in(['si', 'no'])],
-            'area_experiencia' => ['nullable', 'string', 'max:100'],
-            'cargo_experiencia' => ['nullable', 'string', 'max:100'],
             'anios_experiencia' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'manejo_defensivo_aplica' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'conduccion_carga_pesada_aplica' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'experiencia_terreno_plano' => ['nullable', Rule::in(['si', 'no'])],
+            'experiencia_terreno_montanoso' => ['nullable', Rule::in(['si', 'no'])],
+
+            // Paso 3 (el historial de cargos lo gestiona CargoHistorialService)
+            'area' => ['nullable', Rule::in(['Administrativa', 'Operativa'])],
+            'cargo' => ['nullable', Rule::in(config('seguridad.colaboradores.cargos'))],
+            'cargo_fecha_inicio' => ['nullable', 'required_with:cargo', 'date'],
+            'centro' => ['nullable', Rule::in(config('seguridad.colaboradores.centros'))],
+            'centro_trabajo' => ['nullable', Rule::in(config('seguridad.colaboradores.centros_trabajo'))],
+            'fecha_ingreso_empresa' => ['nullable', 'date'],
+            'fecha_retiro_empresa' => ['nullable', 'date', 'after_or_equal:today'],
+            'motivo_retiro' => ['nullable', Rule::in(config('seguridad.colaboradores.motivos_retiro'))],
+            'tipo_contrato' => ['nullable', Rule::in(config('seguridad.colaboradores.tipos_contrato'))],
+            'contrato_fecha_desde' => ['nullable', 'date'],
+            'contrato_fecha_hasta' => ['nullable', 'date', 'after_or_equal:contrato_fecha_desde', 'after_or_equal:today'],
             'codigo_qr_skap' => ['nullable', 'string', 'max:100'],
-            'imagen' => ['nullable', 'image', 'max:2048'],
-            'documento_cedula' => ['nullable', 'array'],
-            'documento_cedula.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_licencia_conduccion' => ['nullable', 'array'],
-            'documento_licencia_conduccion.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_carnet_manejo_defensivo' => ['nullable', 'array'],
-            'documento_carnet_manejo_defensivo.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_certificado_manejo_defensivo' => ['nullable', 'array'],
-            'documento_certificado_manejo_defensivo.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_carnet_ingreso_cd' => ['nullable', 'array'],
-            'documento_carnet_ingreso_cd.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_simit' => ['nullable', 'array'],
-            'documento_simit.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_examen_medico_ocupacional' => ['nullable', 'array'],
-            'documento_examen_medico_ocupacional.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_recordatorio_vehiculo_licencia_conduccion' => ['nullable', 'array'],
-            'documento_recordatorio_vehiculo_licencia_conduccion.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_eps' => ['nullable', 'array'],
-            'documento_eps.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_pension' => ['nullable', 'array'],
-            'documento_pension.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_titulo_bachiller' => ['nullable', 'array'],
-            'documento_titulo_bachiller.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
-            'documento_titulo_academico' => ['nullable', 'array'],
-            'documento_titulo_academico.*' => ['file', 'mimes:pdf,xls,xlsx', 'max:5120'],
+            'vacaciones_aplica' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'vacaciones_fecha_desde' => ['nullable', 'date', 'after_or_equal:today'],
+            'vacaciones_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_fecha_desde', 'after_or_equal:today'],
+            'vacaciones_pagadas_fecha_desde' => ['nullable', 'date', 'after_or_equal:today'],
+            'vacaciones_pagadas_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_pagadas_fecha_desde', 'after_or_equal:today'],
+
+            // Paso 4
+            'licencia_conduccion_categorias' => ['nullable', 'array'],
+            'licencia_conduccion_categorias.*' => [Rule::in(config('seguridad.colaboradores.licencia_conduccion_categorias'))],
+            'es_padrino' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
+            'tipo_padrino' => ['nullable', 'required_if:es_padrino,aplica', Rule::in(['padrino', 'plan_padrino_personal_nuevo'])],
+
             'is_active' => ['boolean'],
+
+            ...$this->documentoRules(ColaboradorDocumentoCampos::todas()),
         ];
     }
 }

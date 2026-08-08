@@ -18,6 +18,7 @@ class EstadoColaboradorController extends Controller
     public function index(EvaluacionCalculator $calculator): Response
     {
         $colaboradores = Colaborador::query()
+            ->completos()
             ->where('is_active', true)
             ->orderBy('nombres')
             ->get()

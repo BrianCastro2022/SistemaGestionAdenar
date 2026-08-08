@@ -4,6 +4,7 @@ export interface Auth {
     user: User;
     roles: string[];
     isAdmin: boolean;
+    isColaborador: boolean;
     accessibleModules: string[];
 }
 

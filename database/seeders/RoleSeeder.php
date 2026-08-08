@@ -14,7 +14,8 @@ class RoleSeeder extends Seeder
         $modulePermissions = collect(RoleEnum::moduleRoles())
             ->keys()
             ->map(fn (string $slug) => "modules.{$slug}")
-            ->push('users.manage');
+            ->push('users.manage')
+            ->push('portal.colaborador');
 
         $modulePermissions->each(
             fn (string $name) => Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web'])
@@ -27,6 +28,8 @@ class RoleSeeder extends Seeder
         foreach (RoleEnum::moduleRoles() as $slug => $role) {
             Role::findByName($role->value, 'web')->syncPermissions(["modules.{$slug}"]);
         }
+
+        Role::findByName(RoleEnum::Colaborador->value, 'web')->syncPermissions(['portal.colaborador']);
 
         // The Administrador role holds every permission that exists today; new
         // permissions added later are still covered by the Gate::before bypass.

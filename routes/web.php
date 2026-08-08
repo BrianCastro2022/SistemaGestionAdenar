@@ -9,6 +9,8 @@ Route::get('/', function () {
 })->name('home');
 
 require __DIR__.'/seguridad.php';
+require __DIR__.'/colaborador.php';
+require __DIR__.'/flota.php';
 
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

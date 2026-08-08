@@ -3,10 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -34,6 +35,16 @@ interface AsignacionesPaginator {
 
 export default function AsignacionesConductoresIndex({ asignaciones, filters }: { asignaciones: AsignacionesPaginator; filters: { search: string } }) {
     const [search, setSearch] = useState(filters.search);
+    const debouncedSearch = useDebouncedValue(search);
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        router.get(route('seguridad.asignaciones-conductores.index'), { search: debouncedSearch }, { preserveState: true, replace: true });
+    }, [debouncedSearch]);
 
     const submitFilters: FormEventHandler = (e) => {
         e.preventDefault();

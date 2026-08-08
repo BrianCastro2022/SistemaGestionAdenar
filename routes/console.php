@@ -9,4 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('seguridad:revisar-calibraciones')->daily();
+Schedule::command('seguridad:revisar-vencimiento-contratos')->daily();
 Schedule::command('seguridad:recordatorios-pruebas')->hourly();
+Schedule::command('glossary:scrape')->daily()->withoutOverlapping();

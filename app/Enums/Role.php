@@ -9,9 +9,12 @@ enum Role: string
     case Reparto = 'Reparto';
     case Gente = 'Gente';
     case Flota = 'Flota';
+    case Colaborador = 'Colaborador';
 
     /**
      * Roles that map 1:1 to a business module slug (excludes Administrador).
+     * Colaborador is intentionally excluded: it is a self-service portal role,
+     * not a generic module.
      *
      * @return array<string, self>
      */

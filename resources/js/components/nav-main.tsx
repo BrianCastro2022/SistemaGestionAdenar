@@ -8,6 +8,7 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
@@ -60,6 +61,7 @@ function NavSubItems({ items, currentUrl }: { items: NavItem[]; currentUrl: stri
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();
+    const { state } = useSidebar();
 
     return (
         <SidebarGroup className="px-2 py-0">
@@ -67,6 +69,27 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
             <SidebarMenu>
                 {items.map((item) => {
                     const isGroupActive = page.url.startsWith(item.url);
+
+                    // Con el sidebar retraído a solo íconos no hay espacio para desplegar
+                    // los submódulos, así que el ícono navega directo a la vista general
+                    // del módulo en vez de intentar abrir el submenú (que quedaría oculto).
+                    if (item.items?.length && state === 'collapsed') {
+                        return (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={isGroupActive}
+                                    tooltip={item.title}
+                                    style={isGroupActive && item.color ? { color: item.color } : undefined}
+                                >
+                                    <Link href={item.url} prefetch>
+                                        {item.icon && <item.icon />}
+                                        <span>{item.title}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        );
+                    }
 
                     return item.items?.length ? (
                         <Collapsible key={item.title} asChild defaultOpen={isGroupActive} className="group/collapsible">

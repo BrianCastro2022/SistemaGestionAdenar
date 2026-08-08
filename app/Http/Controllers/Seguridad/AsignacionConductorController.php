@@ -111,9 +111,9 @@ class AsignacionConductorController extends Controller
         $cedula = $request->query('cedula');
 
         if ($colaboradorId) {
-            $colaborador = Colaborador::find($colaboradorId);
+            $colaborador = Colaborador::completos()->find($colaboradorId);
         } elseif ($cedula) {
-            $colaborador = Colaborador::where('cedula', $cedula)->first();
+            $colaborador = Colaborador::completos()->where('cedula', $cedula)->first();
         }
 
         if ($colaborador) {
@@ -149,9 +149,9 @@ class AsignacionConductorController extends Controller
 
         $colaborador = null;
         if (!empty($data['colaborador_id'])) {
-            $colaborador = Colaborador::find($data['colaborador_id']);
+            $colaborador = Colaborador::completos()->find($data['colaborador_id']);
         } elseif (!empty($data['cedula'])) {
-            $colaborador = Colaborador::where('cedula', $data['cedula'])->first();
+            $colaborador = Colaborador::completos()->where('cedula', $data['cedula'])->first();
         }
 
         if ($colaborador) {

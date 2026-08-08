@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\Role as RoleEnum;
+use App\Models\Seguridad\Colaborador;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -16,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
         $this->call(GlossarySeeder::class);
+        $this->call(WebScrapingSourceSeeder::class);
 
         $demoUsers = [
             ['id_number' => '1000000001', 'first' => 'Ana', 'last' => 'Administradora', 'role' => RoleEnum::Administrador],
@@ -23,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ['id_number' => '1000000003', 'first' => 'Rita', 'last' => 'Reparto', 'role' => RoleEnum::Reparto],
             ['id_number' => '1000000004', 'first' => 'Gina', 'last' => 'Gente', 'role' => RoleEnum::Gente],
             ['id_number' => '1000000005', 'first' => 'Felipe', 'last' => 'Flota', 'role' => RoleEnum::Flota],
+            ['id_number' => '1000000006', 'first' => 'Carlos', 'last' => 'Colaborador', 'role' => RoleEnum::Colaborador],
         ];
 
         foreach ($demoUsers as $demo) {
@@ -36,6 +39,19 @@ class DatabaseSeeder extends Seeder
             ]);
 
             $user->assignRole($demo['role']->value);
+
+            if ($demo['role'] === RoleEnum::Colaborador) {
+                Colaborador::create([
+                    'user_id' => $user->id,
+                    'cedula' => $demo['id_number'],
+                    'nombres' => $demo['first'],
+                    'apellidos' => $demo['last'],
+                    'cargo' => 'Conductor',
+                    'turno' => 'manana',
+                    'area' => 'Ruta Norte',
+                    'is_active' => true,
+                ]);
+            }
         }
     }
 }

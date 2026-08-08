@@ -11,6 +11,7 @@ import {
     Fuel,
     Gauge,
     HeartHandshake,
+    HeartPulse,
     Map,
     MapPin,
     Megaphone,
@@ -60,6 +61,7 @@ export const modules: ModuleDef[] = [
                 ],
             },
             { title: 'Asignaciones de conductores', slug: 'asignaciones-conductores', icon: Truck },
+            { title: 'Condiciones de Salud', slug: 'condiciones-salud', icon: HeartPulse },
             { title: 'Indicador', slug: 'indicador', icon: Activity },
             { title: 'Alertas', slug: 'alertas', icon: BellRing },
             { title: 'ACIS', slug: 'acis', icon: ShieldCheck },
@@ -100,6 +102,7 @@ export const modules: ModuleDef[] = [
         icon: Car,
         accent: '#2B6CB0',
         submodules: [
+            { title: 'Documentación', slug: 'vehiculos', icon: Truck },
             { title: 'Checklist', slug: 'checklist', icon: ClipboardCheck },
             { title: 'Combustible', slug: 'combustible', icon: Fuel },
             { title: 'Calibración de Llantas', slug: 'calibracion-llantas', icon: Gauge },
