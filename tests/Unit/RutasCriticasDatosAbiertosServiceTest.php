@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Services\Seguridad\RutasCriticasDatosAbiertosService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 class RutasCriticasDatosAbiertosServiceTest extends TestCase
@@ -15,6 +16,10 @@ class RutasCriticasDatosAbiertosServiceTest extends TestCase
 
         // Evita depender de la base de datos configurada como cache store por defecto.
         config(['cache.default' => 'array']);
+
+        // El backoff entre reintentos (retry()) duerme de verdad salvo que se
+        // falsee — si no, el test de la respuesta 503 tarda varios segundos.
+        Sleep::fake();
     }
 
     public function test_no_guarda_una_respuesta_fallida_para_que_la_siguiente_carga_pueda_reintentarse(): void

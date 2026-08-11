@@ -26,7 +26,7 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
 
         return [
             'colaborador_id' => ['required', 'integer', Rule::exists('colaboradores', 'id')->whereNull('deleted_at')],
-            'tipo' => ['required', Rule::in(['entrada', 'ruta', 'salida'])],
+            'tipo' => ['required', Rule::in(['pre_ruta', 'ruta', 'post_ruta'])],
             'es_programacion' => ['boolean'],
             'programada_en' => [
                 'required_if:es_programacion,1', 'nullable', 'date',
@@ -53,11 +53,20 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
                 }),
             ],
             'resultado' => ['required_unless:es_programacion,1', 'nullable', 'numeric'],
-            'consentimiento_aceptado' => ['required_unless:es_programacion,1', 'accepted'],
+            // 'accepted' es una regla implícita que siempre corre si el campo
+            // está presente, incluso si 'required_unless' no lo exige — al
+            // programar, el checkbox de consentimiento sigue viajando en el
+            // formulario (Inertia manda booleans como '1'/'0'), así que sin
+            // este Rule::when() un "0" tumbaba la validación aunque se
+            // estuviera programando la prueba en vez de registrarla.
+            'consentimiento_aceptado' => [
+                'required_unless:es_programacion,1',
+                Rule::when(! $this->boolean('es_programacion'), ['accepted']),
+            ],
             'evidencia' => ['nullable', 'array'],
             'evidencia.*' => ['image', 'max:5120'],
             'evidencias' => ['nullable', 'array'],
-            'evidencias.*' => ['image', 'max:5120'],
+            'evidencias.*' => ['mimes:pdf', 'max:5120'],
             'firma' => ['nullable', 'image', 'max:2048'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ];
@@ -88,9 +97,10 @@ class StorePruebaAlcoholemiaRequest extends FormRequest
             $ignorarId = $this->route('prueba')?->id;
 
             if (PruebaAlcoholemia::existeConflictoDeIntervalo((int) $this->input('colaborador_id'), $this->input('tipo'), $fechaHora, $ignorarId)) {
+                $tipoLabel = (new PruebaAlcoholemia(['tipo' => $this->input('tipo')]))->tipoLabel();
                 $validator->errors()->add(
                     'tipo',
-                    "Este colaborador ya tiene una prueba de tipo \"{$this->input('tipo')}\" registrada en las últimas {$horas} horas."
+                    "Este colaborador ya tiene una prueba de tipo \"{$tipoLabel}\" registrada en las últimas {$horas} horas."
                 );
             }
         });

@@ -42,13 +42,15 @@ export default function CreateDispositivo() {
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <HeadingSmall title="Nuevo dispositivo" description="Registra un alcoholímetro y su información técnica." />
 
-                <form onSubmit={submit} className="max-w-2xl space-y-6">
+                <form onSubmit={submit} className="grid gap-6">
                     <DispositivoFormFields data={data} setData={setData} errors={errors} processing={processing} />
 
-                    <Button type="submit" disabled={processing}>
-                        {processing && <LoaderCircle className="size-4 animate-spin" />}
-                        Registrar dispositivo
-                    </Button>
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={processing}>
+                            {processing && <LoaderCircle className="size-4 animate-spin" />}
+                            Registrar dispositivo
+                        </Button>
+                    </div>
                 </form>
             </div>
         </AppLayout>

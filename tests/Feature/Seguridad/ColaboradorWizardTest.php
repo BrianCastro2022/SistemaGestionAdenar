@@ -110,4 +110,205 @@ class ColaboradorWizardTest extends TestCase
             ->where('borradoresCount', 1)
         );
     }
+
+    public function test_editing_a_complete_colaborador_opens_the_wizard_on_paso_1_with_linkable_users(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100202',
+            'nombres' => 'Marta',
+            'apellidos' => 'Ríos',
+            'is_active' => true,
+            'estado_registro' => 'completo',
+            'wizard_step' => 4,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('seguridad.colaboradores.edit', $colaborador));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('seguridad/colaboradores/wizard/index')
+            ->where('currentStep', 1)
+            ->has('usuarios')
+        );
+    }
+
+    public function test_paso1_update_can_change_the_linked_user(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100203',
+            'nombres' => 'Pedro',
+            'apellidos' => 'Gómez',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 0,
+        ]);
+
+        $cuenta = User::factory()->create();
+
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso1.update', $colaborador), [
+            'cedula' => '900100203',
+            'nombres' => 'Pedro',
+            'apellidos' => 'Gómez',
+            'user_id' => $cuenta->id,
+        ])->assertRedirect(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 2]));
+
+        $this->assertSame($cuenta->id, $colaborador->fresh()->user_id);
+    }
+
+    public function test_paso1_update_preserves_the_existing_photo_when_no_new_file_is_uploaded(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100204',
+            'nombres' => 'Laura',
+            'apellidos' => 'Vega',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 0,
+            'imagen' => 'colaboradores/foto-existente.jpg',
+        ]);
+
+        // Inertia siempre envía todos los campos del formulario, incluido
+        // 'imagen' vacío cuando no se eligió una foto nueva.
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso1.update', $colaborador), [
+            'cedula' => '900100204',
+            'nombres' => 'Laura',
+            'apellidos' => 'Vega',
+            'imagen' => '',
+        ])->assertRedirect(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 2]));
+
+        $this->assertSame('colaboradores/foto-existente.jpg', $colaborador->fresh()->imagen);
+    }
+
+    public function test_paso3_update_does_not_fail_when_resubmitting_unchanged_past_dates(): void
+    {
+        $user = $this->seguridadUser();
+
+        $desde = now()->subYears(3)->toDateString();
+        $hasta = now()->subYears(3)->addMonths(5)->toDateString();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100205',
+            'nombres' => 'Mario',
+            'apellidos' => 'Ruiz',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 2,
+            'contrato_fecha_desde' => $desde,
+            'contrato_fecha_hasta' => $hasta,
+            'vacaciones_aplica' => 'aplica',
+            'vacaciones_fecha_desde' => $desde,
+            'vacaciones_fecha_hasta' => $hasta,
+            'vacaciones_pagadas_fecha_desde' => $desde,
+            'vacaciones_pagadas_fecha_hasta' => $hasta,
+        ]);
+
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso3.update', $colaborador), [
+            'contrato_fecha_desde' => $desde,
+            'contrato_fecha_hasta' => $hasta,
+            'vacaciones_aplica' => 'aplica',
+            'vacaciones_fecha_desde' => $desde,
+            'vacaciones_fecha_hasta' => $hasta,
+            'vacaciones_pagadas_fecha_desde' => $desde,
+            'vacaciones_pagadas_fecha_hasta' => $hasta,
+        ])->assertRedirect(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 4]));
+
+        $this->assertSame(3, $colaborador->fresh()->wizard_step);
+    }
+
+    public function test_wizard_page_serves_dates_as_plain_dates_and_resubmitting_them_unchanged_advances_the_step(): void
+    {
+        $user = $this->seguridadUser();
+
+        $desde = now()->subYears(3)->toDateString();
+        $hasta = now()->subYears(3)->addMonths(5)->toDateString();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100207',
+            'nombres' => 'Elena',
+            'apellidos' => 'Prieto',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 2,
+            'cargo' => 'CONDUCTOR',
+            'contrato_fecha_desde' => $desde,
+            'contrato_fecha_hasta' => $hasta,
+            'vacaciones_aplica' => 'aplica',
+            'vacaciones_fecha_desde' => $desde,
+            'vacaciones_fecha_hasta' => $hasta,
+            'vacaciones_pagadas_fecha_desde' => $desde,
+            'vacaciones_pagadas_fecha_hasta' => $hasta,
+        ]);
+        // Igual que cualquier colaborador con un cargo ya asignado (lo normal
+        // al editar): tiene un registro de historial de cargos activo.
+        $colaborador->cargos()->create([
+            'cargo' => 'CONDUCTOR',
+            'fecha_inicio' => $desde,
+            'estado' => 'ACTIVO',
+        ]);
+
+        // Lo que el navegador realmente recibe y volvería a enviar tal cual,
+        // sin que el usuario toque nada — no un valor sintético del test.
+        $wizardResponse = $this->actingAs($user)->get(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 3]));
+        $props = $wizardResponse->viewData('page')['props'];
+
+        $this->assertSame($hasta, $props['colaborador']['contrato_fecha_hasta']);
+
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso3.update', $colaborador), [
+            // El formulario siempre envía 'cargo' (aunque no cambie) y
+            // 'cargo_fecha_inicio' vacío cuando el cargo no se está cambiando.
+            'cargo' => $props['colaborador']['cargo'],
+            'cargo_fecha_inicio' => '',
+            'contrato_fecha_desde' => $props['colaborador']['contrato_fecha_desde'],
+            'contrato_fecha_hasta' => $props['colaborador']['contrato_fecha_hasta'],
+            'vacaciones_aplica' => $props['colaborador']['vacaciones_aplica'],
+            'vacaciones_fecha_desde' => $props['colaborador']['vacaciones_fecha_desde'],
+            'vacaciones_fecha_hasta' => $props['colaborador']['vacaciones_fecha_hasta'],
+            'vacaciones_pagadas_fecha_desde' => $props['colaborador']['vacaciones_pagadas_fecha_desde'],
+            'vacaciones_pagadas_fecha_hasta' => $props['colaborador']['vacaciones_pagadas_fecha_hasta'],
+        ])->assertRedirect(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 4]));
+    }
+
+    public function test_paso3_update_still_rejects_a_new_past_date(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100206',
+            'nombres' => 'Nora',
+            'apellidos' => 'Salas',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 2,
+        ]);
+
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso3.update', $colaborador), [
+            'fecha_retiro_empresa' => now()->subDay()->toDateString(),
+        ])->assertSessionHasErrors('fecha_retiro_empresa');
+
+        $this->assertNull($colaborador->fresh()->fecha_retiro_empresa);
+    }
+
+    public function test_paso3_update_still_requires_a_start_date_when_the_cargo_actually_changes(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100208',
+            'nombres' => 'Tomas',
+            'apellidos' => 'León',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 2,
+            'cargo' => 'CONDUCTOR',
+        ]);
+        $colaborador->cargos()->create([
+            'cargo' => 'CONDUCTOR',
+            'fecha_inicio' => now()->subYear()->toDateString(),
+            'estado' => 'ACTIVO',
+        ]);
+
+        $this->actingAs($user)->patch(route('seguridad.colaboradores.paso3.update', $colaborador), [
+            'cargo' => 'SUPERVISOR DE ÁREA',
+            'cargo_fecha_inicio' => '',
+        ])->assertSessionHasErrors('cargo_fecha_inicio');
+    }
 }

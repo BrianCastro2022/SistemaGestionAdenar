@@ -54,6 +54,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
+            // Varios controladores ya mandan `->with('status', ...)` tras un
+            // redirect (algunos como string simple, otros como
+            // ['message' => ..., 'type' => 'success'|'warning'|'error']) —
+            // se comparte tal cual y el toast del frontend soporta ambas formas.
+            'status' => fn () => $request->session()->get('status'),
             'auth' => [
                 'user' => $user,
                 'roles' => $user?->getRoleNames()->all() ?? [],

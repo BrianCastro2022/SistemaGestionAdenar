@@ -59,7 +59,7 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <HeadingSmall title="Editar dispositivo" description="Actualiza la información técnica del alcoholímetro." />
 
-                <form onSubmit={submit} className="max-w-2xl space-y-6">
+                <form onSubmit={submit} className="grid gap-6">
                     <DispositivoFormFields
                         data={data}
                         setData={setData}
@@ -70,10 +70,12 @@ export default function EditDispositivo({ dispositivo }: { dispositivo: Editable
                         documentoLegado={dispositivo.documento_path ? `/storage/${dispositivo.documento_path}` : null}
                     />
 
-                    <Button type="submit" disabled={processing}>
-                        {processing && <LoaderCircle className="size-4 animate-spin" />}
-                        Guardar cambios
-                    </Button>
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={processing}>
+                            {processing && <LoaderCircle className="size-4 animate-spin" />}
+                            Guardar cambios
+                        </Button>
+                    </div>
                 </form>
             </div>
         </AppLayout>

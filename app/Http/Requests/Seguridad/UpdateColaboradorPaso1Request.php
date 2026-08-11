@@ -22,6 +22,10 @@ class UpdateColaboradorPaso1Request extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id' => [
+                'nullable', 'integer', Rule::exists('users', 'id'),
+                Rule::unique('colaboradores', 'user_id')->ignore($this->route('colaborador')),
+            ],
             'cedula' => [
                 'required', 'string', 'max:30',
                 Rule::unique('colaboradores', 'cedula')->ignore($this->route('colaborador')),

@@ -15,6 +15,7 @@ export type ColaboradorRecord = {
 };
 
 export type Paso1FormData = {
+    user_id: string;
     cedula: string;
     nombres: string;
     apellidos: string;
@@ -123,3 +124,4 @@ export type Paso4FormData = {
 
 export type ReferenciaOpcion = { id: number; nombre: string };
 export type InstitucionSena = { nombre: string; nit: string };
+export type UsuarioVinculable = { id: number; name: string; identification_number: string };

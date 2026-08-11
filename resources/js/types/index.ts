@@ -28,10 +28,13 @@ export interface NavItem {
     color?: string;
 }
 
+export type FlashStatus = string | { message: string; type?: 'success' | 'warning' | 'error' } | null;
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    status?: FlashStatus;
     [key: string]: unknown;
 }
 

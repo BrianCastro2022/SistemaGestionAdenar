@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { IconActionButton } from '@/components/icon-action-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { Eye, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface GlossaryTerm {
@@ -132,11 +133,7 @@ export default function GlosarioIndex({
                             {terms.data.map((term) => (
                                 <TableRow key={term.id}>
                                     <TableCell className="text-muted-foreground">{term.pregunta_numero ?? '—'}</TableCell>
-                                    <TableCell className="font-medium">
-                                        <Link href={route('seguridad.glosario.show', term.id)} className="hover:underline">
-                                            {term.nombre}
-                                        </Link>
-                                    </TableCell>
+                                    <TableCell className="font-medium">{term.nombre}</TableCell>
                                     <TableCell>
                                         <Badge variant="secondary">{term.categoria}</Badge>
                                     </TableCell>
@@ -157,14 +154,14 @@ export default function GlosarioIndex({
                                                     </a>
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={route('seguridad.glosario.edit', term.id)}>
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(term.id, term.nombre)}>
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
+                                            <IconActionButton icon={Eye} label="Ver" href={route('seguridad.glosario.show', term.id)} />
+                                            <IconActionButton icon={Pencil} label="Editar" href={route('seguridad.glosario.edit', term.id)} />
+                                            <IconActionButton
+                                                icon={Trash2}
+                                                label="Eliminar"
+                                                className="text-destructive hover:text-destructive"
+                                                onClick={() => handleDelete(term.id, term.nombre)}
+                                            />
                                         </div>
                                     </TableCell>
                                 </TableRow>

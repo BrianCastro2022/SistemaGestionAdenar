@@ -46,7 +46,7 @@ class PruebaAlcoholemiaController extends Controller
                 ->where('is_active', true)
                 ->when($turno !== '', fn ($query) => $query->where('turno', $turno))
                 ->orderBy('nombres')
-                ->get(['id', 'nombres', 'apellidos', 'cedula', 'turno']),
+                ->get(['id', 'nombres', 'apellidos', 'cedula', 'turno', 'cargo']),
             'dispositivosDisponibles' => Alcoholimetro::query()
                 ->where('estado', 'Disponible')
                 ->orderBy('codigo')
@@ -120,7 +120,7 @@ class PruebaAlcoholemiaController extends Controller
                 ->where('is_active', true)
                 ->when($turno !== '', fn ($query) => $query->where('turno', $turno))
                 ->orderBy('nombres')
-                ->get(['id', 'nombres', 'apellidos', 'cedula', 'turno']),
+                ->get(['id', 'nombres', 'apellidos', 'cedula', 'turno', 'cargo']),
             'dispositivosDisponibles' => $dispositivosDisponibles,
             'filters' => ['turno' => $turno],
             'prueba' => $pruebaData,

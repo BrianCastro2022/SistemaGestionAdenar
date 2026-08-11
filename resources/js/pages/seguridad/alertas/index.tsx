@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { IconActionButton } from '@/components/icon-action-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { Check } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -100,9 +102,9 @@ export default function AlertasIndex({ alertas, filters }: { alertas: AlertasPag
                                     <TableCell>{alerta.atendida ? 'Atendida' : 'Pendiente'}</TableCell>
                                     <TableCell className="text-right">
                                         {!alerta.atendida && (
-                                            <Button variant="outline" size="sm" onClick={() => atender(alerta)}>
-                                                Marcar como atendida
-                                            </Button>
+                                            <div className="flex justify-end">
+                                                <IconActionButton icon={Check} label="Marcar como atendida" onClick={() => atender(alerta)} />
+                                            </div>
                                         )}
                                     </TableCell>
                                 </TableRow>

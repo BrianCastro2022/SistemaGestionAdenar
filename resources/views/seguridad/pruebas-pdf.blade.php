@@ -44,20 +44,19 @@
                 <th>Responsable</th>
                 <th>Firma</th>
                 <th>Evidencia principal</th>
-                <th>Evidencias adicionales</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($pruebas as $prueba)
                 @php
                     $firma = $fotoDataUri($prueba->firma_path);
-                    $evidenciaPrincipal = $fotoDataUri($prueba->evidencia_path);
+                    $evidenciaPrincipal = $fotoDataUri($prueba->evidenciaPrincipalPath());
                 @endphp
                 <tr>
                     <td>{{ $prueba->fecha_hora->format('d/m/Y H:i') }}</td>
                     <td>{{ $prueba->colaborador?->nombre_completo }}</td>
                     <td>{{ $prueba->colaborador?->cedula }}</td>
-                    <td>{{ ucfirst($prueba->tipo) }}</td>
+                    <td>{{ $prueba->tipoLabel() }}</td>
                     <td>{{ $prueba->alcoholimetro?->codigo }}</td>
                     <td class="{{ $prueba->es_positivo ? 'positivo' : '' }}">{{ $prueba->resultado ?? '—' }}</td>
                     <td>{{ $prueba->estado === 'programada' ? '—' : $prueba->evaluacion() }}</td>
@@ -76,16 +75,6 @@
                         @else
                             —
                         @endif
-                    </td>
-                    <td>
-                        @forelse ($prueba->evidencias as $evidencia)
-                            @php $foto = $fotoDataUri($evidencia->path); @endphp
-                            @if ($foto)
-                                <img class="thumb" src="{{ $foto }}" alt="Evidencia adicional">
-                            @endif
-                        @empty
-                            —
-                        @endforelse
                     </td>
                 </tr>
             @endforeach

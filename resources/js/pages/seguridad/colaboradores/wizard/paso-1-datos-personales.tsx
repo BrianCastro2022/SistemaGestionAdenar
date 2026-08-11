@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { calcularEdad, ESTADOS_CIVILES, PillToggle, SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
-import { ArrowRight, GraduationCap, IdCard, LoaderCircle, MapPin, ShieldCheck, Stethoscope, User } from 'lucide-react';
+import { ArrowRight, GraduationCap, IdCard, LoaderCircle, MapPin, ShieldCheck, Stethoscope, User, UserCog } from 'lucide-react';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useMemo } from 'react';
 import { DepartamentoCiudadSelect } from './components/departamento-ciudad-select';
@@ -13,20 +13,22 @@ import { ExternalSelect } from './components/external-select';
 import { PhotoUploader } from './components/photo-uploader';
 import { SelectConOtro } from './components/select-con-otro';
 import { SimpleFileField } from './components/simple-file-field';
-import { type ColaboradorRecord, type Paso1FormData } from './types';
+import { type ColaboradorRecord, type Paso1FormData, type UsuarioVinculable } from './types';
 import { type WizardCatalogos } from './catalogos';
 
 interface Paso1Props {
     colaborador: ColaboradorRecord | null;
     catalogos: WizardCatalogos;
+    usuarios?: UsuarioVinculable[];
 }
 
-export function Paso1DatosPersonales({ colaborador, catalogos }: Paso1Props) {
+export function Paso1DatosPersonales({ colaborador, catalogos, usuarios }: Paso1Props) {
     const esNuevo = !colaborador;
     const cargoActual = (colaborador?.cargo as string | null) ?? '';
     const esAprendizSena = cargoActual === 'APRENDIZ SENA';
 
     const { data, setData, post, processing, errors, transform } = useForm<Paso1FormData>({
+        user_id: colaborador?.user_id?.toString() ?? '',
         cedula: (colaborador?.cedula as string) ?? '',
         nombres: (colaborador?.nombres as string) ?? '',
         apellidos: (colaborador?.apellidos as string) ?? '',
@@ -453,6 +455,28 @@ export function Paso1DatosPersonales({ colaborador, catalogos }: Paso1Props) {
                             onChange={(files) => setData('documento_sena_carta_presentacion', files)}
                             disabled={processing}
                         />
+                    </div>
+                </SeccionCard>
+            )}
+
+            {usuarios && (
+                <SeccionCard icon={UserCog} titulo="Usuario del sistema" subtitulo="Corrige el vínculo con la cuenta del portal si es necesario" tono="azul">
+                    <div className="grid gap-2 sm:max-w-md">
+                        <Label htmlFor="user_id">Cuenta de colaborador</Label>
+                        <Select value={data.user_id || 'none'} onValueChange={(value) => setData('user_id', value === 'none' ? '' : value)} disabled={processing}>
+                            <SelectTrigger id="user_id">
+                                <SelectValue placeholder="Sin vincular" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Sin vincular</SelectItem>
+                                {usuarios.map((usuario) => (
+                                    <SelectItem key={usuario.id} value={String(usuario.id)}>
+                                        {usuario.name} · {usuario.identification_number}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.user_id} />
                     </div>
                 </SeccionCard>
             )}

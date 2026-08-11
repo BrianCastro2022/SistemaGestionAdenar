@@ -19,6 +19,8 @@ interface PruebaDelDia {
     colaborador: string | null;
 }
 
+const TIPO_LABELS: Record<string, string> = { pre_ruta: 'Pre Ruta', ruta: 'Ruta', post_ruta: 'Post Ruta' };
+
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MESES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -80,7 +82,7 @@ export default function PruebasCalendario({ mes, pruebasPorDia }: { mes: string;
                                                 key={prueba.id}
                                                 href={route('seguridad.pruebas.show', prueba.id)}
                                                 className="truncate rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary hover:bg-primary/20"
-                                                title={`${prueba.hora} · ${prueba.colaborador} (${prueba.tipo})`}
+                                                title={`${prueba.hora} · ${prueba.colaborador} (${TIPO_LABELS[prueba.tipo] ?? prueba.tipo})`}
                                             >
                                                 {prueba.hora} {prueba.colaborador}
                                             </Link>

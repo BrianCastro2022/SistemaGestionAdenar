@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { IconActionButton } from '@/components/icon-action-button';
 import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import AppLayout from '@/layouts/app-layout';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CalendarDays, FileSpreadsheet, FileText, Plus } from 'lucide-react';
+import { CalendarDays, Eye, FileSpreadsheet, FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -18,6 +19,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Seguridad', href: '/modules/seguridad' },
     { title: 'Pruebas de Alcoholemia', href: '/modules/seguridad/pruebas' },
 ];
+
+const TIPO_LABELS: Record<string, string> = { pre_ruta: 'Pre Ruta', ruta: 'Ruta', post_ruta: 'Post Ruta' };
 
 interface PruebaRow {
     id: number;
@@ -121,9 +124,9 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="todos">Todos</SelectItem>
-                                <SelectItem value="entrada">Entrada</SelectItem>
+                                <SelectItem value="pre_ruta">Pre Ruta</SelectItem>
                                 <SelectItem value="ruta">Ruta</SelectItem>
-                                <SelectItem value="salida">Salida</SelectItem>
+                                <SelectItem value="post_ruta">Post Ruta</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -170,6 +173,7 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                 <TableHead>Resultado</TableHead>
                                 <TableHead>Responsable</TableHead>
                                 <TableHead>Firma</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -182,15 +186,11 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                             )}
                             {pruebas.data.map((prueba) => (
                                 <TableRow key={prueba.id}>
-                                    <TableCell>
-                                        <Link href={route('seguridad.pruebas.show', prueba.id)} className="hover:underline">
-                                            {new Date(prueba.fecha_hora).toLocaleString()}
-                                        </Link>
-                                    </TableCell>
+                                    <TableCell>{new Date(prueba.fecha_hora).toLocaleString()}</TableCell>
                                     <TableCell>
                                         {prueba.colaborador ? `${prueba.colaborador.nombres} ${prueba.colaborador.apellidos}` : '—'}
                                     </TableCell>
-                                    <TableCell className="capitalize">{prueba.tipo}</TableCell>
+                                    <TableCell>{TIPO_LABELS[prueba.tipo] ?? prueba.tipo}</TableCell>
                                     <TableCell>{prueba.alcoholimetro?.codigo ?? '—'}</TableCell>
                                     <TableCell>
                                         {prueba.estado === 'programada' ? (
@@ -213,12 +213,11 @@ export default function PruebasIndex({ pruebas, filters }: { pruebas: PruebasPag
                                             <span className="text-muted-foreground">—</span>
                                         )}
                                     </TableCell>
-                                    <TableCell>
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={route('seguridad.pruebas.edit', prueba.id)}>
-                                                Editar
-                                            </Link>
-                                        </Button>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-1">
+                                            <IconActionButton icon={Eye} label="Ver" href={route('seguridad.pruebas.show', prueba.id)} />
+                                            <IconActionButton icon={Pencil} label="Editar" href={route('seguridad.pruebas.edit', prueba.id)} />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

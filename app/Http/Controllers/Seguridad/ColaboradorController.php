@@ -14,6 +14,7 @@ use App\Models\Seguridad\Colaborador;
 use App\Models\Seguridad\Entrenamiento;
 use App\Models\User;
 use App\Services\Seguridad\CargoHistorialService;
+use App\Services\Seguridad\ColaboradorAutoprovisionService;
 use App\Services\Seguridad\IndiceRiesgoCalculator;
 use App\Support\Seguridad\ColaboradorDocumentoCampos;
 use Illuminate\Http\RedirectResponse;
@@ -121,7 +122,7 @@ class ColaboradorController extends Controller
      * Paso 1 del wizard: crea el colaborador como borrador. Los pasos
      * siguientes se completan sobre este mismo registro vía wizard().
      */
-    public function store(StoreColaboradorRequest $request): RedirectResponse
+    public function store(StoreColaboradorRequest $request, ColaboradorAutoprovisionService $autoprovision): RedirectResponse
     {
         $data = $request->validated();
 
@@ -134,7 +135,7 @@ class ColaboradorController extends Controller
         }
 
         if (empty($data['user_id'])) {
-            $data['user_id'] = $this->autoprovisionarUsuario($data['cedula'], $data['nombres'], $data['apellidos'], $data['correo'] ?? null)->id;
+            $data['user_id'] = $autoprovision->provisionar($data['cedula'], $data['nombres'], $data['apellidos'], $data['correo'] ?? null)->id;
         }
 
         $colaborador = Colaborador::create([
@@ -151,15 +152,19 @@ class ColaboradorController extends Controller
 
     /**
      * Muestra el wizard sobre un colaborador ya existente: retoma un
-     * borrador donde se quedó, o permite revisar cualquier paso ya guardado.
+     * borrador donde se quedó, o permite revisar/editar cualquier paso de
+     * un colaborador ya completo (esta es también la vista de "editar").
      */
     public function wizard(Request $request, Colaborador $colaborador): Response
     {
         $maxStep = max(1, (int) $colaborador->wizard_step);
-        $siguienteStep = min($maxStep + 1, 4);
-        $currentStep = min(max((int) $request->integer('paso', $siguienteStep), 1), 4);
+        // Un borrador arranca en el siguiente paso sin completar; un
+        // colaborador completo arranca en el Paso 1 para revisar desde el
+        // principio (no tendría sentido aterrizar siempre en "Archivos").
+        $siguienteStepPorDefecto = $colaborador->estado_registro === 'completo' ? 1 : min($maxStep + 1, 4);
+        $currentStep = min(max((int) $request->integer('paso', $siguienteStepPorDefecto), 1), 4);
 
-        $colaboradorData = $colaborador->toArray();
+        $colaboradorData = $this->colaboradorArrayConFechasSimples($colaborador);
         $colaboradorData = [...$colaboradorData, ...$this->documentPaths($colaborador)];
 
         return Inertia::render('seguridad/colaboradores/wizard/index', [
@@ -167,6 +172,7 @@ class ColaboradorController extends Controller
             'currentStep' => $currentStep,
             'catalogos' => $this->catalogos(),
             'historialCargos' => $colaborador->cargos()->orderByDesc('fecha_inicio')->get(),
+            'usuarios' => $this->usuariosVinculables($colaborador),
         ]);
     }
 
@@ -203,6 +209,11 @@ class ColaboradorController extends Controller
             }
 
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        } else {
+            // Sin archivo nuevo, no se toca la foto ya guardada — 'imagen'
+            // siempre llega en el request (aunque sea vacía) porque Inertia
+            // envía todos los campos del formulario en cada envío.
+            unset($data['imagen']);
         }
 
         $colaborador->update([
@@ -275,7 +286,7 @@ class ColaboradorController extends Controller
     public function show(Colaborador $colaborador, IndiceRiesgoCalculator $calculator): Response
     {
         $documentos = $this->documentPaths($colaborador);
-        $colaboradorData = [...$colaborador->toArray(), ...$documentos];
+        $colaboradorData = [...$this->colaboradorArrayConFechasSimples($colaborador), ...$documentos];
 
         return Inertia::render('seguridad/colaboradores/show', [
             'colaborador' => $colaboradorData,
@@ -310,29 +321,31 @@ class ColaboradorController extends Controller
 
     /**
      * HU04: botón dedicado en la vista de detalle para activar/desactivar
-     * al colaborador en el sistema.
+     * al colaborador en el sistema. Se sincroniza en ambos sentidos con la
+     * cuenta de usuario vinculada (si tiene una), para que no quede activa
+     * en Gestión de Usuarios un colaborador desactivado, ni bloqueada la
+     * cuenta de uno que se vuelve a activar.
      */
     public function toggleActivo(Colaborador $colaborador): RedirectResponse
     {
         $colaborador->update(['is_active' => ! $colaborador->is_active]);
 
+        $colaborador->user?->update(['is_active' => $colaborador->is_active]);
+
         return back()->with('status', $colaborador->is_active ? 'Colaborador activado.' : 'Colaborador desactivado.');
     }
 
-    public function edit(Colaborador $colaborador): Response
+    /**
+     * "Editar" reutiliza el mismo wizard que crear: para un colaborador ya
+     * completo simplemente arranca en el Paso 1 con los 4 pasos
+     * desbloqueados (ver wizard()).
+     */
+    public function edit(Request $request, Colaborador $colaborador): Response
     {
-        $colaboradorData = $colaborador->toArray();
-        $colaboradorData = [...$colaboradorData, ...$this->documentPaths($colaborador)];
-
-        return Inertia::render('seguridad/colaboradores/edit', [
-            'colaborador' => $colaboradorData,
-            'usuarios' => $this->usuariosVinculables($colaborador),
-            'catalogos' => $this->catalogos(),
-            'historialCargos' => $colaborador->cargos()->orderByDesc('fecha_inicio')->get(),
-        ]);
+        return $this->wizard($request, $colaborador);
     }
 
-    public function update(UpdateColaboradorRequest $request, Colaborador $colaborador, CargoHistorialService $cargoHistorial): RedirectResponse
+    public function update(UpdateColaboradorRequest $request, Colaborador $colaborador, CargoHistorialService $cargoHistorial, ColaboradorAutoprovisionService $autoprovision): RedirectResponse
     {
         $data = $request->validated();
 
@@ -351,6 +364,8 @@ class ColaboradorController extends Controller
             }
 
             $data['imagen'] = $request->file('imagen')->store('colaboradores', 'public');
+        } else {
+            unset($data['imagen']);
         }
 
         $colaborador->update([
@@ -366,7 +381,7 @@ class ColaboradorController extends Controller
             $usuario = User::find($colaborador->user_id);
 
             if ($usuario) {
-                $this->sincronizarCorreoUsuario($usuario, $data['correo'] ?? null);
+                $autoprovision->sincronizarCorreo($usuario, $data['correo'] ?? null);
             }
         }
 
@@ -407,54 +422,6 @@ class ColaboradorController extends Controller
         }
     }
 
-    /**
-     * Al crear un colaborador se le provisiona automáticamente una cuenta
-     * para el portal de autoservicio: usuario y contraseña son su cédula.
-     * Si ya existe un usuario con esa cédula (p. ej. provisionado antes),
-     * se reutiliza y solo se le asegura el rol Colaborador.
-     */
-    private function autoprovisionarUsuario(string $cedula, string $nombres, string $apellidos, ?string $correo = null): User
-    {
-        $usuario = User::where('identification_number', $cedula)->first();
-
-        if (! $usuario) {
-            $usuario = User::create([
-                'first_name' => $nombres,
-                'last_name' => $apellidos,
-                'identification_number' => $cedula,
-                'password' => $cedula,
-                'is_active' => true,
-            ]);
-        }
-
-        $this->sincronizarCorreoUsuario($usuario, $correo);
-
-        if (! $usuario->hasRole(Role::Colaborador->value)) {
-            $usuario->assignRole(Role::Colaborador->value);
-        }
-
-        return $usuario;
-    }
-
-    /**
-     * Mantiene sincronizado el email de la cuenta con el "correo" del
-     * formulario de colaborador (contacto), tanto al crear como al editar.
-     * El correo del formulario no es único (es solo un dato de contacto),
-     * así que solo se aplica si no choca con el email de otro usuario.
-     */
-    private function sincronizarCorreoUsuario(User $usuario, ?string $correo): void
-    {
-        if (! $correo || $correo === $usuario->email) {
-            return;
-        }
-
-        $disponible = ! User::where('email', $correo)->whereKeyNot($usuario->id)->exists();
-
-        if ($disponible) {
-            $usuario->update(['email' => $correo]);
-        }
-    }
-
     private function usuariosVinculables(?Colaborador $colaborador = null): Collection
     {
         return User::role(Role::Colaborador->value)
@@ -464,6 +431,26 @@ class ColaboradorController extends Controller
             })
             ->orderBy('name')
             ->get(['id', 'name', 'identification_number']);
+    }
+
+    /**
+     * `toArray()` serializa los atributos con cast 'date' como datetime ISO
+     * completo (ej. "2024-06-01T00:00:00.000000Z"), lo que no calza con el
+     * formato "Y-m-d" que esperan los <input type="date"> del wizard ni con
+     * el valor que se vuelve a enviar al reenviar un paso sin tocar esa
+     * fecha. Se normalizan a "Y-m-d" antes de mandarlos a Inertia.
+     */
+    private function colaboradorArrayConFechasSimples(Colaborador $colaborador): array
+    {
+        $data = $colaborador->toArray();
+
+        foreach ($colaborador->getCasts() as $campo => $cast) {
+            if ($cast === 'date' && $colaborador->{$campo} !== null) {
+                $data[$campo] = $colaborador->{$campo}->toDateString();
+            }
+        }
+
+        return $data;
     }
 
     private function documentPaths(Colaborador $colaborador): array

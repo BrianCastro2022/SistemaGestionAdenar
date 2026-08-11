@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
+import { ColaboradorSearchSelect, type ColaboradorOption } from '@/pages/seguridad/pruebas/colaborador-search-select';
 import { FirmaPad, type FirmaPadHandle } from '@/pages/seguridad/pruebas/firma-pad';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { LoaderCircle, X } from 'lucide-react';
+import { CalendarClock, Camera, ClipboardList, Gauge, LoaderCircle, Paperclip, PenTool, ShieldCheck, Users, X } from 'lucide-react';
 import { FormEventHandler, useRef, useState } from 'react';
 
 const breadcrumbsBase: BreadcrumbItem[] = [
@@ -18,14 +20,6 @@ const breadcrumbsBase: BreadcrumbItem[] = [
     { title: 'Seguridad', href: '/modules/seguridad' },
     { title: 'Pruebas de Alcoholemia', href: '/modules/seguridad/pruebas' },
 ];
-
-interface ColaboradorOption {
-    id: number;
-    nombres: string;
-    apellidos: string;
-    cedula: string;
-    turno: string | null;
-}
 
 interface DispositivoOption {
     id: number;
@@ -69,14 +63,15 @@ interface PruebaForm {
     [key: string]: string | boolean | File | File[] | number[] | null | undefined;
 }
 
-const TURNO_LABELS: Record<string, string> = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' };
+const CONSENTIMIENTO_TEXTO =
+    'Declaro que he sido informado(a) sobre la realización de la prueba de alcoholimetría, su finalidad preventiva dentro del Sistema de Gestión de Seguridad y Salud en el Trabajo (SG-SST), el procedimiento aplicable y el tratamiento reservado de sus resultados, de conformidad con la normativa vigente.';
 
 type PickedFile = { file: File; preview: string };
 
 /**
  * Grilla de miniaturas para subir/ver evidencias fotográficas: combina las ya
  * guardadas (marcables para borrar cuando se está editando) con las nuevas
- * recién seleccionadas. Se reutiliza para "evidencia principal" y "adicionales".
+ * recién seleccionadas.
  */
 function EvidenciaUploader({
     label,
@@ -96,7 +91,7 @@ function EvidenciaUploader({
     inputId: string;
     inputRef: React.RefObject<HTMLInputElement | null>;
     onAdd: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    savedPaths: string[];
+    savedPaths: { path: string; index: number }[];
     deletedIndices: number[];
     canDeleteSaved: boolean;
     onToggleSaved: (index: number) => void;
@@ -110,8 +105,8 @@ function EvidenciaUploader({
             <Label>{label}</Label>
             <input ref={inputRef} id={inputId} type="file" accept="image/*" multiple className="hidden" onChange={onAdd} />
             <InputError message={error} />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {savedPaths.map((path, index) => (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {savedPaths.map(({ path, index }) => (
                     <div
                         key={`saved-${index}`}
                         className={`group relative cursor-pointer ${deletedIndices.includes(index) ? 'opacity-50' : ''}`}
@@ -169,6 +164,88 @@ function EvidenciaUploader({
     );
 }
 
+/** Lista compacta de archivos PDF adjuntos (adicionales): sin miniaturas, con nombre y enlace de descarga. */
+function PdfUploader({
+    label,
+    inputId,
+    inputRef,
+    onAdd,
+    savedPaths,
+    deletedIndices,
+    canDeleteSaved,
+    onToggleSaved,
+    newFiles,
+    onRemoveNew,
+    error,
+}: {
+    label: string;
+    inputId: string;
+    inputRef: React.RefObject<HTMLInputElement | null>;
+    onAdd: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    savedPaths: { path: string; index: number }[];
+    deletedIndices: number[];
+    canDeleteSaved: boolean;
+    onToggleSaved: (index: number) => void;
+    newFiles: PickedFile[];
+    onRemoveNew: (index: number) => void;
+    error?: string;
+}) {
+    return (
+        <div className="grid gap-2">
+            <Label>{label}</Label>
+            <input ref={inputRef} id={inputId} type="file" accept="application/pdf" multiple className="hidden" onChange={onAdd} />
+            <InputError message={error} />
+            <div className="flex flex-wrap gap-2">
+                {savedPaths.map(({ path, index }) => (
+                    <div
+                        key={`saved-${index}`}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                            deletedIndices.includes(index)
+                                ? 'border-border bg-muted text-muted-foreground opacity-60'
+                                : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        }`}
+                    >
+                        <Paperclip className="size-4 shrink-0" />
+                        <a href={path} target="_blank" rel="noreferrer" className="max-w-[180px] truncate hover:underline">
+                            {path.split('/').pop()}
+                        </a>
+                        {canDeleteSaved && (
+                            <button
+                                type="button"
+                                onClick={() => onToggleSaved(index)}
+                                aria-label="Quitar PDF"
+                                className="text-muted-foreground hover:text-red-600"
+                            >
+                                <X className="size-3.5" />
+                            </button>
+                        )}
+                    </div>
+                ))}
+                {newFiles.map((item, index) => (
+                    <div
+                        key={`new-${index}`}
+                        className="flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-300"
+                    >
+                        <Paperclip className="size-4 shrink-0" />
+                        <span className="max-w-[180px] truncate">{item.file.name}</span>
+                        <button type="button" onClick={() => onRemoveNew(index)} aria-label={`Quitar ${item.file.name}`} className="text-sky-600 hover:text-red-600">
+                            <X className="size-3.5" />
+                        </button>
+                    </div>
+                ))}
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    className="flex items-center gap-1.5 rounded-lg border-2 border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                    <Paperclip className="size-4" />
+                    Adjuntar PDF
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function CreatePrueba({
     colaboradores,
     dispositivosDisponibles,
@@ -185,17 +262,19 @@ export default function CreatePrueba({
         : [...breadcrumbsBase, { title: 'Registrar prueba', href: '/modules/seguridad/pruebas/create' }];
     const { data, setData, post, processing, errors, transform } = useForm<PruebaForm>({
         colaborador_id: prueba?.colaborador_id ? String(prueba.colaborador_id) : '',
-        tipo: prueba?.tipo ?? 'entrada',
+        tipo: prueba?.tipo ?? 'pre_ruta',
         es_programacion: prueba ? prueba.estado === 'programada' : false,
         programada_en: prueba?.programada_en ? String(prueba.programada_en) : '',
         alcoholimetro_id: prueba?.alcoholimetro_id ? String(prueba.alcoholimetro_id) : '',
-        resultado: prueba?.resultado ? String(prueba.resultado) : '',
+        resultado: prueba?.resultado ? String(prueba.resultado) : '0',
         consentimiento_aceptado: prueba?.consentimiento_aceptado ?? false,
         evidencia: [],
         evidencias: [],
         firma: null,
         observaciones: prueba?.observaciones ?? '',
     });
+
+    const colaboradorSeleccionado = colaboradores.find((c) => String(c.id) === data.colaborador_id);
 
     const firmaPadRef = useRef<FirmaPadHandle>(null);
     const evidenciaInputRef = useRef<HTMLInputElement>(null);
@@ -210,6 +289,14 @@ export default function CreatePrueba({
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
     const [deleteType, setDeleteType] = useState<'evidencia' | 'adicional' | null>(null);
+
+    // La evidencia principal siempre es imagen y las adicionales siempre PDF,
+    // así que el tipo de archivo separa el listado guardado de forma
+    // confiable — se conserva el índice original porque el backend borra por
+    // posición dentro de la colección completa de evidencias.
+    const savedConIndice = savedEvidencias.map((path, index) => ({ path, index }));
+    const savedFotos = savedConIndice.filter(({ path }) => !/\.pdf$/i.test(path));
+    const savedPdfs = savedConIndice.filter(({ path }) => /\.pdf$/i.test(path));
 
     const addEvidencia = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newFiles = Array.from(e.target.files ?? []).map((file) => ({ file, preview: URL.createObjectURL(file) }));
@@ -305,8 +392,16 @@ export default function CreatePrueba({
         router.get(route('seguridad.pruebas.create'), { turno: turno === 'todos' ? '' : turno }, { preserveState: true, replace: true });
     };
 
+    const requiereConsentimiento = !data.es_programacion;
+    const puedeGuardar = !requiereConsentimiento || data.consentimiento_aceptado;
+
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+
+        if (!puedeGuardar) {
+            return;
+        }
+
         const firma = await firmaPadRef.current?.getFile();
         transform((data) => ({ ...data, firma: firma ?? null, ...(prueba ? { _method: 'PUT' } : {}) }));
 
@@ -327,12 +422,11 @@ export default function CreatePrueba({
                     description={prueba ? 'Modifica los datos de la prueba y guarda los cambios.' : 'Selecciona al colaborador y completa los datos de la prueba.'}
                 />
 
-                <form onSubmit={submit} className="max-w-2xl space-y-6">
-                    <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-500/20 dark:bg-sky-500/5">
-                        <h3 className="mb-4 text-base font-semibold text-sky-900 dark:text-sky-200">Filtrar colaboradores por turno</h3>
+                <form onSubmit={submit} className="grid gap-6">
+                    <SeccionCard icon={Users} titulo="Colaborador y tipo de prueba" tono="verde">
                         <div className="grid gap-4 sm:grid-cols-3">
                             <div className="grid gap-2">
-                                <Label htmlFor="turno-filter">Todos los turnos</Label>
+                                <Label htmlFor="turno-filter">Filtrar por turno</Label>
                                 <Select value={filters.turno || 'todos'} onValueChange={filtrarPorTurno}>
                                     <SelectTrigger id="turno-filter">
                                         <SelectValue placeholder="Todos los turnos" />
@@ -346,23 +440,14 @@ export default function CreatePrueba({
                                 </Select>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="colaborador_id">Colaborador</Label>
-                                <Select value={data.colaborador_id} onValueChange={(value) => setData('colaborador_id', value)}>
-                                    <SelectTrigger id="colaborador_id">
-                                        <SelectValue placeholder="Selecciona un colaborador" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {colaboradores.map((colaborador) => (
-                                            <SelectItem key={colaborador.id} value={String(colaborador.id)}>
-                                                {colaborador.nombres} {colaborador.apellidos} — {colaborador.cedula}
-                                                {colaborador.turno ? ` (${TURNO_LABELS[colaborador.turno]})` : ''}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.colaborador_id} />
-                            </div>
+                            <ColaboradorSearchSelect
+                                id="colaborador_search"
+                                label="Colaborador"
+                                colaboradores={colaboradores}
+                                selectedId={data.colaborador_id}
+                                onSelect={(colaborador) => setData('colaborador_id', colaborador ? String(colaborador.id) : '')}
+                                error={errors.colaborador_id}
+                            />
 
                             <div className="grid gap-2">
                                 <Label htmlFor="tipo">Tipo de prueba</Label>
@@ -371,15 +456,36 @@ export default function CreatePrueba({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="entrada">Entrada</SelectItem>
+                                        <SelectItem value="pre_ruta">Pre Ruta</SelectItem>
                                         <SelectItem value="ruta">Ruta</SelectItem>
-                                        <SelectItem value="salida">Salida</SelectItem>
+                                        <SelectItem value="post_ruta">Post Ruta</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError message={errors.tipo} />
                             </div>
                         </div>
-                    </div>
+
+                        {colaboradorSeleccionado && (
+                            <div className="mt-4 grid gap-3 rounded-lg border border-emerald-200 bg-white/60 p-3 text-sm sm:grid-cols-4 dark:border-emerald-500/20 dark:bg-black/10">
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Identificación</p>
+                                    <p className="font-medium text-foreground">{colaboradorSeleccionado.cedula}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Nombres</p>
+                                    <p className="font-medium text-foreground">{colaboradorSeleccionado.nombres}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Apellidos</p>
+                                    <p className="font-medium text-foreground">{colaboradorSeleccionado.apellidos}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Cargo</p>
+                                    <p className="font-medium text-foreground">{colaboradorSeleccionado.cargo ?? '—'}</p>
+                                </div>
+                            </div>
+                        )}
+                    </SeccionCard>
 
                     <div className="flex items-center space-x-2">
                         <Checkbox
@@ -388,24 +494,26 @@ export default function CreatePrueba({
                             onCheckedChange={(checked) => setData('es_programacion', checked === true)}
                         />
                         <Label htmlFor="es_programacion" className="font-normal">
-                            Programar para más tarde (en vez de registrar el resultado ahora)
+                            Programar para más tarde
                         </Label>
                     </div>
 
                     {data.es_programacion ? (
-                        <div className="grid gap-2">
-                            <Label htmlFor="programada_en">Fecha y hora programada</Label>
-                            <Input
-                                id="programada_en"
-                                type="datetime-local"
-                                value={data.programada_en}
-                                onChange={(e) => setData('programada_en', e.target.value)}
-                            />
-                            <InputError message={errors.programada_en} />
-                        </div>
+                        <SeccionCard icon={CalendarClock} titulo="Programación" tono="azul">
+                            <div className="grid gap-2 sm:max-w-xs">
+                                <Label htmlFor="programada_en">Fecha y hora programada</Label>
+                                <Input
+                                    id="programada_en"
+                                    type="datetime-local"
+                                    value={data.programada_en}
+                                    onChange={(e) => setData('programada_en', e.target.value)}
+                                />
+                                <InputError message={errors.programada_en} />
+                            </div>
+                        </SeccionCard>
                     ) : (
                         <>
-                            <div className="rounded-lg border border-border p-4">
+                            <SeccionCard icon={Gauge} titulo="Dispositivo y resultado" tono="verde">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="grid gap-2">
                                         <Label htmlFor="alcoholimetro_id">Dispositivo</Label>
@@ -429,63 +537,79 @@ export default function CreatePrueba({
                                         <Input
                                             id="resultado"
                                             type="number"
+                                            inputMode="decimal"
+                                            min="0"
                                             step="0.001"
                                             value={data.resultado}
-                                            onChange={(e) => setData('resultado', e.target.value)}
+                                            onChange={(e) => setData('resultado', e.target.value.replace(/[^0-9.]/g, ''))}
+                                            onKeyDown={(e) => {
+                                                if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                                            }}
                                         />
                                         <InputError message={errors.resultado} />
                                     </div>
                                 </div>
-                            </div>
+                            </SeccionCard>
 
-                            <EvidenciaUploader
-                                label="Evidencia principal (foto)"
-                                inputId="evidencia"
-                                inputRef={evidenciaInputRef}
-                                onAdd={addEvidencia}
-                                savedPaths={savedEvidencias}
-                                deletedIndices={deletedEvidenciasIndices}
-                                canDeleteSaved={Boolean(prueba)}
-                                onToggleSaved={removeSavedEvidencia}
-                                newFiles={filesEvidencia}
-                                onRemoveNew={removeEvidencia}
-                                onPreview={setSelectedImage}
-                                error={errors.evidencia}
-                            />
+                            <SeccionCard icon={Camera} titulo="Evidencia fotográfica" tono="azul">
+                                <div className="grid gap-6">
+                                    <EvidenciaUploader
+                                        label="Evidencia principal (foto)"
+                                        inputId="evidencia"
+                                        inputRef={evidenciaInputRef}
+                                        onAdd={addEvidencia}
+                                        savedPaths={savedFotos}
+                                        deletedIndices={deletedEvidenciasIndices}
+                                        canDeleteSaved={Boolean(prueba)}
+                                        onToggleSaved={removeSavedEvidencia}
+                                        newFiles={filesEvidencia}
+                                        onRemoveNew={removeEvidencia}
+                                        onPreview={setSelectedImage}
+                                        error={errors.evidencia}
+                                    />
+                                </div>
+                            </SeccionCard>
 
-                            <EvidenciaUploader
-                                label="Evidencias adicionales (opcional)"
-                                inputId="evidencias"
-                                inputRef={evidenciasInputRef}
-                                onAdd={addEvidencias}
-                                savedPaths={savedEvidencias.slice(1)}
-                                deletedIndices={deletedEvidenciasAdicionalesIndices}
-                                canDeleteSaved={Boolean(prueba)}
-                                onToggleSaved={removeSavedEvidencias}
-                                newFiles={filesEvidencias}
-                                onRemoveNew={removeEvidencias}
-                                onPreview={setSelectedImage}
-                                error={errors.evidencias}
-                            />
-
-                            <FirmaPad ref={firmaPadRef} />
-
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="consentimiento_aceptado"
-                                    checked={data.consentimiento_aceptado}
-                                    onCheckedChange={(checked) => setData('consentimiento_aceptado', checked === true)}
+                            <SeccionCard icon={Paperclip} titulo="Evidencia adicional (PDF)" subtitulo="Opcional" tono="verde">
+                                <PdfUploader
+                                    label="Documentos PDF"
+                                    inputId="evidencias"
+                                    inputRef={evidenciasInputRef}
+                                    onAdd={addEvidencias}
+                                    savedPaths={savedPdfs}
+                                    deletedIndices={deletedEvidenciasAdicionalesIndices}
+                                    canDeleteSaved={Boolean(prueba)}
+                                    onToggleSaved={removeSavedEvidencias}
+                                    newFiles={filesEvidencias}
+                                    onRemoveNew={removeEvidencias}
+                                    error={errors.evidencias}
                                 />
-                                <Label htmlFor="consentimiento_aceptado" className="font-normal">
-                                    El colaborador acepta someterse voluntariamente a la prueba (consentimiento informado)
-                                </Label>
-                            </div>
-                            <InputError message={errors.consentimiento_aceptado} />
+                            </SeccionCard>
+
+                            <SeccionCard icon={PenTool} titulo="Firma del colaborador" tono="azul">
+                                <div className="max-w-md">
+                                    <FirmaPad ref={firmaPadRef} />
+                                </div>
+                            </SeccionCard>
+
+                            <SeccionCard icon={ShieldCheck} titulo="Consentimiento informado" tono="verde">
+                                <div className="flex items-start space-x-2">
+                                    <Checkbox
+                                        id="consentimiento_aceptado"
+                                        className="mt-0.5"
+                                        checked={data.consentimiento_aceptado}
+                                        onCheckedChange={(checked) => setData('consentimiento_aceptado', checked === true)}
+                                    />
+                                    <Label htmlFor="consentimiento_aceptado" className="font-normal leading-snug">
+                                        {CONSENTIMIENTO_TEXTO}
+                                    </Label>
+                                </div>
+                                <InputError message={errors.consentimiento_aceptado} />
+                            </SeccionCard>
                         </>
                     )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="observaciones">Observaciones</Label>
+                    <SeccionCard icon={ClipboardList} titulo="Observaciones" subtitulo="Opcional" tono="azul">
                         <textarea
                             id="observaciones"
                             className="border-input bg-background flex min-h-20 w-full rounded-md border px-3 py-2 text-sm"
@@ -493,12 +617,14 @@ export default function CreatePrueba({
                             onChange={(e) => setData('observaciones', e.target.value)}
                         />
                         <InputError message={errors.observaciones} />
-                    </div>
+                    </SeccionCard>
 
-                    <Button type="submit" disabled={processing}>
-                        {processing && <LoaderCircle className="size-4 animate-spin" />}
-                        {data.es_programacion ? (prueba ? 'Actualizar programación' : 'Programar prueba') : prueba ? 'Actualizar prueba' : 'Registrar prueba'}
-                    </Button>
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={processing || !puedeGuardar}>
+                            {processing && <LoaderCircle className="size-4 animate-spin" />}
+                            {data.es_programacion ? (prueba ? 'Actualizar programación' : 'Programar prueba') : prueba ? 'Actualizar prueba' : 'Registrar prueba'}
+                        </Button>
+                    </div>
                 </form>
             </div>
 
@@ -518,9 +644,13 @@ export default function CreatePrueba({
 
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogContent className="border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-950">
-                    <AlertDialogTitle className="text-red-900 dark:text-red-200">Eliminar imagen</AlertDialogTitle>
+                    <AlertDialogTitle className="text-red-900 dark:text-red-200">
+                        {deleteType === 'adicional' ? 'Eliminar PDF' : 'Eliminar imagen'}
+                    </AlertDialogTitle>
                     <AlertDialogDescription className="text-red-800 dark:text-red-300">
-                        ¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer y la imagen se eliminará permanentemente.
+                        {deleteType === 'adicional'
+                            ? '¿Estás seguro de que deseas eliminar este PDF? Esta acción no se puede deshacer y el archivo se eliminará permanentemente.'
+                            : '¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer y la imagen se eliminará permanentemente.'}
                     </AlertDialogDescription>
                     <div className="flex justify-end gap-2 pt-4">
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>

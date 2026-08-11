@@ -10,7 +10,7 @@ import { Paso2RequisitosCargo } from './paso-2-requisitos-cargo';
 import { Paso3InformacionPuesto } from './paso-3-informacion-puesto';
 import { Paso4Archivos } from './paso-4-archivos';
 import { type StepDefinition, Stepper } from './stepper';
-import { type ColaboradorRecord } from './types';
+import { type ColaboradorRecord, type UsuarioVinculable } from './types';
 
 const STEPS: StepDefinition[] = [
     { id: 1, label: 'Datos personales', description: 'Identificación y contacto', icon: IdCard },
@@ -32,9 +32,10 @@ interface WizardPageProps {
     currentStep: number;
     catalogos: WizardCatalogos;
     historialCargos?: HistorialCargo[];
+    usuarios?: UsuarioVinculable[];
 }
 
-export default function ColaboradorWizard({ colaborador, currentStep, catalogos, historialCargos = [] }: WizardPageProps) {
+export default function ColaboradorWizard({ colaborador, currentStep, catalogos, historialCargos = [], usuarios }: WizardPageProps) {
     const [visibleStep, setVisibleStep] = useState(currentStep);
 
     // Cuando el servidor confirma un paso (redirect tras Siguiente) o se
@@ -70,7 +71,7 @@ export default function ColaboradorWizard({ colaborador, currentStep, catalogos,
                     onStepClick={(step) => step <= maxUnlockedStep && setVisibleStep(step)}
                 />
 
-                {visibleStep === 1 && <Paso1DatosPersonales colaborador={colaborador} catalogos={catalogos} />}
+                {visibleStep === 1 && <Paso1DatosPersonales colaborador={colaborador} catalogos={catalogos} usuarios={usuarios} />}
                 {visibleStep === 2 && colaborador && <Paso2RequisitosCargo colaborador={colaborador} onBack={() => setVisibleStep(1)} />}
                 {visibleStep === 3 && colaborador && (
                     <Paso3InformacionPuesto colaborador={colaborador} catalogos={catalogos} historialCargos={historialCargos} onBack={() => setVisibleStep(2)} />

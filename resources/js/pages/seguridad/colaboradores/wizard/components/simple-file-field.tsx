@@ -34,7 +34,15 @@ export function SimpleFileField({ label, files, existing = [], onChange, error, 
     return (
         <div className="grid gap-1.5">
             {label && <p className="text-xs font-medium text-muted-foreground">{label}</p>}
-            <input ref={inputRef} type="file" multiple={multiple} className="hidden" onChange={handleChange} disabled={disabled} />
+            <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,image/*"
+                multiple={multiple}
+                className="hidden"
+                onChange={handleChange}
+                disabled={disabled}
+            />
             <div className="flex flex-wrap items-center gap-1.5">
                 {existing.map((doc, index) => (
                     <span key={`existing-${index}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">

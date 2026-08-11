@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, FileSpreadsheet, FileText, X } from 'lucide-react';
+import { SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
+import { CalendarClock, Camera, Cpu, Download, FileSpreadsheet, FileText, Gauge, Paperclip, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 export interface DispositivoFormData {
@@ -149,110 +150,114 @@ export function DispositivoFormFields({
 
     return (
         <div className="grid gap-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-                <div className="grid gap-2">
-                    <Label htmlFor="codigo">Código / Serial</Label>
-                    <Input id="codigo" value={data.codigo} onChange={(e) => setData('codigo', e.target.value)} disabled={processing} required autoFocus />
-                    <InputError message={errors.codigo} />
+            <SeccionCard icon={Cpu} titulo="Información del dispositivo" tono="verde">
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-2">
+                        <Label htmlFor="codigo">Código / Serial</Label>
+                        <Input id="codigo" value={data.codigo} onChange={(e) => setData('codigo', e.target.value)} disabled={processing} required autoFocus />
+                        <InputError message={errors.codigo} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="marca">Marca</Label>
+                        <Input id="marca" value={data.marca} onChange={(e) => setData('marca', e.target.value)} disabled={processing} />
+                        <InputError message={errors.marca} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="modelo">Modelo</Label>
+                        <Input id="modelo" value={data.modelo} onChange={(e) => setData('modelo', e.target.value)} disabled={processing} />
+                        <InputError message={errors.modelo} />
+                    </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="marca">Marca</Label>
-                    <Input id="marca" value={data.marca} onChange={(e) => setData('marca', e.target.value)} disabled={processing} />
-                    <InputError message={errors.marca} />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="modelo">Modelo</Label>
-                    <Input id="modelo" value={data.modelo} onChange={(e) => setData('modelo', e.target.value)} disabled={processing} />
-                    <InputError message={errors.modelo} />
-                </div>
-            </div>
+            </SeccionCard>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                    <Label htmlFor="fecha_calibracion">Fecha de calibración</Label>
-                    <Input
-                        id="fecha_calibracion"
-                        type="date"
-                        value={data.fecha_calibracion}
-                        onChange={(e) => setData('fecha_calibracion', e.target.value)}
-                        disabled={processing}
-                    />
-                    <InputError message={errors.fecha_calibracion} />
+            <SeccionCard icon={CalendarClock} titulo="Calibración" tono="azul">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                        <Label htmlFor="fecha_calibracion">Fecha de calibración</Label>
+                        <Input
+                            id="fecha_calibracion"
+                            type="date"
+                            value={data.fecha_calibracion}
+                            onChange={(e) => setData('fecha_calibracion', e.target.value)}
+                            disabled={processing}
+                        />
+                        <InputError message={errors.fecha_calibracion} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="fecha_vencimiento_certificado">Vencimiento del certificado</Label>
+                        <Input
+                            id="fecha_vencimiento_certificado"
+                            type="date"
+                            value={data.fecha_vencimiento_certificado}
+                            onChange={(e) => setData('fecha_vencimiento_certificado', e.target.value)}
+                            disabled={processing}
+                        />
+                        <InputError message={errors.fecha_vencimiento_certificado} />
+                    </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="fecha_vencimiento_certificado">Vencimiento del certificado</Label>
-                    <Input
-                        id="fecha_vencimiento_certificado"
-                        type="date"
-                        value={data.fecha_vencimiento_certificado}
-                        onChange={(e) => setData('fecha_vencimiento_certificado', e.target.value)}
-                        disabled={processing}
-                    />
-                    <InputError message={errors.fecha_vencimiento_certificado} />
-                </div>
-            </div>
+            </SeccionCard>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-                <div className="grid gap-2">
-                    <Label htmlFor="valor_min">Valor mínimo válido</Label>
-                    <Input
-                        id="valor_min"
-                        type="number"
-                        step="0.001"
-                        value={data.valor_min}
-                        onChange={(e) => setData('valor_min', e.target.value)}
-                        disabled={processing}
-                        required
-                    />
-                    <InputError message={errors.valor_min} />
+            <SeccionCard icon={Gauge} titulo="Rango de valores y estado" tono="verde">
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-2">
+                        <Label htmlFor="valor_min">Valor mínimo válido</Label>
+                        <Input
+                            id="valor_min"
+                            type="number"
+                            step="0.001"
+                            value={data.valor_min}
+                            onChange={(e) => setData('valor_min', e.target.value)}
+                            disabled={processing}
+                            required
+                        />
+                        <InputError message={errors.valor_min} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="valor_max">Valor máximo válido</Label>
+                        <Input
+                            id="valor_max"
+                            type="number"
+                            step="0.001"
+                            value={data.valor_max}
+                            onChange={(e) => setData('valor_max', e.target.value)}
+                            disabled={processing}
+                            required
+                        />
+                        <InputError message={errors.valor_max} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="estado">Estado</Label>
+                        <Select value={data.estado} onValueChange={(value) => setData('estado', value)} disabled={processing}>
+                            <SelectTrigger id="estado">
+                                <SelectValue placeholder="Selecciona un estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ESTADOS.map((estado) => (
+                                    <SelectItem key={estado} value={estado}>
+                                        {estado}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.estado} />
+                    </div>
                 </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="valor_max">Valor máximo válido</Label>
-                    <Input
-                        id="valor_max"
-                        type="number"
-                        step="0.001"
-                        value={data.valor_max}
-                        onChange={(e) => setData('valor_max', e.target.value)}
-                        disabled={processing}
-                        required
-                    />
-                    <InputError message={errors.valor_max} />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="estado">Estado</Label>
-                    <Select value={data.estado} onValueChange={(value) => setData('estado', value)} disabled={processing}>
-                        <SelectTrigger id="estado">
-                            <SelectValue placeholder="Selecciona un estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {ESTADOS.map((estado) => (
-                                <SelectItem key={estado} value={estado}>
-                                    {estado}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.estado} />
-                </div>
-            </div>
+            </SeccionCard>
 
-            {documentoLegado && (
-                <div className="grid gap-2">
-                    <Label>Documento original</Label>
-                    <button
-                        type="button"
-                        onClick={() => setPreview({ url: documentoLegado, label: 'Documento original', esPdf: esPdf(documentoLegado) })}
-                        className="inline-flex w-fit items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm text-primary underline underline-offset-4"
-                    >
-                        <FileText className="size-4" />
-                        Ver documento original
-                    </button>
-                </div>
-            )}
-
-            <div className="grid gap-2">
-                <Label>Documentos (certificados, fichas técnicas, etc.)</Label>
+            <SeccionCard icon={Paperclip} titulo="Documentos" subtitulo="Certificados, fichas técnicas, etc." tono="azul">
+                {documentoLegado && (
+                    <div className="mb-4 grid gap-2">
+                        <Label>Documento original</Label>
+                        <button
+                            type="button"
+                            onClick={() => setPreview({ url: documentoLegado, label: 'Documento original', esPdf: esPdf(documentoLegado) })}
+                            className="inline-flex w-fit items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm text-primary underline underline-offset-4"
+                        >
+                            <FileText className="size-4" />
+                            Ver documento original
+                        </button>
+                    </div>
+                )}
                 <input
                     ref={documentosInputRef}
                     id="documentos"
@@ -327,10 +332,9 @@ export function DispositivoFormFields({
                         <span className="text-sm">+ Agregar documento</span>
                     </button>
                 </div>
-            </div>
+            </SeccionCard>
 
-            <div className="grid gap-2">
-                <Label>Imágenes del dispositivo (opcional)</Label>
+            <SeccionCard icon={Camera} titulo="Imágenes del dispositivo" subtitulo="Opcional" tono="verde">
                 <input ref={imagenesInputRef} id="imagenes" type="file" accept="image/*" multiple className="hidden" onChange={handleImagenesChange} />
                 <InputError message={errors.imagenes} />
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
@@ -384,7 +388,7 @@ export function DispositivoFormFields({
                         <span className="mt-1 text-xs">Agregar</span>
                     </button>
                 </div>
-            </div>
+            </SeccionCard>
 
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogContent className="border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-950">

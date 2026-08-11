@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { IconActionButton } from '@/components/icon-action-button';
 import { SafeImage } from '@/components/safe-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { calcularTiempoTrabajado } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
+import { ImportarColaboradoresDialog } from '@/pages/seguridad/colaboradores/importar-dialog';
 import { type WizardCatalogos } from '@/pages/seguridad/colaboradores/wizard/catalogos';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { ArrowRight, ClipboardCheck, Eye, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -80,11 +83,6 @@ type Filters = {
 
 const TODOS = 'todos';
 
-function nombreEps(colaborador: ColaboradorRow): string {
-    if (!colaborador.eps) return '—';
-    return colaborador.eps === 'Otro' ? (colaborador.eps_otro ?? 'Otro') : colaborador.eps;
-}
-
 function nombreArl(colaborador: ColaboradorRow): string {
     if (!colaborador.arl) return '—';
     return colaborador.arl === 'Otro' ? (colaborador.arl_otro ?? 'Otro') : colaborador.arl;
@@ -144,12 +142,22 @@ export default function ColaboradoresIndex({
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <HeadingSmall title="Colaboradores" description="Administra el listado de colaboradores para las pruebas de alcoholemia." />
-                    <Button asChild>
-                        <Link href={route('seguridad.colaboradores.create')}>
-                            <Plus className="size-4" />
-                            Nuevo colaborador
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <ImportarColaboradoresDialog
+                            trigger={
+                                <Button type="button" variant="outline">
+                                    <Upload className="size-4" />
+                                    Importar Excel
+                                </Button>
+                            }
+                        />
+                        <Button asChild>
+                            <Link href={route('seguridad.colaboradores.create')}>
+                                <Plus className="size-4" />
+                                Nuevo colaborador
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-end gap-2">
@@ -308,7 +316,7 @@ export default function ColaboradoresIndex({
                 </div>
 
                 {viewMode === 'lista' ? (
-                    <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                    <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -317,15 +325,6 @@ export default function ColaboradoresIndex({
                                     <TableHead>Nombres y apellidos</TableHead>
                                     <TableHead>Área</TableHead>
                                     <TableHead>Cargo</TableHead>
-                                    <TableHead>Centro</TableHead>
-                                    <TableHead>Teléfono</TableHead>
-                                    <TableHead>Código SKAP</TableHead>
-                                    <TableHead>Correo</TableHead>
-                                    <TableHead>Dirección</TableHead>
-                                    <TableHead>Centro de trabajo</TableHead>
-                                    <TableHead>EPS</TableHead>
-                                    <TableHead>ARL</TableHead>
-                                    <TableHead>Fecha de ingreso</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
@@ -333,7 +332,7 @@ export default function ColaboradoresIndex({
                             <TableBody>
                                 {colaboradores.data.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={16} className="text-muted-foreground py-6 text-center">
+                                        <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
                                             No se encontraron colaboradores.
                                         </TableCell>
                                     </TableRow>
@@ -343,21 +342,10 @@ export default function ColaboradoresIndex({
                                         <TableCell className="text-muted-foreground">{(colaboradores.from ?? 1) + index}</TableCell>
                                         <TableCell>{colaborador.cedula}</TableCell>
                                         <TableCell className="font-medium">
-                                            <Link href={route('seguridad.colaboradores.show', colaborador.id)} className="hover:underline">
-                                                {colaborador.nombres} {colaborador.apellidos}
-                                            </Link>
+                                            {colaborador.nombres} {colaborador.apellidos}
                                         </TableCell>
                                         <TableCell>{colaborador.area ?? '—'}</TableCell>
                                         <TableCell>{colaborador.cargo ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.centro ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.celular_1 ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.codigo_qr_skap ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.correo ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.direccion ?? '—'}</TableCell>
-                                        <TableCell>{colaborador.centro_trabajo ?? '—'}</TableCell>
-                                        <TableCell>{nombreEps(colaborador)}</TableCell>
-                                        <TableCell>{nombreArl(colaborador)}</TableCell>
-                                        <TableCell>{colaborador.fecha_ingreso_empresa ?? '—'}</TableCell>
                                         <TableCell>
                                             {colaborador.estado_registro === 'borrador' ? (
                                                 <Badge variant="secondary">Borrador · Paso {colaborador.wizard_step ?? 1}</Badge>
@@ -369,28 +357,48 @@ export default function ColaboradoresIndex({
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {colaborador.estado_registro === 'borrador' ? (
-                                                <Button variant="default" size="sm" asChild>
-                                                    <Link href={route('seguridad.colaboradores.wizard', colaborador.id)}>Continuar registro</Link>
-                                                </Button>
+                                                <div className="flex justify-end">
+                                                    <IconActionButton
+                                                        icon={ArrowRight}
+                                                        label="Continuar registro"
+                                                        href={route('seguridad.colaboradores.wizard', colaborador.id)}
+                                                    />
+                                                </div>
                                             ) : (
-                                                <div className="flex justify-end gap-2">
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
-                                                            Evaluar
-                                                        </Link>
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
-                                                    </Button>
-                                                    <Button variant="outline" size="sm" asChild>
-                                                        <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
-                                                    </Button>
+                                                <div className="flex justify-end gap-1">
+                                                    <IconActionButton
+                                                        icon={Eye}
+                                                        label="Ver"
+                                                        href={route('seguridad.colaboradores.show', colaborador.id)}
+                                                    />
+                                                    <IconActionButton
+                                                        icon={Pencil}
+                                                        label="Editar"
+                                                        href={route('seguridad.colaboradores.edit', colaborador.id)}
+                                                    />
+                                                    <IconActionButton
+                                                        icon={ClipboardCheck}
+                                                        label="Evaluar"
+                                                        href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
+                                                    />
                                                     <Dialog>
-                                                        <DialogTrigger asChild>
-                                                            <Button variant="destructive" size="sm">
-                                                                Eliminar
-                                                            </Button>
-                                                        </DialogTrigger>
+                                                        <TooltipProvider delayDuration={200}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="text-destructive hover:text-destructive"
+                                                                            aria-label="Eliminar"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>Eliminar</TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                         <DialogContent>
                                                             <DialogTitle>
                                                                 ¿Eliminar a {colaborador.nombres} {colaborador.apellidos}?
@@ -480,23 +488,33 @@ export default function ColaboradoresIndex({
                                     </dl>
                                     {colaborador.estado_registro === 'borrador' ? (
                                         <div className="mt-4">
-                                            <Button variant="default" size="sm" asChild>
-                                                <Link href={route('seguridad.colaboradores.wizard', colaborador.id)}>Continuar registro</Link>
-                                            </Button>
+                                            <IconActionButton
+                                                icon={ArrowRight}
+                                                label="Continuar registro"
+                                                variant="outline"
+                                                href={route('seguridad.colaboradores.wizard', colaborador.id)}
+                                            />
                                         </div>
                                     ) : (
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <Button variant="default" size="sm" asChild>
-                                                <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
-                                                    Evaluar
-                                                </Link>
-                                            </Button>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={route('seguridad.colaboradores.show', colaborador.id)}>Ver</Link>
-                                            </Button>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={route('seguridad.colaboradores.edit', colaborador.id)}>Editar</Link>
-                                            </Button>
+                                        <div className="mt-4 flex flex-wrap gap-1">
+                                            <IconActionButton
+                                                icon={ClipboardCheck}
+                                                label="Evaluar"
+                                                variant="outline"
+                                                href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
+                                            />
+                                            <IconActionButton
+                                                icon={Eye}
+                                                label="Ver"
+                                                variant="outline"
+                                                href={route('seguridad.colaboradores.show', colaborador.id)}
+                                            />
+                                            <IconActionButton
+                                                icon={Pencil}
+                                                label="Editar"
+                                                variant="outline"
+                                                href={route('seguridad.colaboradores.edit', colaborador.id)}
+                                            />
                                         </div>
                                     )}
                                 </div>

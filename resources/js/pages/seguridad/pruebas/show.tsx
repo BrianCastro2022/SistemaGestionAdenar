@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { FileText } from 'lucide-react';
 
 interface PruebaDetalle {
     id: number;
@@ -31,6 +32,8 @@ const EVALUACION_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'
     'No Apto': 'destructive',
 };
 
+const TIPO_LABELS: Record<string, string> = { pre_ruta: 'Pre Ruta', ruta: 'Ruta', post_ruta: 'Post Ruta' };
+
 export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; qrSvg: string | null }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -39,7 +42,12 @@ export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; q
         { title: `Prueba #${prueba.id}`, href: `/modules/seguridad/pruebas/${prueba.id}` },
     ];
 
-    const fotos = [prueba.evidencia_path, ...prueba.evidencias.map((e) => e.path)].filter((p): p is string => Boolean(p));
+    // La evidencia principal siempre es imagen y las adicionales siempre PDF
+    // (así lo exige la validación), así que el tipo de archivo es más
+    // confiable que la posición para separarlas al mostrarlas.
+    const evidenciaPaths = [prueba.evidencia_path, ...prueba.evidencias.map((e) => e.path)].filter((p): p is string => Boolean(p));
+    const fotos = evidenciaPaths.filter((p) => !/\.pdf$/i.test(p));
+    const pdfs = evidenciaPaths.filter((p) => /\.pdf$/i.test(p));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -48,7 +56,7 @@ export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; q
                 <div className="flex flex-wrap items-center gap-3">
                     <HeadingSmall
                         title={prueba.colaborador ? `${prueba.colaborador.nombres} ${prueba.colaborador.apellidos}` : `Prueba #${prueba.id}`}
-                        description={`${new Date(prueba.fecha_hora).toLocaleString()} · ${prueba.tipo}`}
+                        description={`${new Date(prueba.fecha_hora).toLocaleString()} · ${TIPO_LABELS[prueba.tipo] ?? prueba.tipo}`}
                     />
                     {prueba.estado === 'programada' ? (
                         <Badge variant="secondary">Programada</Badge>
@@ -106,6 +114,26 @@ export default function PruebaShow({ prueba, qrSvg }: { prueba: PruebaDetalle; q
                                     alt="Evidencia de la prueba"
                                     className="h-32 w-32 rounded-lg border border-sidebar-border/70 object-cover dark:border-sidebar-border"
                                 />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {pdfs.length > 0 && (
+                    <div>
+                        <h2 className="mb-2 text-lg font-medium tracking-tight">Evidencia adicional (PDF)</h2>
+                        <div className="flex flex-wrap gap-2">
+                            {pdfs.map((path) => (
+                                <a
+                                    key={path}
+                                    href={`/storage/${path}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-2 rounded-lg border border-sidebar-border/70 bg-card px-3 py-2 text-sm text-foreground hover:underline dark:border-sidebar-border"
+                                >
+                                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                                    <span className="max-w-[220px] truncate">{path.split('/').pop()}</span>
+                                </a>
                             ))}
                         </div>
                     </div>

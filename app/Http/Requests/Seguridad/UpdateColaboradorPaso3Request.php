@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Seguridad;
 
+use App\Http\Requests\Seguridad\Concerns\ValidatesFutureDates;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateColaboradorPaso3Request extends FormRequest
 {
+    use ValidatesFutureDates;
+
     public function authorize(): bool
     {
         return true;
@@ -18,29 +21,36 @@ class UpdateColaboradorPaso3Request extends FormRequest
      */
     public function rules(): array
     {
+        $colaborador = $this->route('colaborador');
+
         return [
             'area' => ['nullable', Rule::in(['Administrativa', 'Operativa'])],
             'cargo' => ['nullable', Rule::in(config('seguridad.colaboradores.cargos'))],
-            // Fecha en la que inicia el cargo seleccionado; requerida cuando
-            // se envía un cargo, para poder abrir el registro de historial.
-            'cargo_fecha_inicio' => ['nullable', 'required_with:cargo', 'date'],
+            // Fecha en la que inicia el cargo seleccionado; requerida solo
+            // cuando el cargo enviado difiere del cargo activo actual — si no,
+            // reenviar el paso sin cambiar de cargo queda bloqueado siempre.
+            'cargo_fecha_inicio' => [
+                'nullable',
+                'date',
+                Rule::requiredIf(fn () => $this->input('cargo') && $this->input('cargo') !== $colaborador?->cargoActual?->cargo),
+            ],
 
             'centro' => ['nullable', Rule::in(config('seguridad.colaboradores.centros'))],
             'centro_trabajo' => ['nullable', Rule::in(config('seguridad.colaboradores.centros_trabajo'))],
             'fecha_ingreso_empresa' => ['nullable', 'date'],
-            'fecha_retiro_empresa' => ['nullable', 'date', 'after_or_equal:today'],
+            'fecha_retiro_empresa' => ['nullable', 'date', $this->futureUnlessUnchanged($colaborador, 'fecha_retiro_empresa')],
             'motivo_retiro' => ['nullable', Rule::in(config('seguridad.colaboradores.motivos_retiro'))],
             'tipo_contrato' => ['nullable', Rule::in(config('seguridad.colaboradores.tipos_contrato'))],
             'contrato_fecha_desde' => ['nullable', 'date'],
-            'contrato_fecha_hasta' => ['nullable', 'date', 'after_or_equal:contrato_fecha_desde', 'after_or_equal:today'],
+            'contrato_fecha_hasta' => ['nullable', 'date', 'after_or_equal:contrato_fecha_desde', $this->futureUnlessUnchanged($colaborador, 'contrato_fecha_hasta')],
 
             'codigo_qr_skap' => ['nullable', 'string', 'max:100'],
 
             'vacaciones_aplica' => ['nullable', Rule::in(['no_aplica', 'aplica'])],
-            'vacaciones_fecha_desde' => ['nullable', 'date', 'after_or_equal:today'],
-            'vacaciones_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_fecha_desde', 'after_or_equal:today'],
-            'vacaciones_pagadas_fecha_desde' => ['nullable', 'date', 'after_or_equal:today'],
-            'vacaciones_pagadas_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_pagadas_fecha_desde', 'after_or_equal:today'],
+            'vacaciones_fecha_desde' => ['nullable', 'date', $this->futureUnlessUnchanged($colaborador, 'vacaciones_fecha_desde')],
+            'vacaciones_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_fecha_desde', $this->futureUnlessUnchanged($colaborador, 'vacaciones_fecha_hasta')],
+            'vacaciones_pagadas_fecha_desde' => ['nullable', 'date', $this->futureUnlessUnchanged($colaborador, 'vacaciones_pagadas_fecha_desde')],
+            'vacaciones_pagadas_fecha_hasta' => ['nullable', 'date', 'after_or_equal:vacaciones_pagadas_fecha_desde', $this->futureUnlessUnchanged($colaborador, 'vacaciones_pagadas_fecha_hasta')],
         ];
     }
 

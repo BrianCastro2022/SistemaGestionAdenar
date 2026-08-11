@@ -1,14 +1,16 @@
 import HeadingSmall from '@/components/heading-small';
+import { IconActionButton } from '@/components/icon-action-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, Plus, Search } from 'lucide-react';
+import { AlertTriangle, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -110,11 +112,7 @@ export default function DispositivosIndex({ dispositivos, filters }: { dispositi
                             )}
                             {dispositivos.data.map((dispositivo) => (
                                 <TableRow key={dispositivo.id}>
-                                    <TableCell className="font-medium">
-                                        <Link href={route('seguridad.dispositivos.show', dispositivo.id)} className="hover:underline">
-                                            {dispositivo.codigo}
-                                        </Link>
-                                    </TableCell>
+                                    <TableCell className="font-medium">{dispositivo.codigo}</TableCell>
                                     <TableCell>
                                         {[dispositivo.marca, dispositivo.modelo].filter(Boolean).join(' / ') || '—'}
                                     </TableCell>
@@ -133,16 +131,27 @@ export default function DispositivosIndex({ dispositivos, filters }: { dispositi
                                         <Badge variant={ESTADO_VARIANT[dispositivo.estado] ?? 'default'}>{dispositivo.estado}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={route('seguridad.dispositivos.edit', dispositivo.id)}>Editar</Link>
-                                            </Button>
+                                        <div className="flex justify-end gap-1">
+                                            <IconActionButton icon={Eye} label="Ver" href={route('seguridad.dispositivos.show', dispositivo.id)} />
+                                            <IconActionButton icon={Pencil} label="Editar" href={route('seguridad.dispositivos.edit', dispositivo.id)} />
                                             <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="destructive" size="sm">
-                                                        Eliminar
-                                                    </Button>
-                                                </DialogTrigger>
+                                                <TooltipProvider delayDuration={200}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <DialogTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-destructive hover:text-destructive"
+                                                                    aria-label="Eliminar"
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Eliminar</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                                 <DialogContent>
                                                     <DialogTitle>¿Eliminar el dispositivo {dispositivo.codigo}?</DialogTitle>
                                                     <DialogDescription>

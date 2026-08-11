@@ -42,16 +42,23 @@ return [
     'colaboradores' => [
         'cargos' => [
             'APRENDIZ SENA',
+            'AUXILIAR ADMINISTRATIVO',
+            'AUXILIAR CONTABLE',
             'AUXILIAR DE FLOTA',
             'AUXILIAR DE LIQUIDACIÓN',
             'AUXILIAR DE REPARTO',
             'AUXILIAR SST',
             'CALL CENTER',
             'CONDUCTOR',
+            'CONDUCTOR DE REPARTO',
+            'CONDUCTOR MULA',
+            'CONTADORA',
             'COORDINADOR DE DESPACHO',
             'COORDINADOR DE FLOTA',
             'COORDINADOR DE LIQUIDACIÓN',
             'COORDINADOR DE REPARTO',
+            'COORDINADORA SST',
+            'JEFE DE BODEGA',
             'PROFESIONAL RH',
             'PROGRAMADOR',
             'RESPONSABLE DE REPARTO',
@@ -60,6 +67,8 @@ return [
 
         'centros' => [
             'UC',
+            'UD',
+            'KA',
             'SUR',
             'JL',
             'MOVILIZADOR',
@@ -97,6 +106,7 @@ return [
             'FAMISANAR',
             'NUEVA EPS',
             'MALLAMAS',
+            'ASMET SALUD',
         ],
 
         'afp_opciones' => [

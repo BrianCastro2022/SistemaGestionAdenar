@@ -13,6 +13,16 @@ import { type ColaboradorRecord, type Paso3FormData } from './types';
 
 const hoyISO = new Date().toISOString().slice(0, 10);
 
+/**
+ * Restringe el selector a "hoy en adelante" para fechas nuevas, pero sin
+ * bloquear una fecha histórica que el colaborador ya tenía guardada — si no,
+ * reabrir un contrato o unas vacaciones ya vencidas impide avanzar el wizard.
+ */
+function minDateFor(valorGuardado: unknown): string {
+    const valor = typeof valorGuardado === 'string' ? valorGuardado : null;
+    return valor && valor < hoyISO ? valor : hoyISO;
+}
+
 type HistorialCargo = {
     id: number;
     cargo: string;
@@ -180,7 +190,7 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                         <Input
                             id="fecha_retiro_empresa"
                             type="date"
-                            min={hoyISO}
+                            min={minDateFor(colaborador.fecha_retiro_empresa)}
                             value={data.fecha_retiro_empresa}
                             onChange={(e) => setData('fecha_retiro_empresa', e.target.value)}
                             disabled={processing}
@@ -228,7 +238,7 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="contrato_fecha_hasta">Tiempo de contrato — hasta</Label>
-                        <Input id="contrato_fecha_hasta" type="date" min={hoyISO} value={data.contrato_fecha_hasta} onChange={(e) => setData('contrato_fecha_hasta', e.target.value)} disabled={processing} />
+                        <Input id="contrato_fecha_hasta" type="date" min={minDateFor(colaborador.contrato_fecha_hasta)} value={data.contrato_fecha_hasta} onChange={(e) => setData('contrato_fecha_hasta', e.target.value)} disabled={processing} />
                         <InputError message={errors.contrato_fecha_hasta} />
                     </div>
                 </div>
@@ -240,9 +250,8 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                         <Label htmlFor="codigo_qr_skap">Número de código</Label>
                         <Input
                             id="codigo_qr_skap"
-                            inputMode="numeric"
                             value={data.codigo_qr_skap}
-                            onChange={(e) => setData('codigo_qr_skap', e.target.value.replace(/\D/g, ''))}
+                            onChange={(e) => setData('codigo_qr_skap', e.target.value)}
                             disabled={processing}
                         />
                         <InputError message={errors.codigo_qr_skap} />
@@ -270,12 +279,12 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                         <div className="grid gap-4 border-l-2 border-emerald-300 pl-4 sm:grid-cols-2 dark:border-emerald-500/30">
                             <div className="grid gap-2">
                                 <Label htmlFor="vacaciones_fecha_desde">Fecha desde</Label>
-                                <Input id="vacaciones_fecha_desde" type="date" min={hoyISO} value={data.vacaciones_fecha_desde} onChange={(e) => setData('vacaciones_fecha_desde', e.target.value)} disabled={processing} />
+                                <Input id="vacaciones_fecha_desde" type="date" min={minDateFor(colaborador.vacaciones_fecha_desde)} value={data.vacaciones_fecha_desde} onChange={(e) => setData('vacaciones_fecha_desde', e.target.value)} disabled={processing} />
                                 <InputError message={errors.vacaciones_fecha_desde} />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="vacaciones_fecha_hasta">Fecha hasta</Label>
-                                <Input id="vacaciones_fecha_hasta" type="date" min={hoyISO} value={data.vacaciones_fecha_hasta} onChange={(e) => setData('vacaciones_fecha_hasta', e.target.value)} disabled={processing} />
+                                <Input id="vacaciones_fecha_hasta" type="date" min={minDateFor(colaborador.vacaciones_fecha_hasta)} value={data.vacaciones_fecha_hasta} onChange={(e) => setData('vacaciones_fecha_hasta', e.target.value)} disabled={processing} />
                                 <InputError message={errors.vacaciones_fecha_hasta} />
                             </div>
                         </div>
@@ -286,7 +295,7 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                             <Input
                                 id="vacaciones_pagadas_fecha_desde"
                                 type="date"
-                                min={hoyISO}
+                                min={minDateFor(colaborador.vacaciones_pagadas_fecha_desde)}
                                 value={data.vacaciones_pagadas_fecha_desde}
                                 onChange={(e) => setData('vacaciones_pagadas_fecha_desde', e.target.value)}
                                 disabled={processing}
@@ -298,7 +307,7 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
                             <Input
                                 id="vacaciones_pagadas_fecha_hasta"
                                 type="date"
-                                min={hoyISO}
+                                min={minDateFor(colaborador.vacaciones_pagadas_fecha_hasta)}
                                 value={data.vacaciones_pagadas_fecha_hasta}
                                 onChange={(e) => setData('vacaciones_pagadas_fecha_hasta', e.target.value)}
                                 disabled={processing}

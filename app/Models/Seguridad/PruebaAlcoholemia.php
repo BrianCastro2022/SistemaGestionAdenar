@@ -93,6 +93,32 @@ class PruebaAlcoholemia extends Model
     }
 
     /**
+     * La evidencia principal (foto) y las adicionales (PDF) se guardan juntas
+     * en `evidencias`, distinguibles solo por tipo de archivo (la validación
+     * exige imagen para la principal y PDF para las adicionales) — la
+     * posición en la colección no es confiable porque depende del orden de
+     * subida, así que se identifica por extensión.
+     */
+    public function evidenciaPrincipalPath(): ?string
+    {
+        if ($this->evidencia_path) {
+            return $this->evidencia_path;
+        }
+
+        return $this->evidencias->first(fn ($evidencia) => ! str($evidencia->path)->lower()->endsWith('.pdf'))?->path;
+    }
+
+    public function tipoLabel(): string
+    {
+        return match ($this->tipo) {
+            'pre_ruta' => 'Pre Ruta',
+            'ruta' => 'Ruta',
+            'post_ruta' => 'Post Ruta',
+            default => ucfirst($this->tipo),
+        };
+    }
+
+    /**
      * HU043: combina la condición de salud del colaborador ese día con el
      * resultado de la prueba para determinar Apto / Apto con Observaciones / No Apto.
      */

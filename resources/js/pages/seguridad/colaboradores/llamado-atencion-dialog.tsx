@@ -51,6 +51,7 @@ export function LlamadoAtencionDialog({ colaboradorId, trigger }: { colaboradorI
                         <input
                             id="documento"
                             type="file"
+                            accept=".pdf,.doc,.docx,image/*"
                             className="text-sm"
                             onChange={(e) => setData('documento', e.target.files?.[0] ?? null)}
                         />

@@ -1,5 +1,6 @@
 import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,8 @@ import AppLayout from '@/layouts/app-layout';
 import { UserFormData, UserFormFields } from '@/pages/admin/users/user-form-fields';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { CheckCircle2, LoaderCircle } from 'lucide-react';
+import { FormEventHandler, useEffect, useState } from 'react';
 
 interface EditableUser {
     id: number;
@@ -45,14 +46,26 @@ export default function EditUser({ user, roles }: { user: EditableUser; roles: s
     };
 
     const resetPasswordForm = useForm({ password: '', password_confirmation: '' });
+    const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+    const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
 
     const submitResetPassword: FormEventHandler = (e) => {
         e.preventDefault();
         resetPasswordForm.patch(route('admin.users.reset-password', user.id), {
             preserveScroll: true,
-            onSuccess: () => resetPasswordForm.reset(),
+            onSuccess: () => {
+                resetPasswordForm.reset();
+                setResetPasswordOpen(false);
+                setResetPasswordSuccess(true);
+            },
         });
     };
+
+    useEffect(() => {
+        if (!resetPasswordSuccess) return;
+        const timeout = setTimeout(() => setResetPasswordSuccess(false), 4000);
+        return () => clearTimeout(timeout);
+    }, [resetPasswordSuccess]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -81,7 +94,14 @@ export default function EditUser({ user, roles }: { user: EditableUser; roles: s
                 <div className="max-w-2xl space-y-4 rounded-lg border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                     <HeadingSmall title="Restablecer contraseña" description="Define una nueva contraseña para este usuario." />
 
-                    <Dialog>
+                    {resetPasswordSuccess && (
+                        <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            <CheckCircle2 className="size-4" />
+                            <AlertDescription>Contraseña cambiada correctamente.</AlertDescription>
+                        </Alert>
+                    )}
+
+                    <Dialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline">Restablecer contraseña</Button>
                         </DialogTrigger>

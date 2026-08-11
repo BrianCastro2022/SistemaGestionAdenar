@@ -46,8 +46,9 @@ class InstitucionesSenaService
     {
         try {
             $response = Http::acceptJson()
-                ->timeout(8)
-                ->retry(2, 250)
+                ->withHeaders(['User-Agent' => 'SistemaGestionAdenar-SGSST/1.0'])
+                ->timeout(10)
+                ->retry([500, 1000, 2000])
                 ->get(self::URL, ['$limit' => 100]);
 
             if (! $response->successful()) {

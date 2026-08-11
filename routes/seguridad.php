@@ -5,6 +5,7 @@ use App\Http\Controllers\Seguridad\AlertaController;
 use App\Http\Controllers\Seguridad\AsignacionConductorController;
 use App\Http\Controllers\Seguridad\ColaboradorController;
 use App\Http\Controllers\Seguridad\ColaboradorEntrenamientoController;
+use App\Http\Controllers\Seguridad\ColaboradorImportController;
 use App\Http\Controllers\Seguridad\CondicionSaludController;
 use App\Http\Controllers\Seguridad\LlamadoAtencionController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
@@ -30,6 +31,10 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
             ->name('colaboradores.referencias.ciudades');
         Route::get('colaboradores/referencias/instituciones-sena', [ReferenciaExternaController::class, 'institucionesSena'])
             ->name('colaboradores.referencias.instituciones-sena');
+
+        // Carga masiva desde el Excel de nómina ("BASE ACTUALIZADA").
+        Route::post('colaboradores/importar', [ColaboradorImportController::class, 'store'])
+            ->name('colaboradores.importar');
 
         // El pluralizador en inglés de Laravel no singulariza bien "colaboradores"
         // (produce "colaboradore"), así que se fuerza el nombre del parámetro.
