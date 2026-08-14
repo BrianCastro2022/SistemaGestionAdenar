@@ -115,6 +115,14 @@ interface CondicionRow {
     fecha_hora: string;
 }
 
+interface EvaluacionMedicaRow {
+    id: number;
+    tipo_evaluacion: string;
+    fecha_evaluacion: string;
+    estado: string;
+    concepto_aptitud: { nombre: string } | null;
+}
+
 interface LlamadoAtencionRow {
     id: number;
     observacion: string;
@@ -180,6 +188,7 @@ export default function ColaboradorShow({
     indiceRiesgo,
     pruebas,
     condicionesSalud,
+    evaluacionesMedicas,
     llamadosAtencion,
     entrenamientos,
     entrenamientosCatalogo,
@@ -189,6 +198,7 @@ export default function ColaboradorShow({
     indiceRiesgo: IndiceRiesgo;
     pruebas: PruebaRow[];
     condicionesSalud: CondicionRow[];
+    evaluacionesMedicas: EvaluacionMedicaRow[];
     llamadosAtencion: LlamadoAtencionRow[];
     entrenamientos: EntrenamientoRow[];
     entrenamientosCatalogo: { id: number; nombre: string }[];
@@ -596,6 +606,49 @@ export default function ColaboradorShow({
                                 </TableBody>
                             </Table>
                         </div>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <h2 className="text-lg font-medium tracking-tight">Exámenes médicos ocupacionales</h2>
+                    <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Tipo</TableHead>
+                                    <TableHead>Concepto de aptitud</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {evaluacionesMedicas.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-muted-foreground py-6 text-center">
+                                            Sin evaluaciones médicas registradas.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {evaluacionesMedicas.map((evaluacion) => (
+                                    <TableRow key={evaluacion.id}>
+                                        <TableCell>{new Date(evaluacion.fecha_evaluacion).toLocaleDateString()}</TableCell>
+                                        <TableCell className="capitalize">{evaluacion.tipo_evaluacion}</TableCell>
+                                        <TableCell>{evaluacion.concepto_aptitud?.nombre ?? '—'}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={evaluacion.estado === 'terminada' ? 'default' : 'secondary'}>
+                                                {evaluacion.estado === 'sin_iniciar'
+                                                    ? 'Sin Iniciar'
+                                                    : evaluacion.estado === 'demorada'
+                                                      ? 'Demorada'
+                                                      : evaluacion.estado === 'en_proceso'
+                                                        ? 'En Proceso'
+                                                        : 'Terminada'}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
             </div>

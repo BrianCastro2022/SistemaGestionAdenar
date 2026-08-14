@@ -4,6 +4,7 @@ namespace App\Http\Requests\Seguridad;
 
 use App\Http\Requests\Seguridad\Concerns\ValidatesColaboradorDocumentos;
 use App\Support\Seguridad\ColaboradorDocumentoCampos;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,11 @@ class UpdateColaboradorPaso1Request extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(fn () => $this->logArchivosDocumentoRechazados($validator, ColaboradorDocumentoCampos::PASO1));
     }
 
     /**

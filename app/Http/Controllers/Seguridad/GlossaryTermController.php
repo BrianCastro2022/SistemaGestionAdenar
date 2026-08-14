@@ -33,11 +33,17 @@ class GlossaryTermController
             $query->byCategory($categoria);
         }
 
-        $terms = $query->orderBy('categoria')->orderBy('nombre')->paginate(15)->withQueryString();
+        match ($request->input('orden')) {
+            'nombre_asc' => $query->orderBy('nombre'),
+            'nombre_desc' => $query->orderByDesc('nombre'),
+            default => $query->orderBy('categoria')->orderBy('nombre'),
+        };
+
+        $terms = $query->paginate(15)->withQueryString();
 
         return Inertia::render('seguridad/glosario/index', [
             'terms' => $terms,
-            'filters' => $request->only('search', 'categoria'),
+            'filters' => $request->only('search', 'categoria', 'orden'),
             'categories' => self::CATEGORIES,
         ]);
     }

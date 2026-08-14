@@ -18,9 +18,10 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(GlossarySeeder::class);
         $this->call(WebScrapingSourceSeeder::class);
+        $this->call(RecomendacionSeeder::class);
 
         $demoUsers = [
-            ['id_number' => '1000000001', 'first' => 'Ana', 'last' => 'Administradora', 'role' => RoleEnum::Administrador],
+            ['id_number' => '1000000001', 'first' => 'Brian', 'last' => 'Administrador', 'role' => RoleEnum::Administrador],
             ['id_number' => '1000000002', 'first' => 'Samuel', 'last' => 'Seguridad', 'role' => RoleEnum::Seguridad],
             ['id_number' => '1000000003', 'first' => 'Rita', 'last' => 'Reparto', 'role' => RoleEnum::Reparto],
             ['id_number' => '1000000004', 'first' => 'Gina', 'last' => 'Gente', 'role' => RoleEnum::Gente],

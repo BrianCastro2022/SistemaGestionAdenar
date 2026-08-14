@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\Role;
+use App\Models\Seguridad\Colaborador;
 use App\Models\Seguridad\CondicionSalud;
 use App\Models\Seguridad\PruebaAlcoholemia;
+use App\Observers\Seguridad\ColaboradorExamenObserver;
 use App\Observers\Seguridad\CondicionSaludObserver;
 use App\Observers\Seguridad\PruebaAlcoholemiaObserver;
 use Illuminate\Support\Facades\Gate;
@@ -31,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
 
         PruebaAlcoholemia::observe(PruebaAlcoholemiaObserver::class);
         CondicionSalud::observe(CondicionSaludObserver::class);
+        Colaborador::observe(ColaboradorExamenObserver::class);
     }
 }

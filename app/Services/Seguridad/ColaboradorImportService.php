@@ -3,6 +3,7 @@
 namespace App\Services\Seguridad;
 
 use App\Models\Seguridad\Colaborador;
+use App\Services\Seguridad\Concerns\NormalizaCatalogos;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,8 @@ use Throwable;
  */
 class ColaboradorImportService
 {
+    use NormalizaCatalogos;
+
     private const COLUMNA_CEDULA = 'B';
 
     private const COLUMNA_NOMBRE_COMPLETO = 'C';
@@ -197,55 +200,6 @@ class ColaboradorImportService
             'OPERATIVA' => 'Operativa',
             default => trim($valor),
         };
-    }
-
-    /**
-     * Quita tildes/mayúsculas/lo que no sea alfanumérico, para comparar
-     * catálogos sin que un tilde faltante o un guion de más rompa el match.
-     */
-    private function normalizar(string $valor): string
-    {
-        $sinTildes = strtr(strtoupper(trim($valor)), [
-            'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ñ' => 'N',
-        ]);
-
-        return preg_replace('/[^A-Z0-9]/', '', $sinTildes) ?? '';
-    }
-
-    /**
-     * @param  array<int, string>  $catalogo
-     */
-    private function coincidirExacto(string $valorCrudo, array $catalogo): string
-    {
-        $normalizado = $this->normalizar($valorCrudo);
-
-        foreach ($catalogo as $opcion) {
-            if ($normalizado === $this->normalizar($opcion)) {
-                return $opcion;
-            }
-        }
-
-        return trim($valorCrudo);
-    }
-
-    /**
-     * Para EPS/AFP/ARL: el Excel trae variantes con prefijos/sufijos ("EPS-S
-     * EMSSANAR", "NUEVA E.P.S. S.A.") que no calzan con un match exacto, así
-     * que se acepta que el valor de la fila *contenga* el nombre canónico.
-     *
-     * @param  array<int, string>  $catalogo
-     */
-    private function coincidirParcial(string $valorCrudo, array $catalogo): string
-    {
-        $normalizado = $this->normalizar($valorCrudo);
-
-        foreach ($catalogo as $opcion) {
-            if ($normalizado !== '' && str_contains($normalizado, $this->normalizar($opcion))) {
-                return $opcion;
-            }
-        }
-
-        return trim($valorCrudo);
     }
 
     private function parsearFecha(string $valor): ?string

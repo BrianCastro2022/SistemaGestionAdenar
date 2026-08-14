@@ -1,6 +1,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { type DocumentInfo } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
+import { errorDeArchivo } from '../utils';
 import { SimpleFileField } from './simple-file-field';
 
 const CATEGORIAS: { value: string; label: string }[] = [
@@ -20,6 +21,7 @@ interface LicenciaConduccionCategoriasProps {
     archivos: Record<string, File[]>;
     onArchivoChange: (categoria: string, files: File[]) => void;
     existingDocumentos?: Record<string, DocumentInfo[]>;
+    errors?: Record<string, string | undefined>;
     disabled?: boolean;
 }
 
@@ -33,6 +35,7 @@ export function LicenciaConduccionCategorias({
     archivos,
     onArchivoChange,
     existingDocumentos,
+    errors = {},
     disabled,
 }: LicenciaConduccionCategoriasProps) {
     return (
@@ -60,6 +63,7 @@ export function LicenciaConduccionCategorias({
                                     files={archivos[categoria.value] ?? []}
                                     existing={existingDocumentos?.[campo]}
                                     onChange={(files) => onArchivoChange(categoria.value, files)}
+                                    error={errorDeArchivo(errors, campo)}
                                     disabled={disabled}
                                 />
                             </div>

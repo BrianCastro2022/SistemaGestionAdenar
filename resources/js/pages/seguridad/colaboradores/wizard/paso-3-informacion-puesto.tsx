@@ -40,6 +40,13 @@ interface Paso3Props {
 
 export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos, onBack }: Paso3Props) {
     const cargoActivo = historialCargos.find((h) => h.estado === 'ACTIVO');
+    // El cargo con el que arrancó el formulario — no el del historial, que
+    // muchos colaboradores reales no tienen (ej. los cargados por Excel). Si
+    // se comparara contra el historial, a esos colaboradores les aparecía el
+    // campo de "nuevo cargo" como si el usuario lo hubiera cambiado sin
+    // tocar nada, y el paso 3 quedaba bloqueado pidiendo una fecha que no
+    // correspondía a ningún cambio real.
+    const cargoInicial = (colaborador.cargo as string) ?? '';
 
     const { data, setData, post, processing, errors, transform } = useForm<Paso3FormData>({
         area: (colaborador.area as Paso3FormData['area']) ?? '',
@@ -64,7 +71,7 @@ export function Paso3InformacionPuesto({ colaborador, catalogos, historialCargos
         vacaciones_pagadas_fecha_hasta: (colaborador.vacaciones_pagadas_fecha_hasta as string) ?? '',
     });
 
-    const cambioDeCargo = data.cargo !== '' && data.cargo !== cargoActivo?.cargo;
+    const cambioDeCargo = data.cargo !== '' && data.cargo !== cargoInicial;
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();

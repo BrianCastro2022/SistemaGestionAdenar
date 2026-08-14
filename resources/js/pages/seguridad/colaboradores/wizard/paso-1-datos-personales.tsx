@@ -15,6 +15,7 @@ import { SelectConOtro } from './components/select-con-otro';
 import { SimpleFileField } from './components/simple-file-field';
 import { type ColaboradorRecord, type Paso1FormData, type UsuarioVinculable } from './types';
 import { type WizardCatalogos } from './catalogos';
+import { errorDeArchivo } from './utils';
 
 interface Paso1Props {
     colaborador: ColaboradorRecord | null;
@@ -147,6 +148,7 @@ export function Paso1DatosPersonales({ colaborador, catalogos, usuarios }: Paso1
                         files={data.documento_tipo_identificacion}
                         existing={existing('documento_tipo_identificacion')}
                         onChange={(files) => setData('documento_tipo_identificacion', files)}
+                        error={errorDeArchivo(errors, 'documento_tipo_identificacion')}
                         disabled={processing}
                     />
                 </div>
@@ -341,6 +343,7 @@ export function Paso1DatosPersonales({ colaborador, catalogos, usuarios }: Paso1
                                 files={data.documento_libreta_militar}
                                 existing={existing('documento_libreta_militar')}
                                 onChange={(files) => setData('documento_libreta_militar', files)}
+                                error={errorDeArchivo(errors, 'documento_libreta_militar')}
                                 disabled={processing}
                             />
                         )}
@@ -358,6 +361,7 @@ export function Paso1DatosPersonales({ colaborador, catalogos, usuarios }: Paso1
                                 files={data.documento_runt}
                                 existing={existing('documento_runt')}
                                 onChange={(files) => setData('documento_runt', files)}
+                                error={errorDeArchivo(errors, 'documento_runt')}
                                 disabled={processing}
                             />
                         )}
@@ -453,6 +457,7 @@ export function Paso1DatosPersonales({ colaborador, catalogos, usuarios }: Paso1
                             files={data.documento_sena_carta_presentacion}
                             existing={existing('documento_sena_carta_presentacion')}
                             onChange={(files) => setData('documento_sena_carta_presentacion', files)}
+                            error={errorDeArchivo(errors, 'documento_sena_carta_presentacion')}
                             disabled={processing}
                         />
                     </div>

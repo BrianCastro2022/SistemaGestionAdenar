@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, Award, History, LoaderCircle, Mountain } from 'l
 import { FormEventHandler } from 'react';
 import { SimpleFileField } from './components/simple-file-field';
 import { type ColaboradorRecord, type Paso2FormData } from './types';
+import { errorDeArchivo } from './utils';
 
 interface Paso2Props {
     colaborador: ColaboradorRecord;
@@ -83,6 +84,7 @@ export function Paso2RequisitosCargo({ colaborador, onBack }: Paso2Props) {
                                 files={data.documento_carnet_manejo_defensivo}
                                 existing={existing('documento_carnet_manejo_defensivo')}
                                 onChange={(files) => setData('documento_carnet_manejo_defensivo', files)}
+                                error={errorDeArchivo(errors, 'documento_carnet_manejo_defensivo')}
                                 disabled={processing}
                             />
                         )}
@@ -100,6 +102,7 @@ export function Paso2RequisitosCargo({ colaborador, onBack }: Paso2Props) {
                                 files={data.documento_certificado_carga_pesada}
                                 existing={existing('documento_certificado_carga_pesada')}
                                 onChange={(files) => setData('documento_certificado_carga_pesada', files)}
+                                error={errorDeArchivo(errors, 'documento_certificado_carga_pesada')}
                                 disabled={processing}
                             />
                         )}
@@ -135,6 +138,7 @@ export function Paso2RequisitosCargo({ colaborador, onBack }: Paso2Props) {
                                 files={data.documento_certificados_terreno_plano}
                                 existing={existing('documento_certificados_terreno_plano')}
                                 onChange={(files) => setData('documento_certificados_terreno_plano', files)}
+                                error={errorDeArchivo(errors, 'documento_certificados_terreno_plano')}
                                 disabled={processing}
                             />
                         )}

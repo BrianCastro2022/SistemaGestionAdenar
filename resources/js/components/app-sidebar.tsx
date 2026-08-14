@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { modules, type SubModuleDef } from '@/data/modules';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BellRing, HeartPulse, LayoutGrid, TestTube, Truck, User, UserCog } from 'lucide-react';
+import { BellRing, HeartPulse, LayoutGrid, Stethoscope, TestTube, Truck, User, UserCog } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -54,6 +54,7 @@ export function AppSidebar() {
                   { title: 'Mis Pruebas', url: '/portal/pruebas', icon: TestTube, color: '#3F7A22' },
                   { title: 'Mis Rutas', url: '/portal/rutas', icon: Truck, color: '#3F7A22' },
                   { title: 'Condición de Salud', url: '/portal/condicion-salud', icon: HeartPulse, color: '#3F7A22' },
+                  { title: 'Encuesta de Morbilidad', url: '/portal/encuesta-morbilidad', icon: Stethoscope, color: '#3F7A22' },
                   { title: 'Alertas', url: '/portal/alertas', icon: BellRing, color: '#3F7A22' },
               ]
             : []),

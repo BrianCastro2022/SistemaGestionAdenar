@@ -42,7 +42,7 @@ export default function GlosarioIndex({
     categories,
 }: {
     terms: Paginator;
-    filters: { search: string; categoria: string };
+    filters: { search: string; categoria: string; orden: string };
     categories: string[];
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -105,6 +105,19 @@ export default function GlosarioIndex({
                             {categories.map((cat) => (
                                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                             ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.orden || 'categoria'}
+                        onValueChange={(v) => applyFilter({ orden: v === 'categoria' ? '' : v, page: '1' })}
+                    >
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder="Ordenar por" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="categoria">Categoría (por defecto)</SelectItem>
+                            <SelectItem value="nombre_asc">Nombre A-Z</SelectItem>
+                            <SelectItem value="nombre_desc">Nombre Z-A</SelectItem>
                         </SelectContent>
                     </Select>
                     <Button type="submit" variant="outline">Buscar</Button>

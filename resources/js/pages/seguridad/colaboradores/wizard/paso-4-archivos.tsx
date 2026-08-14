@@ -1,14 +1,16 @@
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PillToggle, SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
 import { useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, FolderOpen, LoaderCircle } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, FolderOpen, LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 import { DocumentoGrupo, type DocumentoGrupoItem } from './components/documento-grupo';
 import { LicenciaConduccionCategorias } from './components/licencia-conduccion-categorias';
 import { SimpleFileField } from './components/simple-file-field';
 import { type ColaboradorRecord, type Paso4FormData } from './types';
+import { errorDeArchivo } from './utils';
 
 const GRUPOS: { numero: string; titulo: string; items: DocumentoGrupoItem[] }[] = [
     {
@@ -106,7 +108,7 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
     const licenciaKeys = ['a1', 'a2', 'b1', 'b2', 'b3', 'c1', 'c2', 'c3'].map((c) => `documento_licencia_${c}`);
     const licenciaIniciales = Object.fromEntries(licenciaKeys.map((key) => [key, [] as File[]]));
 
-    const { data, setData, post, processing, transform } = useForm<Paso4FormData>({
+    const { data, setData, post, processing, errors, transform } = useForm<Paso4FormData>({
         ...documentosIniciales,
         ...licenciaIniciales,
         documento_sena_carta_presentacion: [],
@@ -136,6 +138,13 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
 
     return (
         <form onSubmit={submit} className="grid gap-6">
+            {Object.keys(errors).length > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    Hay archivos u opciones con error — revisa los grupos marcados en rojo antes de finalizar.
+                </div>
+            )}
+
             <SeccionCard icon={FolderOpen} titulo="Requerimientos de tránsito — licencia de conducción" tono="verde">
                 <LicenciaConduccionCategorias
                     seleccionadas={data.licencia_conduccion_categorias}
@@ -143,6 +152,7 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
                     archivos={archivosLicenciaPorCategoria}
                     onArchivoChange={(categoria, files) => setData(`documento_licencia_${categoria.toLowerCase()}`, files)}
                     existingDocumentos={existingMap}
+                    errors={errors}
                     disabled={processing}
                 />
             </SeccionCard>
@@ -154,6 +164,7 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
                         files={data.documento_sena_carta_presentacion}
                         existing={existing('documento_sena_carta_presentacion')}
                         onChange={(files) => setData('documento_sena_carta_presentacion', files)}
+                        error={errorDeArchivo(errors, 'documento_sena_carta_presentacion')}
                         disabled={processing}
                     />
                 </SeccionCard>
@@ -181,12 +192,14 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
                                         <SelectItem value="plan_padrino_personal_nuevo">Plan padrino personal nuevo</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <InputError message={errors.tipo_padrino} />
                             </div>
                             {data.tipo_padrino === 'plan_padrino_personal_nuevo' && (
                                 <SimpleFileField
                                     files={data.documento_plan_padrino}
                                     existing={existing('documento_plan_padrino')}
                                     onChange={(files) => setData('documento_plan_padrino', files)}
+                                    error={errorDeArchivo(errors, 'documento_plan_padrino')}
                                     disabled={processing}
                                 />
                             )}
@@ -204,6 +217,7 @@ export function Paso4Archivos({ colaborador, onBack }: Paso4Props) {
                     files={data as unknown as Record<string, File[]>}
                     existingDocumentos={existingMap}
                     onChange={(key, files) => setData(key, files)}
+                    errors={errors}
                     disabled={processing}
                 />
             ))}

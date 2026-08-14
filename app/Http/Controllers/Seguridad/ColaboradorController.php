@@ -300,6 +300,11 @@ class ColaboradorController extends Controller
                 ->latest('fecha_hora')
                 ->limit(25)
                 ->get(),
+            'evaluacionesMedicas' => $colaborador->evaluacionesMedicas()
+                ->with('conceptoAptitud:id,nombre')
+                ->latest('fecha_evaluacion')
+                ->limit(25)
+                ->get(),
             'llamadosAtencion' => $colaborador->llamadosAtencion()
                 ->with('registradoPor:id,name')
                 ->latest('fecha_hora')

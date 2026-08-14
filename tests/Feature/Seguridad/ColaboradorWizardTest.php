@@ -5,6 +5,7 @@ namespace Tests\Feature\Seguridad;
 use App\Models\Seguridad\Colaborador;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -310,5 +311,69 @@ class ColaboradorWizardTest extends TestCase
             'cargo' => 'SUPERVISOR DE ÁREA',
             'cargo_fecha_inicio' => '',
         ])->assertSessionHasErrors('cargo_fecha_inicio');
+    }
+
+    /**
+     * Regresión: casi toda la base real de colaboradores no tiene ninguna
+     * fila en `colaborador_cargos` (ej. los cargados por Excel, que escriben
+     * `colaboradores.cargo` directamente sin pasar por el wizard). Antes de
+     * este fix, resubmitir el paso 3 sin tocar el cargo comparaba contra
+     * `cargoActual` (null para estos casos) en vez de contra el cargo ya
+     * guardado, así que exigía `cargo_fecha_inicio` como si el usuario
+     * hubiera cambiado de cargo sin haberlo hecho, bloqueando el paso 3 para
+     * casi cualquier colaborador real.
+     */
+    public function test_paso3_update_does_not_require_start_date_when_cargo_is_unchanged_and_has_no_history(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100209',
+            'nombres' => 'Import',
+            'apellidos' => 'Sinhistorial',
+            'estado_registro' => 'completo',
+            'wizard_step' => 4,
+            'cargo' => 'CONDUCTOR',
+        ]);
+        $this->assertNull($colaborador->cargoActual);
+
+        $response = $this->actingAs($user)->patch(route('seguridad.colaboradores.paso3.update', $colaborador), [
+            // El formulario siempre envía 'cargo' aunque el usuario no lo
+            // haya tocado, y 'cargo_fecha_inicio' vacío cuando no cambia.
+            'cargo' => 'CONDUCTOR',
+            'cargo_fecha_inicio' => '',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('seguridad.colaboradores.wizard', ['colaborador' => $colaborador, 'paso' => 4]));
+        $this->assertNull($colaborador->fresh()->cargoActual);
+    }
+
+    /**
+     * Confirma la clave exacta que Laravel usa para un archivo rechazado
+     * dentro de un campo de arreglo (`campo.0`, no `campo`) — es la clave que
+     * el frontend tiene que saber leer (ver `errorDeArchivo()` en
+     * resources/js/pages/seguridad/colaboradores/wizard/utils.ts) para poder
+     * mostrarle el error al usuario en vez de fallar en silencio.
+     */
+    public function test_paso4_update_rejects_an_invalid_file_with_an_array_indexed_error_key(): void
+    {
+        $user = $this->seguridadUser();
+
+        $colaborador = Colaborador::create([
+            'cedula' => '900100210',
+            'nombres' => 'Paso',
+            'apellidos' => 'Cuatro',
+            'estado_registro' => 'borrador',
+            'wizard_step' => 3,
+        ]);
+
+        $response = $this->actingAs($user)->patch(route('seguridad.colaboradores.paso4.update', $colaborador), [
+            'es_padrino' => 'no_aplica',
+            'documento_cedula' => [UploadedFile::fake()->create('foto.exe', 100)],
+        ]);
+
+        $response->assertSessionHasErrors('documento_cedula.0');
+        $this->assertSame('borrador', $colaborador->fresh()->estado_registro);
     }
 }

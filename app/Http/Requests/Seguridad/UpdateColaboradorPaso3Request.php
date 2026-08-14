@@ -27,12 +27,19 @@ class UpdateColaboradorPaso3Request extends FormRequest
             'area' => ['nullable', Rule::in(['Administrativa', 'Operativa'])],
             'cargo' => ['nullable', Rule::in(config('seguridad.colaboradores.cargos'))],
             // Fecha en la que inicia el cargo seleccionado; requerida solo
-            // cuando el cargo enviado difiere del cargo activo actual — si no,
-            // reenviar el paso sin cambiar de cargo queda bloqueado siempre.
+            // cuando el cargo enviado difiere del que el colaborador ya tenía
+            // guardado. Importante: se compara contra `colaborador->cargo`
+            // (el valor guardado), NO contra `cargoActual` (el historial en
+            // `colaborador_cargos`) — la mayoría de colaboradores reales no
+            // tienen ninguna fila de historial (ej. los cargados por Excel),
+            // así que comparar contra `cargoActual` (null) hacía que CUALQUIER
+            // colaborador sin historial pidiera esta fecha aunque el usuario
+            // no hubiera tocado el cargo, bloqueando el paso 3 para casi toda
+            // la base real de datos.
             'cargo_fecha_inicio' => [
                 'nullable',
                 'date',
-                Rule::requiredIf(fn () => $this->input('cargo') && $this->input('cargo') !== $colaborador?->cargoActual?->cargo),
+                Rule::requiredIf(fn () => $this->input('cargo') && $this->input('cargo') !== $colaborador?->cargo),
             ],
 
             'centro' => ['nullable', Rule::in(config('seguridad.colaboradores.centros'))],

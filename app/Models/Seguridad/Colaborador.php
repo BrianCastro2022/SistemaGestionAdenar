@@ -201,6 +201,40 @@ class Colaborador extends Model
         return $this->hasMany(ColaboradorEntrenamiento::class);
     }
 
+    public function acisReportados(): HasMany
+    {
+        return $this->hasMany(Aci::class);
+    }
+
+    public function evaluacionesMedicas(): HasMany
+    {
+        return $this->hasMany(EvaluacionMedica::class);
+    }
+
+    public function evaluacionesOwd(): HasMany
+    {
+        return $this->hasMany(EvaluacionOwd::class);
+    }
+
+    public function evaluacionesOwdEvaluador(): HasMany
+    {
+        return $this->hasMany(EvaluacionOwd::class, 'evaluador_colaborador_id');
+    }
+
+    public function encuestasMorbilidad(): HasMany
+    {
+        return $this->hasMany(EncuestaMorbilidad::class);
+    }
+
+    public function getEstadoSkapAttribute(): string
+    {
+        if (! $this->codigo_qr_skap) {
+            return 'Sin asignar';
+        }
+
+        return $this->is_active ? 'Activo' : 'Inactivo';
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Colaborador\CondicionSaludController;
+use App\Http\Controllers\Colaborador\EncuestaMorbilidadController;
 use App\Http\Controllers\Colaborador\PortalController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,4 +17,17 @@ Route::middleware(['auth', 'active', 'role:Colaborador'])
         Route::get('condicion-salud', [CondicionSaludController::class, 'create'])->name('condicion-salud');
         Route::post('condicion-salud', [CondicionSaludController::class, 'store'])->name('condicion-salud.store');
         Route::get('condicion-salud/historial', [CondicionSaludController::class, 'historial'])->name('condicion-salud.historial');
+
+        // Encuesta de Morbilidad Sentida (HU-01 a HU-10). "historial" antes
+        // del comodín encuesta-morbilidad/{encuestaMorbilidad} para que no
+        // choque con la ruta de detalle.
+        Route::get('encuesta-morbilidad', [EncuestaMorbilidadController::class, 'create'])->name('encuesta-morbilidad');
+        Route::post('encuesta-morbilidad/{encuestaMorbilidad}/guardar', [EncuestaMorbilidadController::class, 'guardar'])
+            ->name('encuesta-morbilidad.guardar');
+        Route::post('encuesta-morbilidad/{encuestaMorbilidad}/enviar', [EncuestaMorbilidadController::class, 'store'])
+            ->name('encuesta-morbilidad.enviar');
+        Route::get('encuesta-morbilidad/historial', [EncuestaMorbilidadController::class, 'historial'])
+            ->name('encuesta-morbilidad.historial');
+        Route::get('encuesta-morbilidad/{encuestaMorbilidad}', [EncuestaMorbilidadController::class, 'show'])
+            ->name('encuesta-morbilidad.show');
     });

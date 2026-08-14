@@ -150,4 +150,97 @@ return [
     'referencias_externas' => [
         'cache_ttl_segundos' => 24 * 60 * 60,
     ],
+
+    // Catálogos para normalizar el Excel de ACI (HU-023). Igual que con
+    // colaboradores, el Excel real trae variantes de escritura (ej. 13
+    // formas distintas de escribir "Compañia") que se resuelven contra
+    // estas listas canónicas con coincidencia exacta o parcial.
+    'acis' => [
+        'reporte_de' => [
+            'Acto Inseguro',
+            'Condición Inseguro',
+        ],
+
+        'areas' => [
+            'Ruta',
+            'Viaje/Comisión',
+            'Patios',
+            'Vehículos/Maquinaria',
+            'Oficinas',
+            'Áreas comunes',
+            'Almacén',
+            'Inside DC',
+            'Taller mecánico',
+            'Pasillos, pasos peatonales o áreas seguras',
+        ],
+
+        'clasificaciones' => [
+            'Riesgo Vial',
+            'Riesgo Biológico',
+            'Riesgo Físico',
+            'Riesgo Ergonómico',
+            'Riesgo Mecánico',
+            'Riesgo Público',
+            'Riesgo Psicosocial',
+            'Riesgo Resbalones, Tropezones o Caídas',
+            'Trabajos de alto riesgo',
+            'Riesgo Eléctrico',
+            'Riesgo Locativo',
+        ],
+
+        'estatus_asignacion' => [
+            'Pendiente',
+            'Asignado',
+            'Cerrado',
+        ],
+
+        'companias' => [
+            'ADENAR',
+            'EASY LOGÍSTICA',
+            'BAVARIA',
+            'ALIANZA DISTRIBUIDORA DE NARIÑO',
+            'ABINBEV',
+        ],
+    ],
+
+    // Exámenes médicos ocupacionales (HU-045 y siguientes). La periodicidad
+    // de los exámenes Periódicos es fija según el HU ("12 meses"); vive aquí
+    // por si cambia sin tener que tocar código.
+    'examenes_medicos' => [
+        'periodicidad_meses' => 12,
+
+        // HU-033 CA-033.7: valor por defecto del campo "Empresa" del
+        // seguimiento del examen — editable por fila, no hardcodeado en el
+        // formulario.
+        'empresa_default' => 'Adenar',
+
+        // Catálogo de recomendaciones (HU-054): son registros, no columnas —
+        // esta lista solo define las categorías válidas y los estados de
+        // seguimiento (HU-055); los ~50 valores concretos viven en la tabla
+        // `recomendaciones` (sembrados por RecomendacionSeeder) y se
+        // administran desde la pantalla de catálogo.
+        'recomendaciones' => [
+            'categorias' => [
+                'medica' => 'Médica',
+                'ocupacional' => 'Ocupacional',
+                'habitos' => 'Hábitos y estilos de vida',
+            ],
+            'estados_seguimiento' => [
+                'Pendiente',
+                'En seguimiento',
+                'Atendida',
+                'No atendida',
+            ],
+        ],
+
+        // Egreso (HU no numerada): flujo simplificado, sin matriz ni
+        // periodicidad. El "seguimiento a recomendaciones" aquí es un cierre
+        // de cara al retiro, no el mismo catálogo de HU-054/055.
+        'egreso' => [
+            'seguimiento_recomendaciones' => [
+                'Egreso sin cambio aparente al ingreso',
+                'Soporte desestimiento u otro',
+            ],
+        ],
+    ],
 ];
