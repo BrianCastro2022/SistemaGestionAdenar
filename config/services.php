@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Token compartido para que el monitor SIMIT (script Python en la PC
+    // local) pueda mandar sus consultas a POST /api/simit/consultas.
+    'simit' => [
+        'token' => env('SIMIT_API_TOKEN'),
+    ],
+
 ];
