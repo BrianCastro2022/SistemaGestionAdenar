@@ -1,0 +1,401 @@
+<?php
+
+namespace App\Services\Seguridad;
+
+use App\Models\Seguridad\Colaborador;
+use App\Models\Seguridad\EvaluacionOwd;
+use App\Models\Seguridad\EvaluacionOwdImportacion;
+use App\Models\Seguridad\EvaluacionOwdPregunta;
+use App\Models\Seguridad\PlanAccionOwd;
+use App\Models\User;
+use App\Services\Seguridad\Concerns\NormalizaCatalogos;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Throwable;
+
+/**
+ * Carga masiva de Evaluaciones de Seguridad OWD (HU-030/031), hoja "Data
+ * OWD". Cada fila del Excel es una pregunta/tarea evaluada; varias filas
+ * comparten evaluador+evaluado+fecha y forman una sola "evaluación"
+ * (encabezado) — por eso el import resuelve/crea primero el encabezado
+ * (`evaluaciones_owd`) y luego cuelga cada fila como `evaluacion_owd_preguntas`
+ * de ese encabezado (HU-030, requisito 11: "mantener la relación entre una
+ * evaluación y sus múltiples preguntas").
+ *
+ * Igual que ACI, las columnas se resuelven por el texto del encabezado (no
+ * por letra fija) y cualquier columna nueva no reconocida cae en
+ * `datos_adicionales` en vez de perderse (HU-030, requisitos 4 y 5).
+ */
+class EvaluacionOwdImportService
+{
+    use NormalizaCatalogos;
+
+    private const HEADER_MAP = [
+        'BU' => 'bu',
+        'PAIS' => 'pais',
+        'REGION' => 'region',
+        'UEN' => 'uen',
+        'IDAGENCIA' => 'id_agencia',
+        'AGENCIA' => 'agencia',
+        'EVALUADOR' => 'evaluador',
+        'POSICIONEVALUADOR' => 'posicion_evaluador',
+        'QRSAFETYEVALUADOR' => 'qr_safety_evaluador',
+        'SHARPEVALUADOR' => 'sharp_evaluador',
+        'EVALUADO' => 'evaluado',
+        'POSICION' => 'posicion',
+        'QRSAFETY' => 'qr_safety',
+        'SHARP' => 'sharp',
+        'FECHAEVALUACION' => 'fecha_evaluacion',
+        'TYPE' => 'type',
+        'PILLAR' => 'pillar',
+        'PROCESO' => 'proceso',
+        'ACTIVIDAD' => 'actividad',
+        'TAREA' => 'tarea',
+        'DESCRIPCION' => 'descripcion',
+        'PUNTUACION' => 'puntuacion',
+        'PONDERACION' => 'ponderacion',
+        'PLANDEACCION' => 'plan_accion',
+        'VERSION' => 'version',
+    ];
+
+    /**
+     * Campos que pertenecen al encabezado de la evaluación (se repiten en
+     * todas las filas de una misma evaluación); el resto son propios de la
+     * pregunta/tarea.
+     */
+    private const CAMPOS_CABECERA = [
+        'bu', 'pais', 'region', 'uen', 'id_agencia', 'agencia',
+        'evaluador', 'posicion_evaluador', 'qr_safety_evaluador', 'sharp_evaluador',
+        'evaluado', 'posicion', 'qr_safety', 'sharp',
+        'fecha_evaluacion', 'type', 'pillar',
+    ];
+
+    /**
+     * @param  array<string, string>  $rutasArchivos  Ruta temporal => nombre original del archivo.
+     * @return array{
+     *     archivos_procesados: int,
+     *     registros_leidos: int,
+     *     evaluaciones_identificadas: int,
+     *     nuevos: int,
+     *     duplicados: int,
+     *     sin_coincidencia_qr: int,
+     *     errores: int,
+     * }
+     */
+    public function importar(array $rutasArchivos, ?User $usuario = null): array
+    {
+        $resultado = [
+            'archivos_procesados' => 0,
+            'registros_leidos' => 0,
+            'evaluaciones_identificadas' => 0,
+            'nuevos' => 0,
+            'duplicados' => 0,
+            'sin_coincidencia_qr' => 0,
+            'errores' => 0,
+        ];
+
+        foreach ($rutasArchivos as $rutaArchivo => $nombreOriginal) {
+            $this->importarArchivo($rutaArchivo, $nombreOriginal, $usuario, $resultado);
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * @param  array{archivos_procesados: int, registros_leidos: int, evaluaciones_identificadas: int, nuevos: int, duplicados: int, sin_coincidencia_qr: int, errores: int}  $resultado
+     */
+    private function importarArchivo(string $rutaArchivo, string $nombreOriginal, ?User $usuario, array &$resultado): void
+    {
+        $hoja = $this->buscarHojaOwd($rutaArchivo);
+
+        if (! $hoja) {
+            Log::warning("Importación de Evaluaciones OWD: no se encontró la hoja \"Data OWD\" en {$rutaArchivo}.");
+            $resultado['errores']++;
+
+            return;
+        }
+
+        $resultado['archivos_procesados']++;
+
+        $filas = $hoja->toArray(null, true, true, true);
+        $encabezados = array_shift($filas) ?? [];
+        $mapaColumnas = $this->resolverMapaColumnas($encabezados);
+        $columnasNuevas = collect($mapaColumnas)->filter(fn ($info) => $info['campo'] === null)
+            ->pluck('encabezado')->unique()->values()->all();
+
+        $registro = [
+            'leidos' => 0,
+            'evaluaciones' => [],
+            'nuevos' => 0,
+            'duplicados' => 0,
+            'sin_coincidencia_qr' => 0,
+            'errores' => 0,
+        ];
+
+        $evaluacionesTocadas = [];
+
+        DB::transaction(function () use ($filas, $mapaColumnas, &$registro, &$evaluacionesTocadas) {
+            foreach ($filas as $numeroFila => $fila) {
+                $this->procesarFila($fila, $mapaColumnas, $numeroFila, $registro, $evaluacionesTocadas);
+            }
+        });
+
+        foreach ($evaluacionesTocadas as $evaluacionOwd) {
+            $evaluacionOwd->recalcularContadores();
+        }
+
+        EvaluacionOwdImportacion::create([
+            'nombre_archivo' => $nombreOriginal,
+            'usuario_id' => $usuario?->id,
+            'registros_leidos' => $registro['leidos'],
+            'evaluaciones_identificadas' => count($registro['evaluaciones']),
+            'registros_nuevos' => $registro['nuevos'],
+            'registros_duplicados' => $registro['duplicados'],
+            'registros_sin_coincidencia_qr' => $registro['sin_coincidencia_qr'],
+            'registros_error' => $registro['errores'],
+            'columnas_nuevas_detectadas' => $columnasNuevas !== [] ? $columnasNuevas : null,
+        ]);
+
+        $resultado['registros_leidos'] += $registro['leidos'];
+        $resultado['evaluaciones_identificadas'] += count($registro['evaluaciones']);
+        $resultado['nuevos'] += $registro['nuevos'];
+        $resultado['duplicados'] += $registro['duplicados'];
+        $resultado['sin_coincidencia_qr'] += $registro['sin_coincidencia_qr'];
+        $resultado['errores'] += $registro['errores'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $fila
+     * @param  array<string, array{campo: ?string, encabezado: string}>  $mapaColumnas
+     * @param  array{leidos: int, evaluaciones: array<string, true>, nuevos: int, duplicados: int, sin_coincidencia_qr: int, errores: int}  $registro
+     * @param  array<int, EvaluacionOwd>  $evaluacionesTocadas
+     */
+    private function procesarFila(array $fila, array $mapaColumnas, int|string $numeroFila, array &$registro, array &$evaluacionesTocadas): void
+    {
+        $valores = $this->extraerValoresPorCampo($fila, $mapaColumnas);
+
+        $qrSafety = trim((string) ($valores['qr_safety'] ?? ''));
+
+        if ($qrSafety === '' && trim((string) ($valores['evaluado'] ?? '')) === '') {
+            return; // fila vacía al final de la hoja
+        }
+
+        $registro['leidos']++;
+
+        $fechaEvaluacion = $this->parsearFechaHora((string) ($valores['fecha_evaluacion'] ?? ''));
+
+        if ($qrSafety === '' || $fechaEvaluacion === null) {
+            Log::warning("Importación de Evaluaciones OWD: fila {$numeroFila} sin QR Safety o fecha de evaluación válida, se omite.");
+            $registro['errores']++;
+
+            return;
+        }
+
+        try {
+            $qrSafetyEvaluador = trim((string) ($valores['qr_safety_evaluador'] ?? ''));
+
+            $colaborador = Colaborador::where('codigo_qr_skap', $qrSafety)->first();
+            $evaluadorColaborador = $qrSafetyEvaluador !== ''
+                ? Colaborador::where('codigo_qr_skap', $qrSafetyEvaluador)->first()
+                : null;
+
+            if (! $colaborador) {
+                $registro['sin_coincidencia_qr']++;
+            }
+
+            $claveEvaluacion = "{$qrSafetyEvaluador}|{$qrSafety}|{$fechaEvaluacion}";
+            $registro['evaluaciones'][$claveEvaluacion] = true;
+
+            $datosCabecera = $this->mapearCabecera($valores, $fechaEvaluacion);
+            $datosCabecera['colaborador_id'] = $colaborador?->id;
+            $datosCabecera['evaluador_colaborador_id'] = $evaluadorColaborador?->id;
+
+            $evaluacionOwd = EvaluacionOwd::firstOrCreate([
+                'qr_safety_evaluador' => $qrSafetyEvaluador !== '' ? $qrSafetyEvaluador : null,
+                'qr_safety' => $qrSafety,
+                'fecha_evaluacion' => $fechaEvaluacion,
+            ], $datosCabecera);
+
+            $evaluacionesTocadas[$evaluacionOwd->id] = $evaluacionOwd;
+
+            $datosPregunta = $this->mapearPregunta($valores);
+
+            $existeDuplicada = EvaluacionOwdPregunta::where('evaluacion_owd_id', $evaluacionOwd->id)
+                ->where('proceso', $datosPregunta['proceso'])
+                ->where('actividad', $datosPregunta['actividad'])
+                ->where('tarea', $datosPregunta['tarea'])
+                ->where('version', $datosPregunta['version'])
+                ->exists();
+
+            if ($existeDuplicada) {
+                $registro['duplicados']++;
+
+                return;
+            }
+
+            $datosPregunta['evaluacion_owd_id'] = $evaluacionOwd->id;
+            $pregunta = EvaluacionOwdPregunta::create($datosPregunta);
+            $registro['nuevos']++;
+
+            if ($pregunta->requiere_plan_accion) {
+                PlanAccionOwd::firstOrCreate(
+                    ['evaluacion_owd_pregunta_id' => $pregunta->id],
+                    ['estado' => PlanAccionOwd::ESTADO_PENDIENTE],
+                );
+            }
+        } catch (Throwable $e) {
+            Log::warning("Importación de Evaluaciones OWD: error en fila {$numeroFila}: {$e->getMessage()}");
+            $registro['errores']++;
+        }
+    }
+
+    private function buscarHojaOwd(string $rutaArchivo): ?Worksheet
+    {
+        $spreadsheet = IOFactory::load($rutaArchivo);
+
+        foreach ($spreadsheet->getSheetNames() as $nombre) {
+            if (str(trim($nombre))->upper()->value() === 'DATA OWD') {
+                return $spreadsheet->getSheetByName($nombre);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $encabezados
+     * @return array<string, array{campo: ?string, encabezado: string}>
+     */
+    private function resolverMapaColumnas(array $encabezados): array
+    {
+        $mapa = [];
+
+        foreach ($encabezados as $letra => $texto) {
+            $texto = trim((string) $texto);
+
+            if ($texto === '') {
+                continue;
+            }
+
+            $mapa[$letra] = [
+                'campo' => self::HEADER_MAP[$this->normalizar($texto)] ?? null,
+                'encabezado' => $texto,
+            ];
+        }
+
+        return $mapa;
+    }
+
+    /**
+     * @param  array<string, mixed>  $fila
+     * @param  array<string, array{campo: ?string, encabezado: string}>  $mapaColumnas
+     * @return array<string, mixed>
+     */
+    private function extraerValoresPorCampo(array $fila, array $mapaColumnas): array
+    {
+        $valores = [];
+        $adicionales = [];
+
+        foreach ($mapaColumnas as $letra => $info) {
+            $valorCrudo = trim((string) ($fila[$letra] ?? ''));
+
+            if ($info['campo']) {
+                $valores[$info['campo']] = $valorCrudo;
+            } elseif ($valorCrudo !== '') {
+                $adicionales[$info['encabezado']] = $valorCrudo;
+            }
+        }
+
+        $valores['datos_adicionales'] = $adicionales !== [] ? $adicionales : null;
+
+        return $valores;
+    }
+
+    /**
+     * @param  array<string, mixed>  $valores
+     * @return array<string, mixed>
+     */
+    private function mapearCabecera(array $valores, string $fechaEvaluacion): array
+    {
+        $datos = ['fecha_evaluacion' => $fechaEvaluacion];
+
+        foreach (self::CAMPOS_CABECERA as $campo) {
+            if ($campo === 'fecha_evaluacion') {
+                continue;
+            }
+
+            $valor = trim((string) ($valores[$campo] ?? ''));
+            $datos[$campo] = $valor !== '' ? $valor : null;
+        }
+
+        return $datos;
+    }
+
+    /**
+     * @param  array<string, mixed>  $valores
+     * @return array<string, mixed>
+     */
+    private function mapearPregunta(array $valores): array
+    {
+        return [
+            'proceso' => $this->valorOTexto($valores['proceso'] ?? null),
+            'actividad' => $this->valorOTexto($valores['actividad'] ?? null),
+            'tarea' => $this->valorOTexto($valores['tarea'] ?? null),
+            'descripcion' => $this->valorOTexto($valores['descripcion'] ?? null),
+            'puntuacion' => $this->valorOTexto($valores['puntuacion'] ?? null),
+            'ponderacion' => $this->parsearNumero((string) ($valores['ponderacion'] ?? '')),
+            'requiere_plan_accion' => $this->parsearBooleano((string) ($valores['plan_accion'] ?? '')) ?? false,
+            'version' => $this->valorOTexto($valores['version'] ?? null),
+            'datos_adicionales' => $valores['datos_adicionales'] ?? null,
+        ];
+    }
+
+    private function valorOTexto(mixed $valor): ?string
+    {
+        $valor = trim((string) $valor);
+
+        return $valor !== '' ? $valor : null;
+    }
+
+    private function parsearNumero(string $valor): ?float
+    {
+        $valor = trim(str_replace(',', '.', $valor));
+
+        return is_numeric($valor) ? (float) $valor : null;
+    }
+
+    private function parsearFechaHora(string $valor): ?string
+    {
+        $valor = trim($valor);
+
+        if ($valor === '') {
+            return null;
+        }
+
+        foreach (['Y-m-d H:i:s', 'd/m/Y H:i:s', 'd/m/Y H:i'] as $formato) {
+            try {
+                return Carbon::createFromFormat($formato, $valor)->toDateTimeString();
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        try {
+            return Carbon::parse($valor)->toDateTimeString();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function parsearBooleano(string $valor): ?bool
+    {
+        return match ($this->normalizar($valor)) {
+            'SI' => true,
+            'NO' => false,
+            default => null,
+        };
+    }
+}
