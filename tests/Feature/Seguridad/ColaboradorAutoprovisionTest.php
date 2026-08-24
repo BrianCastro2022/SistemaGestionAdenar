@@ -13,9 +13,9 @@ class ColaboradorAutoprovisionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function seguridadUser(): User
+    private function genteUser(): User
     {
-        $role = Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        $role = Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         Role::create(['name' => 'Colaborador', 'guard_name' => 'web']);
         $user = User::factory()->create();
         $user->assignRole($role);
@@ -25,7 +25,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_it_creates_a_colaborador_user_account_with_cedula_as_credentials(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
             'cedula' => '1002003004',
@@ -54,7 +54,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_it_copies_the_correo_field_to_the_new_account_email(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
             'cedula' => '1002003004',
@@ -72,7 +72,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_it_does_not_overwrite_email_when_it_would_collide_with_another_user(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         User::factory()->create(['email' => 'laura.portal@example.com']);
 
@@ -92,7 +92,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_updating_correo_syncs_the_linked_user_email(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
             'cedula' => '1002003004',
@@ -117,7 +117,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_edit_page_loads_without_error_when_colaborador_has_a_linked_user(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
             'cedula' => '1002003004',
@@ -135,7 +135,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_it_reuses_an_existing_user_with_the_same_identification_number(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $cuentaExistente = User::factory()->create(['identification_number' => '1002003004']);
 
@@ -156,7 +156,7 @@ class ColaboradorAutoprovisionTest extends TestCase
 
     public function test_it_respects_a_manually_selected_user_id_over_autoprovisioning(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $cuenta = User::factory()->create();
         $cuenta->assignRole('Colaborador');

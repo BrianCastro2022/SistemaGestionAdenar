@@ -16,9 +16,10 @@ class ColaboradorImportTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function seguridadUser(): User
+    private function genteUser(): User
     {
-        $role = Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        // La carga masiva de colaboradores es exclusiva de Gente.
+        $role = Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         Role::create(['name' => 'Colaborador', 'guard_name' => 'web']);
         $user = User::factory()->create();
         $user->assignRole($role);
@@ -63,7 +64,7 @@ class ColaboradorImportTest extends TestCase
 
     public function test_importa_colaboradores_normaliza_catalogos_y_provisiona_usuarios(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $existente = Colaborador::create([
             'cedula' => '999000111',
@@ -119,7 +120,7 @@ class ColaboradorImportTest extends TestCase
 
     public function test_codigo_na_se_guarda_como_null_y_encuentra_la_hoja_aunque_no_sea_la_primera(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $archivo = $this->construirExcel([
             ['1002003005', 'GOMEZ RUIZ ANA MARIA', 'OPERATIVA', 'CONDUCTOR', 'UC', '3001112233', 'N/A', '', '', 'Sura riesgo I', 'SANITAS', 'PORVENIR', 'ARL SURA', '4/03/2023'],
@@ -137,7 +138,7 @@ class ColaboradorImportTest extends TestCase
 
     public function test_cargo_y_centro_nuevos_del_catalogo_ampliado_se_guardan_tal_cual(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $archivo = $this->construirExcel([
             ['1002003006', 'TORRES LEON PEDRO', 'OPERATIVA', 'CONDUCTOR MULA', 'UD', '3001112233', 'XYZ999', 'pedro@example.com', '', 'Sura riesgo I', 'ASMET SALUD', 'COLPENSIONES', 'ARL SURA', '1/06/2024'],

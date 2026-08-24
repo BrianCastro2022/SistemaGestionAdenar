@@ -17,8 +17,8 @@ import {
     calcularEdad,
     type DocumentInfo,
 } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     CheckCircle2,
@@ -206,10 +206,17 @@ export default function ColaboradorShow({
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Seguridad', href: '/modules/seguridad' },
+        { title: 'Gente', href: '/modules/gente' },
         { title: 'Colaboradores', href: '/modules/seguridad/colaboradores' },
         { title: `${colaborador.nombres} ${colaborador.apellidos}`, href: `/modules/seguridad/colaboradores/${colaborador.id}` },
     ];
+
+    const { auth } = usePage<SharedData>().props;
+    // Mismo criterio que en el listado: escritura sobre el colaborador es
+    // exclusiva de Gente; "crear evaluación" y "condición de salud" son
+    // funciones de Seguridad, ajenas al módulo de colaboradores.
+    const canManageColaboradores = auth.isAdmin || auth.roles.includes('Gente');
+    const canEvaluar = auth.isAdmin || auth.roles.includes('Seguridad');
 
     const tieneAlgunDocumento = DOCUMENTO_FIELDS.some((doc) => documentosDe(colaborador, doc.key).length > 0);
     const [preview, setPreview] = useState<DocumentoPreview | null>(null);
@@ -244,30 +251,36 @@ export default function ColaboradorShow({
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant={colaborador.is_active ? 'destructive' : 'default'}
-                            onClick={() =>
-                                router.patch(route('seguridad.colaboradores.toggle-activo', colaborador.id), {}, { preserveScroll: true })
-                            }
-                        >
-                            <Power className="mr-2 size-4" />
-                            {colaborador.is_active ? 'Desactivar' : 'Activar'}
-                        </Button>
-                        <Button variant="outline" asChild>
-                            <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
-                                <ClipboardCheck className="mr-2 size-4" />
-                                Crear evaluación
-                            </Link>
-                        </Button>
-                        <CondicionSaludDialog
-                            colaboradorId={colaborador.id}
-                            trigger={
-                                <Button variant="outline">
-                                    <HeartPulse className="mr-2 size-4" />
-                                    Registrar condición de salud
-                                </Button>
-                            }
-                        />
+                        {canManageColaboradores && (
+                            <Button
+                                variant={colaborador.is_active ? 'destructive' : 'default'}
+                                onClick={() =>
+                                    router.patch(route('seguridad.colaboradores.toggle-activo', colaborador.id), {}, { preserveScroll: true })
+                                }
+                            >
+                                <Power className="mr-2 size-4" />
+                                {colaborador.is_active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                        )}
+                        {canEvaluar && (
+                            <Button variant="outline" asChild>
+                                <Link href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}>
+                                    <ClipboardCheck className="mr-2 size-4" />
+                                    Crear evaluación
+                                </Link>
+                            </Button>
+                        )}
+                        {canEvaluar && (
+                            <CondicionSaludDialog
+                                colaboradorId={colaborador.id}
+                                trigger={
+                                    <Button variant="outline">
+                                        <HeartPulse className="mr-2 size-4" />
+                                        Registrar condición de salud
+                                    </Button>
+                                }
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -423,15 +436,17 @@ export default function ColaboradorShow({
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-medium tracking-tight">Llamados de atención</h2>
-                            <LlamadoAtencionDialog
-                                colaboradorId={colaborador.id}
-                                trigger={
-                                    <Button variant="outline" size="sm">
-                                        <AlertTriangle className="mr-2 size-4" />
-                                        Registrar
-                                    </Button>
-                                }
-                            />
+                            {canManageColaboradores && (
+                                <LlamadoAtencionDialog
+                                    colaboradorId={colaborador.id}
+                                    trigger={
+                                        <Button variant="outline" size="sm">
+                                            <AlertTriangle className="mr-2 size-4" />
+                                            Registrar
+                                        </Button>
+                                    }
+                                />
+                            )}
                         </div>
                         <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                             <Table>
@@ -480,16 +495,18 @@ export default function ColaboradorShow({
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-medium tracking-tight">Entrenamientos mensuales</h2>
-                            <EntrenamientoDialog
-                                colaboradorId={colaborador.id}
-                                catalogo={entrenamientosCatalogo}
-                                trigger={
-                                    <Button variant="outline" size="sm">
-                                        <GraduationCap className="mr-2 size-4" />
-                                        Registrar
-                                    </Button>
-                                }
-                            />
+                            {canManageColaboradores && (
+                                <EntrenamientoDialog
+                                    colaboradorId={colaborador.id}
+                                    catalogo={entrenamientosCatalogo}
+                                    trigger={
+                                        <Button variant="outline" size="sm">
+                                            <GraduationCap className="mr-2 size-4" />
+                                            Registrar
+                                        </Button>
+                                    }
+                                />
+                            )}
                         </div>
                         <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                             <Table>

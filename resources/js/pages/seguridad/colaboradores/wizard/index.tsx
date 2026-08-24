@@ -50,7 +50,7 @@ export default function ColaboradorWizard({ colaborador, currentStep, catalogos,
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Seguridad', href: '/modules/seguridad' },
+        { title: 'Gente', href: '/modules/gente' },
         { title: 'Colaboradores', href: '/modules/seguridad/colaboradores' },
         { title: nombre, href: '#' },
     ];

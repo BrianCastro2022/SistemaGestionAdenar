@@ -15,12 +15,12 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function seguridadUser(): User
+    private function genteUser(): User
     {
-        Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         Role::create(['name' => 'Colaborador', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $user->assignRole('Seguridad');
+        $user->assignRole('Gente');
 
         return $user;
     }
@@ -40,7 +40,7 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
     public function test_it_stores_a_llamado_de_atencion_with_an_optional_document(): void
     {
         Storage::fake('public');
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
         $colaborador = $this->colaboradorCompleto();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.llamados-atencion.store', $colaborador), [
@@ -58,7 +58,7 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
 
     public function test_llamado_de_atencion_requires_an_observacion(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
         $colaborador = $this->colaboradorCompleto();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.llamados-atencion.store', $colaborador), [])
@@ -67,7 +67,7 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
 
     public function test_it_creates_a_new_entrenamiento_catalog_entry_on_the_fly(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
         $colaborador = $this->colaboradorCompleto();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.entrenamientos.store', $colaborador), [
@@ -85,7 +85,7 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
 
     public function test_the_same_entrenamiento_can_be_repeated_on_a_different_date_without_overwriting_history(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
         $colaborador = $this->colaboradorCompleto();
         $entrenamiento = Entrenamiento::create(['nombre' => 'Primeros auxilios']);
 
@@ -108,7 +108,7 @@ class ColaboradorRegistrosDuranteContratoTest extends TestCase
     public function test_show_reports_certificado_status_based_on_uploaded_documents(): void
     {
         Storage::fake('public');
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
         $colaborador = $this->colaboradorCompleto();
 
         $response = $this->actingAs($user)->get(route('seguridad.colaboradores.show', $colaborador));

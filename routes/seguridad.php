@@ -41,7 +41,16 @@ use Illuminate\Support\Facades\Route;
 // HU037: verificación pública del QR — intencionalmente fuera del grupo `auth`.
 Route::get('verificar-prueba/{prueba}/{token}', [PublicVerificationController::class, 'show'])->name('seguridad.verificacion');
 
-Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
+// Colaboradores: el módulo pasó a ser propiedad de Gente (crear/importar/
+// editar/eliminar), mientras que Administrador, Seguridad, Reparto y Flota
+// conservan acceso de solo lectura al listado y al detalle. Va en un grupo
+// aparte porque su matriz de roles ya no coincide con el resto de este
+// archivo (Administrador|Seguridad).
+//
+// El grupo con "create" se registra ANTES que el de solo lectura (que trae
+// "show", ruta comodín colaboradores/{colaborador}) para que Laravel no
+// intente resolver GET colaboradores/create como si "create" fuera un id.
+Route::middleware(['auth', 'active', 'role:Administrador|Gente'])
     ->prefix('modules/seguridad')
     ->name('seguridad.')
     ->group(function () {
@@ -60,10 +69,14 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
 
         // El pluralizador en inglés de Laravel no singulariza bien "colaboradores"
         // (produce "colaboradore"), así que se fuerza el nombre del parámetro.
-        Route::resource('colaboradores', ColaboradorController::class)->parameters(['colaboradores' => 'colaborador']);
+        Route::resource('colaboradores', ColaboradorController::class)
+            ->parameters(['colaboradores' => 'colaborador'])
+            ->only(['create', 'store', 'edit', 'update', 'destroy']);
 
         // Wizard multipaso de colaboradores (HU01/HU02): cada paso persiste su
         // porción de datos por separado; el paso 4 marca el registro completo.
+        // También es la vista de "editar" (ColaboradorController::edit delega
+        // en wizard()), así que va en el grupo de escritura.
         Route::get('colaboradores/{colaborador}/wizard', [ColaboradorController::class, 'wizard'])
             ->name('colaboradores.wizard');
         Route::patch('colaboradores/{colaborador}/paso-1', [ColaboradorController::class, 'updatePaso1'])
@@ -85,7 +98,24 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
             ->name('colaboradores.llamados-atencion.store');
         Route::post('colaboradores/{colaborador}/entrenamientos', [ColaboradorEntrenamientoController::class, 'store'])
             ->name('colaboradores.entrenamientos.store');
+    });
 
+Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota|Gente'])
+    ->prefix('modules/seguridad')
+    ->name('seguridad.')
+    ->group(function () {
+        // Solo lectura: todos los roles de módulo pueden ver el listado y el
+        // detalle de colaboradores, pero no crear/editar/importar/eliminar
+        // (ver grupo role:Administrador|Gente arriba).
+        Route::resource('colaboradores', ColaboradorController::class)
+            ->parameters(['colaboradores' => 'colaborador'])
+            ->only(['index', 'show']);
+    });
+
+Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
+    ->prefix('modules/seguridad')
+    ->name('seguridad.')
+    ->group(function () {
         Route::resource('dispositivos', AlcoholimetroController::class);
         Route::post('dispositivos/{dispositivo}/mantenimientos', [AlcoholimetroController::class, 'storeMantenimiento'])
             ->name('dispositivos.mantenimientos.store');

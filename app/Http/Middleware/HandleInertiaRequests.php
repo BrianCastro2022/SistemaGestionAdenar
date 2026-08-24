@@ -50,6 +50,16 @@ class HandleInertiaRequests extends Middleware
                 ->all()
             : [];
 
+        // Submódulos visibles en el sidebar aunque el usuario no tenga acceso
+        // al módulo completo que los agrupa: Colaboradores vive bajo "Gente"
+        // (solo Gente puede crear/editar/importar/eliminar), pero Seguridad,
+        // Reparto y Flota conservan acceso de solo lectura al listado y al
+        // detalle sin necesitar el resto de submódulos de "Gente".
+        $accessibleSubmodules = $user && collect([Role::Seguridad, Role::Reparto, Role::Flota])
+            ->contains(fn (Role $role) => $user->hasRole($role->value))
+            ? ['colaboradores']
+            : [];
+
         return array_merge(parent::share($request), [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -65,6 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'isAdmin' => $isAdmin,
                 'isColaborador' => $isColaborador,
                 'accessibleModules' => $accessibleModules,
+                'accessibleSubmodules' => $accessibleSubmodules,
             ],
         ]);
     }

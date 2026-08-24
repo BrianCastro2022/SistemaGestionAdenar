@@ -13,19 +13,19 @@ class ColaboradorWizardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function seguridadUser(): User
+    private function genteUser(): User
     {
-        Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         Role::create(['name' => 'Colaborador', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $user->assignRole('Seguridad');
+        $user->assignRole('Gente');
 
         return $user;
     }
 
     public function test_full_wizard_flow_creates_a_complete_colaborador_with_cargo_history(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         // Paso 1: crea el borrador.
         $response = $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
@@ -96,7 +96,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_draft_colaboradores_are_excluded_from_the_default_index_listing(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $this->actingAs($user)->post(route('seguridad.colaboradores.store'), [
             'cedula' => '900100201',
@@ -114,7 +114,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_editing_a_complete_colaborador_opens_the_wizard_on_paso_1_with_linkable_users(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100202',
@@ -136,7 +136,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_paso1_update_can_change_the_linked_user(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100203',
@@ -160,7 +160,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_paso1_update_preserves_the_existing_photo_when_no_new_file_is_uploaded(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100204',
@@ -185,7 +185,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_paso3_update_does_not_fail_when_resubmitting_unchanged_past_dates(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $desde = now()->subYears(3)->toDateString();
         $hasta = now()->subYears(3)->addMonths(5)->toDateString();
@@ -220,7 +220,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_wizard_page_serves_dates_as_plain_dates_and_resubmitting_them_unchanged_advances_the_step(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $desde = now()->subYears(3)->toDateString();
         $hasta = now()->subYears(3)->addMonths(5)->toDateString();
@@ -272,7 +272,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_paso3_update_still_rejects_a_new_past_date(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100206',
@@ -291,7 +291,7 @@ class ColaboradorWizardTest extends TestCase
 
     public function test_paso3_update_still_requires_a_start_date_when_the_cargo_actually_changes(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100208',
@@ -325,7 +325,7 @@ class ColaboradorWizardTest extends TestCase
      */
     public function test_paso3_update_does_not_require_start_date_when_cargo_is_unchanged_and_has_no_history(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100209',
@@ -358,7 +358,7 @@ class ColaboradorWizardTest extends TestCase
      */
     public function test_paso4_update_rejects_an_invalid_file_with_an_array_indexed_error_key(): void
     {
-        $user = $this->seguridadUser();
+        $user = $this->genteUser();
 
         $colaborador = Colaborador::create([
             'cedula' => '900100210',

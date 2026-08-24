@@ -14,9 +14,9 @@ class ColaboradorToggleActivoTest extends TestCase
 
     public function test_it_toggles_is_active_on_each_call(): void
     {
-        Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $user->assignRole('Seguridad');
+        $user->assignRole('Gente');
 
         $colaborador = Colaborador::create([
             'cedula' => '600100200',
@@ -36,9 +36,9 @@ class ColaboradorToggleActivoTest extends TestCase
 
     public function test_it_does_not_fail_when_the_colaborador_has_no_linked_user(): void
     {
-        Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $user->assignRole('Seguridad');
+        $user->assignRole('Gente');
 
         $colaborador = Colaborador::create([
             'cedula' => '600100201',
@@ -55,9 +55,9 @@ class ColaboradorToggleActivoTest extends TestCase
 
     public function test_it_syncs_is_active_on_the_linked_user_in_both_directions(): void
     {
-        Role::create(['name' => 'Seguridad', 'guard_name' => 'web']);
+        Role::create(['name' => 'Gente', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $user->assignRole('Seguridad');
+        $user->assignRole('Gente');
 
         $cuenta = User::factory()->create(['is_active' => true]);
 

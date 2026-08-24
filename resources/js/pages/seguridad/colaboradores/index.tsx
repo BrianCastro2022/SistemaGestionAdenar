@@ -14,14 +14,14 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { calcularTiempoTrabajado } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
 import { ImportarColaboradoresDialog } from '@/pages/seguridad/colaboradores/importar-dialog';
 import { type WizardCatalogos } from '@/pages/seguridad/colaboradores/wizard/catalogos';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, ClipboardCheck, Eye, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Seguridad', href: '/modules/seguridad' },
+    { title: 'Gente', href: '/modules/gente' },
     { title: 'Colaboradores', href: '/modules/seguridad/colaboradores' },
 ];
 
@@ -99,6 +99,13 @@ export default function ColaboradoresIndex({
     borradoresCount: number;
     catalogos: WizardCatalogos;
 }) {
+    const { auth } = usePage<SharedData>().props;
+    // Crear/importar/editar/eliminar colaboradores es exclusivo de Gente
+    // (Administrador siempre pasa). "Evaluar" abre asignaciones-conductores,
+    // que sigue siendo exclusivo de Seguridad.
+    const canManageColaboradores = auth.isAdmin || auth.roles.includes('Gente');
+    const canEvaluar = auth.isAdmin || auth.roles.includes('Seguridad');
+
     const [search, setSearch] = useState(filters.search);
     const [viewMode, setViewMode] = useState<ViewMode>('lista');
     const debouncedSearch = useDebouncedValue(search);
@@ -142,22 +149,24 @@ export default function ColaboradoresIndex({
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <HeadingSmall title="Colaboradores" description="Administra el listado de colaboradores para las pruebas de alcoholemia." />
-                    <div className="flex flex-wrap gap-2">
-                        <ImportarColaboradoresDialog
-                            trigger={
-                                <Button type="button" variant="outline">
-                                    <Upload className="size-4" />
-                                    Importar Excel
-                                </Button>
-                            }
-                        />
-                        <Button asChild>
-                            <Link href={route('seguridad.colaboradores.create')}>
-                                <Plus className="size-4" />
-                                Nuevo colaborador
-                            </Link>
-                        </Button>
-                    </div>
+                    {canManageColaboradores && (
+                        <div className="flex flex-wrap gap-2">
+                            <ImportarColaboradoresDialog
+                                trigger={
+                                    <Button type="button" variant="outline">
+                                        <Upload className="size-4" />
+                                        Importar Excel
+                                    </Button>
+                                }
+                            />
+                            <Button asChild>
+                                <Link href={route('seguridad.colaboradores.create')}>
+                                    <Plus className="size-4" />
+                                    Nuevo colaborador
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-wrap items-end gap-2">
@@ -357,13 +366,15 @@ export default function ColaboradoresIndex({
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {colaborador.estado_registro === 'borrador' ? (
-                                                <div className="flex justify-end">
-                                                    <IconActionButton
-                                                        icon={ArrowRight}
-                                                        label="Continuar registro"
-                                                        href={route('seguridad.colaboradores.wizard', colaborador.id)}
-                                                    />
-                                                </div>
+                                                canManageColaboradores && (
+                                                    <div className="flex justify-end">
+                                                        <IconActionButton
+                                                            icon={ArrowRight}
+                                                            label="Continuar registro"
+                                                            href={route('seguridad.colaboradores.wizard', colaborador.id)}
+                                                        />
+                                                    </div>
+                                                )
                                             ) : (
                                                 <div className="flex justify-end gap-1">
                                                     <IconActionButton
@@ -371,52 +382,58 @@ export default function ColaboradoresIndex({
                                                         label="Ver"
                                                         href={route('seguridad.colaboradores.show', colaborador.id)}
                                                     />
-                                                    <IconActionButton
-                                                        icon={Pencil}
-                                                        label="Editar"
-                                                        href={route('seguridad.colaboradores.edit', colaborador.id)}
-                                                    />
-                                                    <IconActionButton
-                                                        icon={ClipboardCheck}
-                                                        label="Evaluar"
-                                                        href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
-                                                    />
-                                                    <Dialog>
-                                                        <TooltipProvider delayDuration={200}>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <DialogTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="text-destructive hover:text-destructive"
-                                                                            aria-label="Eliminar"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </Button>
-                                                                    </DialogTrigger>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Eliminar</TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                        <DialogContent>
-                                                            <DialogTitle>
-                                                                ¿Eliminar a {colaborador.nombres} {colaborador.apellidos}?
-                                                            </DialogTitle>
-                                                            <DialogDescription>
-                                                                Esta acción elimina al colaborador de forma lógica; su historial de pruebas se
-                                                                conserva.
-                                                            </DialogDescription>
-                                                            <DialogFooter>
-                                                                <DialogClose asChild>
-                                                                    <Button variant="secondary">Cancelar</Button>
-                                                                </DialogClose>
-                                                                <Button variant="destructive" onClick={() => destroyColaborador(colaborador)}>
-                                                                    Eliminar
-                                                                </Button>
-                                                            </DialogFooter>
-                                                        </DialogContent>
-                                                    </Dialog>
+                                                    {canManageColaboradores && (
+                                                        <IconActionButton
+                                                            icon={Pencil}
+                                                            label="Editar"
+                                                            href={route('seguridad.colaboradores.edit', colaborador.id)}
+                                                        />
+                                                    )}
+                                                    {canEvaluar && (
+                                                        <IconActionButton
+                                                            icon={ClipboardCheck}
+                                                            label="Evaluar"
+                                                            href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
+                                                        />
+                                                    )}
+                                                    {canManageColaboradores && (
+                                                        <Dialog>
+                                                            <TooltipProvider delayDuration={200}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <DialogTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="text-destructive hover:text-destructive"
+                                                                                aria-label="Eliminar"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </Button>
+                                                                        </DialogTrigger>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Eliminar</TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                            <DialogContent>
+                                                                <DialogTitle>
+                                                                    ¿Eliminar a {colaborador.nombres} {colaborador.apellidos}?
+                                                                </DialogTitle>
+                                                                <DialogDescription>
+                                                                    Esta acción elimina al colaborador de forma lógica; su historial de pruebas
+                                                                    se conserva.
+                                                                </DialogDescription>
+                                                                <DialogFooter>
+                                                                    <DialogClose asChild>
+                                                                        <Button variant="secondary">Cancelar</Button>
+                                                                    </DialogClose>
+                                                                    <Button variant="destructive" onClick={() => destroyColaborador(colaborador)}>
+                                                                        Eliminar
+                                                                    </Button>
+                                                                </DialogFooter>
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    )}
                                                 </div>
                                             )}
                                         </TableCell>
@@ -487,34 +504,40 @@ export default function ColaboradoresIndex({
                                         </div>
                                     </dl>
                                     {colaborador.estado_registro === 'borrador' ? (
-                                        <div className="mt-4">
-                                            <IconActionButton
-                                                icon={ArrowRight}
-                                                label="Continuar registro"
-                                                variant="outline"
-                                                href={route('seguridad.colaboradores.wizard', colaborador.id)}
-                                            />
-                                        </div>
+                                        canManageColaboradores && (
+                                            <div className="mt-4">
+                                                <IconActionButton
+                                                    icon={ArrowRight}
+                                                    label="Continuar registro"
+                                                    variant="outline"
+                                                    href={route('seguridad.colaboradores.wizard', colaborador.id)}
+                                                />
+                                            </div>
+                                        )
                                     ) : (
                                         <div className="mt-4 flex flex-wrap gap-1">
-                                            <IconActionButton
-                                                icon={ClipboardCheck}
-                                                label="Evaluar"
-                                                variant="outline"
-                                                href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
-                                            />
+                                            {canEvaluar && (
+                                                <IconActionButton
+                                                    icon={ClipboardCheck}
+                                                    label="Evaluar"
+                                                    variant="outline"
+                                                    href={route('seguridad.asignaciones-conductores.create', { colaborador_id: colaborador.id, cedula: colaborador.cedula })}
+                                                />
+                                            )}
                                             <IconActionButton
                                                 icon={Eye}
                                                 label="Ver"
                                                 variant="outline"
                                                 href={route('seguridad.colaboradores.show', colaborador.id)}
                                             />
-                                            <IconActionButton
-                                                icon={Pencil}
-                                                label="Editar"
-                                                variant="outline"
-                                                href={route('seguridad.colaboradores.edit', colaborador.id)}
-                                            />
+                                            {canManageColaboradores && (
+                                                <IconActionButton
+                                                    icon={Pencil}
+                                                    label="Editar"
+                                                    variant="outline"
+                                                    href={route('seguridad.colaboradores.edit', colaborador.id)}
+                                                />
+                                            )}
                                         </div>
                                     )}
                                 </div>
