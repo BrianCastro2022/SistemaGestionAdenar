@@ -182,16 +182,16 @@ class ColaboradorController extends Controller
     private function catalogos(): array
     {
         return [
-            'tiposDocumento' => config('gente.colaboradores.tipos_documento'),
-            'epsOpciones' => config('gente.colaboradores.eps_opciones'),
-            'afpOpciones' => config('gente.colaboradores.afp_opciones'),
-            'arlOpciones' => config('gente.colaboradores.arl_opciones'),
-            'cargos' => config('gente.colaboradores.cargos'),
-            'centros' => config('gente.colaboradores.centros'),
-            'centrosTrabajo' => config('gente.colaboradores.centros_trabajo'),
-            'tiposContrato' => config('gente.colaboradores.tipos_contrato'),
-            'motivosRetiro' => config('gente.colaboradores.motivos_retiro'),
-            'licenciaCategorias' => config('gente.colaboradores.licencia_conduccion_categorias'),
+            'tiposDocumento' => config('seguridad.colaboradores.tipos_documento'),
+            'epsOpciones' => config('seguridad.colaboradores.eps_opciones'),
+            'afpOpciones' => config('seguridad.colaboradores.afp_opciones'),
+            'arlOpciones' => config('seguridad.colaboradores.arl_opciones'),
+            'cargos' => config('seguridad.colaboradores.cargos'),
+            'centros' => config('seguridad.colaboradores.centros'),
+            'centrosTrabajo' => config('seguridad.colaboradores.centros_trabajo'),
+            'tiposContrato' => config('seguridad.colaboradores.tipos_contrato'),
+            'motivosRetiro' => config('seguridad.colaboradores.motivos_retiro'),
+            'licenciaCategorias' => config('seguridad.colaboradores.licencia_conduccion_categorias'),
         ];
     }
 

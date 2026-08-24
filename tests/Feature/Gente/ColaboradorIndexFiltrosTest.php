@@ -125,4 +125,28 @@ class ColaboradorIndexFiltrosTest extends TestCase
         $response = $this->actingAs($user)->get(route('gente.colaboradores.index', ['registro' => 'borrador']));
         $response->assertInertia(fn ($page) => $page->has('colaboradores.data', 1)->where('borradoresCount', 1));
     }
+
+    /**
+     * Regresión: catalogos() lee de config('seguridad.colaboradores.*'), un
+     * archivo de config distinto al namespace Gente del controlador — un
+     * reemplazo de texto demasiado amplio al mover ColaboradorController
+     * llegó a reescribir esas claves a config('gente.colaboradores.*')
+     * (inexistente), dejando cada catálogo en null y rompiendo los <select>
+     * del index y del wizard con un "Cannot read properties of null
+     * (reading 'map')" en el navegador.
+     */
+    public function test_catalogos_are_not_empty(): void
+    {
+        $user = $this->seguridadUser();
+
+        $response = $this->actingAs($user)->get(route('gente.colaboradores.index'));
+
+        $response->assertInertia(function ($page) {
+            $catalogos = $page->toArray()['props']['catalogos'];
+
+            $this->assertNotEmpty($catalogos['cargos']);
+            $this->assertNotEmpty($catalogos['centros']);
+            $this->assertNotEmpty($catalogos['tiposDocumento']);
+        });
+    }
 }
