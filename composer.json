@@ -10,6 +10,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "ext-gd": "*",
+        "ext-zip": "*",
+        "ext-xml": "*",
+        "ext-mbstring": "*",
+        "ext-dom": "*",
         "bacon/bacon-qr-code": "^3.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^2.0",
