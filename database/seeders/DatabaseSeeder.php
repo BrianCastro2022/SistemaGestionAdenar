@@ -30,28 +30,36 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($demoUsers as $demo) {
-            $user = User::factory()->create([
-                'first_name' => $demo['first'],
-                'last_name' => $demo['last'],
-                'identification_number' => $demo['id_number'],
-                'email' => strtolower("{$demo['first']}@adenar.test"),
-                'password' => 'password',
-                'is_active' => true,
-            ]);
+            $user = User::where('identification_number', $demo['id_number'])->first();
 
-            $user->assignRole($demo['role']->value);
-
-            if ($demo['role'] === RoleEnum::Colaborador) {
-                Colaborador::create([
-                    'user_id' => $user->id,
-                    'cedula' => $demo['id_number'],
-                    'nombres' => $demo['first'],
-                    'apellidos' => $demo['last'],
-                    'cargo' => 'Conductor',
-                    'turno' => 'manana',
-                    'area' => 'Ruta Norte',
+            if (! $user) {
+                $user = User::factory()->create([
+                    'first_name' => $demo['first'],
+                    'last_name' => $demo['last'],
+                    'identification_number' => $demo['id_number'],
+                    'email' => strtolower("{$demo['first']}@adenar.test"),
+                    'password' => 'password',
                     'is_active' => true,
                 ]);
+            }
+
+            if (! $user->hasRole($demo['role']->value)) {
+                $user->assignRole($demo['role']->value);
+            }
+
+            if ($demo['role'] === RoleEnum::Colaborador) {
+                Colaborador::firstOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'cedula' => $demo['id_number'],
+                        'nombres' => $demo['first'],
+                        'apellidos' => $demo['last'],
+                        'cargo' => 'Conductor',
+                        'turno' => 'manana',
+                        'area' => 'Ruta Norte',
+                        'is_active' => true,
+                    ]
+                );
             }
         }
     }
