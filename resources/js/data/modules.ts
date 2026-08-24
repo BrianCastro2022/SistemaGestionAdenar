@@ -15,6 +15,7 @@ import {
     Folder,
     Fuel,
     Gauge,
+    Gavel,
     GraduationCap,
     Grid3x3,
     HeartHandshake,
@@ -158,6 +159,7 @@ export const modules: ModuleDef[] = [
             { title: 'Checklist', slug: 'checklist', icon: ClipboardCheck },
             { title: 'Combustible', slug: 'combustible', icon: Fuel },
             { title: 'Calibración de Llantas', slug: 'calibracion-llantas', icon: Gauge },
+            { title: 'Consultas SIMIT', slug: 'simit-consultas', icon: Gavel },
         ],
     },
     {
