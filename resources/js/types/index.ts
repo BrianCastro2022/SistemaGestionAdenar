@@ -6,8 +6,6 @@ export interface Auth {
     isAdmin: boolean;
     isColaborador: boolean;
     accessibleModules: string[];
-    /** Submódulos visibles aunque el usuario no tenga acceso al módulo padre completo (ej. Colaboradores para Seguridad/Reparto/Flota). */
-    accessibleSubmodules: string[];
 }
 
 export interface BreadcrumbItem {

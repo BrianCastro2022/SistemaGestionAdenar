@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { modules, type ModuleDef, type SubModuleDef } from '@/data/modules';
+import { colaboradoresReadOnlySubmodule, modules, type ModuleDef, type SubModuleDef } from '@/data/modules';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { BellRing, GraduationCap, HeartPulse, LayoutGrid, Stethoscope, TestTube, Truck, User, UserCog } from 'lucide-react';
@@ -33,25 +33,25 @@ function buildSubNavItems(submodules: SubModuleDef[], moduleSlug: string, color:
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    // Si el usuario no tiene el módulo completo, igual puede tener acceso de
-    // solo lectura a alguno de sus submódulos (ej. Colaboradores bajo Gente
-    // para Seguridad/Reparto/Flota) — en ese caso el módulo se muestra
-    // recortado a solo esos submódulos.
+
+    // Colaboradores es propiedad de Gente (crear/editar/importar/eliminar).
+    // Seguridad, Reparto y Flota conservan acceso de solo lectura, así que
+    // ven el mismo enlace inyectado como submódulo dentro de SU PROPIA
+    // sección — no una sección "Gente" ajena — mientras no tengan el rol
+    // Gente (que ya trae la entrada real en su propia sección) ni sean
+    // Administrador (que ve todos los módulos completos igual).
+    const showColaboradoresReadOnlyLink =
+        !auth.isAdmin && !auth.roles.includes('Gente') && ['Seguridad', 'Reparto', 'Flota'].some((role) => auth.roles.includes(role));
+
     const visibleModules: ModuleDef[] = auth.isAdmin
         ? modules
-        : modules.reduce<ModuleDef[]>((acc, mod) => {
-              if (auth.accessibleModules.includes(mod.slug)) {
-                  acc.push(mod);
-                  return acc;
-              }
-
-              const allowedSubmodules = mod.submodules.filter((sub) => sub.slug && auth.accessibleSubmodules.includes(sub.slug));
-              if (allowedSubmodules.length > 0) {
-                  acc.push({ ...mod, submodules: allowedSubmodules });
-              }
-
-              return acc;
-          }, []);
+        : modules
+              .filter((mod) => auth.accessibleModules.includes(mod.slug))
+              .map((mod) =>
+                  showColaboradoresReadOnlyLink && mod.slug !== 'gente'
+                      ? { ...mod, submodules: [colaboradoresReadOnlySubmodule, ...mod.submodules] }
+                      : mod,
+              );
 
     const mainNavItems: NavItem[] = [
         {

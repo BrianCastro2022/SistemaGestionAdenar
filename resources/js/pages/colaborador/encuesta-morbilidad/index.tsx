@@ -4,7 +4,7 @@ import { respuestasConValoresPorDefecto, seccionesOrdenadas, type RespuestasStat
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { Stepper, type StepDefinition } from '@/pages/seguridad/colaboradores/wizard/stepper';
+import { Stepper, type StepDefinition } from '@/pages/gente/colaboradores/wizard/stepper';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ClipboardList, LoaderCircle, UserCheck } from 'lucide-react';

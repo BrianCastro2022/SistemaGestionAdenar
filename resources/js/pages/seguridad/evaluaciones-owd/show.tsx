@@ -110,7 +110,7 @@ export default function EvaluacionOwdShow({ evaluacionOwd }: { evaluacionOwd: Ev
                             <p className="text-xs font-medium text-muted-foreground">Evaluador</p>
                             {evaluacionOwd.evaluador_colaborador ? (
                                 <Link
-                                    href={route('seguridad.colaboradores.show', evaluacionOwd.evaluador_colaborador.id)}
+                                    href={route('gente.colaboradores.show', evaluacionOwd.evaluador_colaborador.id)}
                                     className="text-sm text-primary hover:underline"
                                 >
                                     {evaluacionOwd.evaluador_colaborador.nombres} {evaluacionOwd.evaluador_colaborador.apellidos}
@@ -127,7 +127,7 @@ export default function EvaluacionOwdShow({ evaluacionOwd }: { evaluacionOwd: Ev
                             <p className="text-xs font-medium text-muted-foreground">Evaluado</p>
                             {evaluacionOwd.colaborador ? (
                                 <Link
-                                    href={route('seguridad.colaboradores.show', evaluacionOwd.colaborador.id)}
+                                    href={route('gente.colaboradores.show', evaluacionOwd.colaborador.id)}
                                     className="text-sm text-primary hover:underline"
                                 >
                                     {evaluacionOwd.colaborador.nombres} {evaluacionOwd.colaborador.apellidos} — {evaluacionOwd.colaborador.cedula}

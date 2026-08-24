@@ -45,10 +45,11 @@ export interface SubModuleDef {
     /** Presente en los ítems que agrupan otros submódulos (se despliegan en el sidebar en vez de navegar). */
     submodules?: SubModuleDef[];
     /**
-     * Para ítems agrupados visualmente bajo un módulo distinto al que
-     * implementa sus rutas (ej. Colaboradores vive bajo "Gente" en el menú,
-     * pero sus páginas siguen en /modules/seguridad/colaboradores). Si se
-     * omite, la URL usa el slug del módulo padre como de costumbre.
+     * Para ítems inyectados dinámicamente dentro de la sección de OTRO rol
+     * (ej. el enlace de solo lectura a Colaboradores que se agrega a la
+     * sección de Seguridad/Reparto/Flota — ver `colaboradoresReadOnlySubmodule`
+     * y app-sidebar.tsx). Si se omite, la URL usa el slug del módulo padre
+     * como de costumbre.
      */
     moduleSlugOverride?: string;
 }
@@ -141,9 +142,7 @@ export const modules: ModuleDef[] = [
         icon: Users,
         accent: '#E3A11E',
         submodules: [
-            // Sus rutas siguen en /modules/seguridad/colaboradores (sin renombrar
-            // controladores ni nombres de ruta); solo cambió quién lo ve/gestiona.
-            { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck, moduleSlugOverride: 'seguridad' },
+            { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
             { title: 'Malas Marcaciones', slug: 'malas-marcaciones', icon: Ban },
             { title: 'Inducciones', slug: 'inducciones', icon: Megaphone },
             { title: 'Plan Padrinos', slug: 'plan-padrinos', icon: HeartHandshake },
@@ -171,6 +170,20 @@ export const modules: ModuleDef[] = [
         ],
     },
 ];
+
+/**
+ * Entrada de "Colaboradores" que app-sidebar.tsx inyecta como submódulo de
+ * solo lectura dentro de la sección propia de Seguridad, Reparto o Flota
+ * (los roles que no son dueños del módulo pero conservan acceso de solo
+ * lectura). La entrada "real", con permisos de escritura, vive en
+ * `modules` bajo Gente.submodules.
+ */
+export const colaboradoresReadOnlySubmodule: SubModuleDef = {
+    title: 'Colaboradores',
+    slug: 'colaboradores',
+    icon: UserCheck,
+    moduleSlugOverride: 'gente',
+};
 
 export function findModule(moduleSlug: string): ModuleDef | undefined {
     return modules.find((mod) => mod.slug === moduleSlug);

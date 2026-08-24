@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
-import { SimpleFileField } from '@/pages/seguridad/colaboradores/wizard/components/simple-file-field';
+import { SimpleFileField } from '@/pages/gente/colaboradores/wizard/components/simple-file-field';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Ban, CalendarClock, CheckCircle2, Download, FileCheck2, FileText, History, LoaderCircle, Pencil, Play, Plus, Stethoscope, Trash2, User } from 'lucide-react';
