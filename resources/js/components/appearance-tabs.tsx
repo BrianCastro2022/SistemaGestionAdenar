@@ -1,4 +1,4 @@
-import { Appearance, useAppearance } from '@/hooks/use-appearance';
+import { APPEARANCE_SWITCHING_ENABLED, Appearance, useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
 import { HTMLAttributes } from 'react';
@@ -6,11 +6,14 @@ import { HTMLAttributes } from 'react';
 export default function AppearanceToggleTab({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
     const { appearance, updateAppearance } = useAppearance();
 
-    const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
+    const allTabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
         { value: 'light', icon: Sun, label: 'Claro' },
         { value: 'dark', icon: Moon, label: 'Oscuro' },
         { value: 'system', icon: Monitor, label: 'Sistema' },
     ];
+
+    // Dark/system are hidden while APPEARANCE_SWITCHING_ENABLED is false — see use-appearance.tsx.
+    const tabs = APPEARANCE_SWITCHING_ENABLED ? allTabs : allTabs.filter((tab) => tab.value === 'light');
 
     return (
         <div className={cn('inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800', className)} {...props}>
