@@ -1,6 +1,7 @@
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Image, Search } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Gavel, Image, Search, Truck, type LucideIcon } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -21,7 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const TODOS = 'todos';
 
 type ConsultaStatus = 'ok' | 'sin_comparendos' | 'captcha' | 'error';
-type Vista = 'actual' | 'historico';
+type Vista = 'actual' | 'historico' | 'indicadores';
 
 const STATUS_LABELS: Record<ConsultaStatus, string> = {
     ok: 'Con comparendos',
@@ -35,6 +37,16 @@ const STATUS_VARIANTS: Record<ConsultaStatus, 'default' | 'secondary' | 'destruc
     sin_comparendos: 'default',
     captcha: 'secondary',
     error: 'destructive',
+};
+
+// Paleta de estado validada (good/warning/serious/critical) — pasa el
+// chequeo de daltonismo al combinarse en un mismo gráfico, a diferencia
+// de los colores sueltos que usan otras páginas de indicadores de la app.
+const STATUS_CHART_COLORS: Record<ConsultaStatus, string> = {
+    sin_comparendos: '#0ca30c', // good
+    captcha: '#fab219', // warning
+    error: '#ec835a', // serious
+    ok: '#d03b3b', // critical
 };
 
 interface ConsultaRow {
@@ -65,6 +77,61 @@ type Filters = {
     fecha_hasta: string;
 };
 
+interface TendenciaDia {
+    fecha: string;
+    sin_comparendos: number;
+    ok: number;
+    captcha: number;
+    error: number;
+}
+
+interface TopPlaca {
+    placa: string;
+    total: number;
+}
+
+interface Indicadores {
+    resumen: {
+        total_placas: number;
+        con_comparendos: number;
+        sin_comparendos: number;
+        requieren_atencion: number;
+    };
+    tendencia_diaria: TendenciaDia[];
+    top_placas_comparendos: TopPlaca[];
+}
+
+interface KpiTile {
+    label: string;
+    valor: number;
+    icon: LucideIcon;
+    color: string;
+}
+
+function KpiCard({ kpi }: { kpi: KpiTile }) {
+    return (
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
+                <div
+                    className="flex size-9 items-center justify-center rounded-full"
+                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
+                >
+                    <kpi.icon className="size-4" />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-2xl font-semibold">{kpi.valor}</p>
+            </CardContent>
+        </Card>
+    );
+}
+
+function formatFechaCorta(fecha: string): string {
+    const [, mes, dia] = fecha.split('-');
+    return `${dia}/${mes}`;
+}
+
 function PantallazoButton({ consulta, onVer }: { consulta: ConsultaRow; onVer: (consulta: ConsultaRow) => void }) {
     if (!consulta.screenshot_nombre) {
         return <span className="text-muted-foreground">—</span>;
@@ -80,10 +147,12 @@ function PantallazoButton({ consulta, onVer }: { consulta: ConsultaRow; onVer: (
 export default function SimitConsultasIndex({
     consultas,
     actuales,
+    indicadores,
     filters,
 }: {
     consultas: ConsultasPaginator;
     actuales: ConsultaRow[];
+    indicadores: Indicadores;
     filters: Filters;
 }) {
     const [vista, setVista] = useState<Vista>('actual');
@@ -129,10 +198,122 @@ export default function SimitConsultasIndex({
                         <Button type="button" variant={vista === 'historico' ? 'default' : 'ghost'} size="sm" onClick={() => setVista('historico')}>
                             Histórico
                         </Button>
+                        <Button
+                            type="button"
+                            variant={vista === 'indicadores' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setVista('indicadores')}
+                        >
+                            Indicadores
+                        </Button>
                     </div>
                 </div>
 
-                {vista === 'actual' ? (
+                {vista === 'indicadores' ? (
+                    <div className="flex flex-col gap-6">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <KpiCard kpi={{ label: 'Placas monitoreadas', valor: indicadores.resumen.total_placas, icon: Truck, color: '#0ca30c' }} />
+                            <KpiCard
+                                kpi={{
+                                    label: 'Con comparendos pendientes',
+                                    valor: indicadores.resumen.con_comparendos,
+                                    icon: Gavel,
+                                    color: '#d03b3b',
+                                }}
+                            />
+                            <KpiCard
+                                kpi={{
+                                    label: 'Sin comparendos',
+                                    valor: indicadores.resumen.sin_comparendos,
+                                    icon: CheckCircle2,
+                                    color: '#0ca30c',
+                                }}
+                            />
+                            <KpiCard
+                                kpi={{
+                                    label: 'Requieren revisión manual',
+                                    valor: indicadores.resumen.requieren_atencion,
+                                    icon: AlertTriangle,
+                                    color: '#fab219',
+                                }}
+                            />
+                        </div>
+
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Consultas por día (últimos 30 días)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {indicadores.tendencia_diaria.every(
+                                    (dia) => dia.sin_comparendos + dia.ok + dia.captcha + dia.error === 0,
+                                ) ? (
+                                    <p className="py-8 text-center text-sm text-muted-foreground">
+                                        Todavía no hay consultas registradas en este rango.
+                                    </p>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={280}>
+                                        <BarChart data={indicadores.tendencia_diaria}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis
+                                                dataKey="fecha"
+                                                tickFormatter={formatFechaCorta}
+                                                tick={{ fontSize: 12 }}
+                                                interval={2}
+                                            />
+                                            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                            <Tooltip labelFormatter={(label) => formatFechaCorta(String(label))} />
+                                            <Legend
+                                                formatter={(value: string) => STATUS_LABELS[value as ConsultaStatus] ?? value}
+                                            />
+                                            <Bar
+                                                dataKey="sin_comparendos"
+                                                stackId="dia"
+                                                name="sin_comparendos"
+                                                fill={STATUS_CHART_COLORS.sin_comparendos}
+                                            />
+                                            <Bar dataKey="ok" stackId="dia" name="ok" fill={STATUS_CHART_COLORS.ok} />
+                                            <Bar dataKey="captcha" stackId="dia" name="captcha" fill={STATUS_CHART_COLORS.captcha} />
+                                            <Bar
+                                                dataKey="error"
+                                                stackId="dia"
+                                                name="error"
+                                                radius={[4, 4, 0, 0]}
+                                                fill={STATUS_CHART_COLORS.error}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Placas con más comparendos detectados (histórico)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {indicadores.top_placas_comparendos.length === 0 ? (
+                                    <p className="py-8 text-center text-sm text-muted-foreground">
+                                        Ninguna placa ha registrado comparendos todavía.
+                                    </p>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={280}>
+                                        <BarChart data={indicadores.top_placas_comparendos}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis dataKey="placa" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
+                                            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                            <Tooltip />
+                                            <Bar dataKey="total" name="Consultas con comparendos" fill={STATUS_CHART_COLORS.ok} radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : vista === 'actual' ? (
                     <div className="rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                         <Table>
                             <TableHeader>

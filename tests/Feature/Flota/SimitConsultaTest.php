@@ -43,6 +43,36 @@ class SimitConsultaTest extends TestCase
         $response->assertInertia(fn ($page) => $page->has('consultas.data', 2));
     }
 
+    public function test_indicadores_are_computed_correctly(): void
+    {
+        $user = $this->actingAsFlota();
+        $this->consulta(['placa' => 'ABC123', 'status' => 'sin_comparendos', 'fecha_hora' => now()]);
+        $this->consulta(['placa' => 'XYZ789', 'status' => 'ok', 'fecha_hora' => now()]);
+        $this->consulta(['placa' => 'DEF456', 'status' => 'captcha', 'fecha_hora' => now()]);
+        // Un segundo hit de "ok" para XYZ789 en un dia distinto: debe sumar
+        // al top de placas con comparendos aunque ya no sea su estado actual.
+        $this->consulta(['placa' => 'XYZ789', 'status' => 'ok', 'fecha_hora' => now()->subDay()]);
+        $this->consulta(['placa' => 'XYZ789', 'status' => 'sin_comparendos', 'fecha_hora' => now()->subDays(2)]);
+
+        $response = $this->actingAs($user)->get(route('flota.simit-consultas.index'));
+
+        $response->assertInertia(function ($page) {
+            $indicadores = $page->toArray()['props']['indicadores'];
+
+            $this->assertSame(3, $indicadores['resumen']['total_placas']);
+            $this->assertSame(1, $indicadores['resumen']['con_comparendos']);
+            $this->assertSame(1, $indicadores['resumen']['sin_comparendos']);
+            $this->assertSame(1, $indicadores['resumen']['requieren_atencion']);
+
+            $this->assertCount(30, $indicadores['tendencia_diaria']);
+            $hoy = collect($indicadores['tendencia_diaria'])->last();
+            $this->assertSame(3, $hoy['sin_comparendos'] + $hoy['ok'] + $hoy['captcha'] + $hoy['error']);
+
+            $topPlacas = collect($indicadores['top_placas_comparendos'])->keyBy('placa');
+            $this->assertSame(2, $topPlacas['XYZ789']['total']);
+        });
+    }
+
     public function test_it_filters_by_placa_and_status(): void
     {
         $user = $this->actingAsFlota();
