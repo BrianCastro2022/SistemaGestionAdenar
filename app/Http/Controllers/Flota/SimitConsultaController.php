@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Flota;
 
 use App\Http\Controllers\Controller;
 use App\Models\SimitConsulta;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
@@ -34,6 +35,7 @@ class SimitConsultaController extends Controller
 
         return Inertia::render('flota/simit-consultas/index', [
             'consultas' => $consultas,
+            'actuales' => $this->estadoActual(),
             'filters' => [
                 'search' => $search,
                 'status' => $status,
@@ -41,6 +43,21 @@ class SimitConsultaController extends Controller
                 'fecha_hasta' => $fechaHasta,
             ],
         ]);
+    }
+
+    /**
+     * Una fila por placa: su consulta más reciente. Equivalente a lo que
+     * el script local guarda en data/{placa}_ultimo.json, separado del
+     * histórico completo (data/historico.csv).
+     */
+    private function estadoActual(): Collection
+    {
+        return SimitConsulta::query()
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')->from('simit_consultas')->groupBy('placa');
+            })
+            ->orderBy('placa')
+            ->get();
     }
 
     /**

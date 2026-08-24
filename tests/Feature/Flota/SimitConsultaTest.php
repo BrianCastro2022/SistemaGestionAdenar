@@ -56,6 +56,24 @@ class SimitConsultaTest extends TestCase
         $response->assertInertia(fn ($page) => $page->has('consultas.data', 1));
     }
 
+    public function test_estado_actual_shows_only_the_latest_consulta_per_placa(): void
+    {
+        $user = $this->actingAsFlota();
+        $this->consulta(['placa' => 'ABC123', 'status' => 'sin_comparendos', 'fecha_hora' => now()->subDay()]);
+        $this->consulta(['placa' => 'ABC123', 'status' => 'ok', 'fecha_hora' => now()]);
+        $this->consulta(['placa' => 'XYZ789', 'status' => 'captcha', 'fecha_hora' => now()]);
+
+        $response = $this->actingAs($user)->get(route('flota.simit-consultas.index'));
+
+        $response->assertInertia(function ($page) {
+            $actuales = collect($page->toArray()['props']['actuales'])->keyBy('placa');
+
+            $this->assertCount(2, $actuales);
+            $this->assertSame('ok', $actuales['ABC123']['status']);
+            $this->assertSame('captcha', $actuales['XYZ789']['status']);
+        });
+    }
+
     public function test_the_screenshot_blob_is_never_serialized_in_the_list(): void
     {
         $user = $this->actingAsFlota();
@@ -64,9 +82,14 @@ class SimitConsultaTest extends TestCase
         $response = $this->actingAs($user)->get(route('flota.simit-consultas.index'));
 
         $response->assertInertia(function ($page) {
-            $fila = $page->toArray()['props']['consultas']['data'][0];
+            $props = $page->toArray()['props'];
+
+            $fila = $props['consultas']['data'][0];
             $this->assertArrayNotHasKey('screenshot', $fila);
             $this->assertSame('captura.png', $fila['screenshot_nombre']);
+
+            $actual = $props['actuales'][0];
+            $this->assertArrayNotHasKey('screenshot', $actual);
         });
     }
 
