@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { colaboradoresReadOnlySubmodule, modules, type ModuleDef, type SubModuleDef } from '@/data/modules';
+import { colaboradoresReadOnlySubmodule, geovictoriaAsistenciaReadOnlySubmodule, modules, type ModuleDef, type SubModuleDef } from '@/data/modules';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { BellRing, GraduationCap, HeartPulse, LayoutGrid, Stethoscope, TestTube, Truck, User, UserCog } from 'lucide-react';
@@ -43,15 +43,26 @@ export function AppSidebar() {
     const showColaboradoresReadOnlyLink =
         !auth.isAdmin && !auth.roles.includes('Gente') && ['Seguridad', 'Reparto', 'Flota'].some((role) => auth.roles.includes(role));
 
+    // Asistencia GeoVictoria vive bajo Gente (ver routes/gente.php), pero
+    // Reparto también tiene acceso de solo lectura: se inyecta el mismo
+    // enlace en SU propia sección, igual que se hace con Colaboradores,
+    // pero solo para Reparto (no Seguridad/Flota, que no lo necesitan).
+    const showGeovictoriaReadOnlyLink = !auth.isAdmin && !auth.roles.includes('Gente') && auth.roles.includes('Reparto');
+
     const visibleModules: ModuleDef[] = auth.isAdmin
         ? modules
         : modules
               .filter((mod) => auth.accessibleModules.includes(mod.slug))
-              .map((mod) =>
-                  showColaboradoresReadOnlyLink && mod.slug !== 'gente'
-                      ? { ...mod, submodules: [colaboradoresReadOnlySubmodule, ...mod.submodules] }
-                      : mod,
-              );
+              .map((mod) => {
+                  const inyectados: SubModuleDef[] = [];
+                  if (showColaboradoresReadOnlyLink && mod.slug !== 'gente') {
+                      inyectados.push(colaboradoresReadOnlySubmodule);
+                  }
+                  if (showGeovictoriaReadOnlyLink && mod.slug === 'reparto') {
+                      inyectados.push(geovictoriaAsistenciaReadOnlySubmodule);
+                  }
+                  return inyectados.length > 0 ? { ...mod, submodules: [...inyectados, ...mod.submodules] } : mod;
+              });
 
     const mainNavItems: NavItem[] = [
         {

@@ -7,6 +7,7 @@ import {
     BookOpen,
     BellRing,
     Car,
+    Clock,
     ClipboardCheck,
     ClipboardList,
     Cpu,
@@ -147,6 +148,7 @@ export const modules: ModuleDef[] = [
             { title: 'Malas Marcaciones', slug: 'malas-marcaciones', icon: Ban },
             { title: 'Inducciones', slug: 'inducciones', icon: Megaphone },
             { title: 'Plan Padrinos', slug: 'plan-padrinos', icon: HeartHandshake },
+            { title: 'Asistencia GeoVictoria', slug: 'asistencia-geovictoria', icon: Clock },
         ],
     },
     {
@@ -184,6 +186,18 @@ export const colaboradoresReadOnlySubmodule: SubModuleDef = {
     title: 'Colaboradores',
     slug: 'colaboradores',
     icon: UserCheck,
+    moduleSlugOverride: 'gente',
+};
+
+/**
+ * Entrada de "Asistencia GeoVictoria" que app-sidebar.tsx inyecta como
+ * submódulo de solo lectura dentro de la sección de Reparto (la ruta real
+ * vive bajo Gente, ver routes/gente.php: role Administrador|Gente|Reparto).
+ */
+export const geovictoriaAsistenciaReadOnlySubmodule: SubModuleDef = {
+    title: 'Asistencia GeoVictoria',
+    slug: 'asistencia-geovictoria',
+    icon: Clock,
     moduleSlugOverride: 'gente',
 };
 

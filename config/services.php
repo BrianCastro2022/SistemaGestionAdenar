@@ -41,4 +41,11 @@ return [
         'token' => env('SIMIT_API_TOKEN'),
     ],
 
+    // Token compartido para que la automatizacion GeoVictoria (script
+    // Python en la PC local) pueda mandar sus indicadores de asistencia a
+    // POST /api/geovictoria/asistencias.
+    'geovictoria' => [
+        'token' => env('GEOVICTORIA_API_TOKEN'),
+    ],
+
 ];

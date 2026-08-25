@@ -3,6 +3,7 @@
 use App\Http\Controllers\Gente\ColaboradorController;
 use App\Http\Controllers\Gente\ColaboradorEntrenamientoController;
 use App\Http\Controllers\Gente\ColaboradorImportController;
+use App\Http\Controllers\Gente\GeovictoriaAsistenciaController;
 use App\Http\Controllers\Gente\LlamadoAtencionController;
 use App\Http\Controllers\Gente\ReferenciaExternaController;
 use Illuminate\Support\Facades\Route;
@@ -74,4 +75,15 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota
         Route::resource('colaboradores', ColaboradorController::class)
             ->parameters(['colaboradores' => 'colaborador'])
             ->only(['index', 'show']);
+    });
+
+Route::middleware(['auth', 'active', 'role:Administrador|Gente|Reparto'])
+    ->prefix('modules/gente')
+    ->name('gente.')
+    ->group(function () {
+        // Solo lectura: los datos los genera la automatizacion GeoVictoria
+        // (ver POST /api/geovictoria/asistencias), no se crean/editan desde
+        // la web. Visible para Gente (dueño del módulo) y Reparto.
+        Route::get('asistencia-geovictoria', [GeovictoriaAsistenciaController::class, 'index'])
+            ->name('asistencia-geovictoria.index');
     });

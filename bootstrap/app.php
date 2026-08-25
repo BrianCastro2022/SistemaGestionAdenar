@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureGeovictoriaApiToken;
 use App\Http\Middleware\EnsureModuleAccess;
 use App\Http\Middleware\EnsureSimitApiToken;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -37,10 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'simit.token' => EnsureSimitApiToken::class,
+            'geovictoria.token' => EnsureGeovictoriaApiToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             if ($response->getStatusCode() === 403 && $request->header('X-Inertia')) {
                 return Inertia::render('errors/403')->toResponse($request)->setStatusCode(403);
             }
