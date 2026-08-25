@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, Clock, Search, Timer, Users, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, BedDouble, CalendarClock, Clock, Search, Timer, Users, type LucideIcon } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -21,13 +21,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const TODOS = 'todos';
 
-type Vista = 'detalle' | 'indicadores';
+type Vista = 'hoy' | 'indicadores' | 'detalle';
 
 // Misma paleta warning/critical ya validada (chequeo de daltonismo) que usa
 // el módulo de Consultas SIMIT, para mantener el mismo lenguaje visual de
 // alerta en toda la app.
 const COLOR_EXCESO_JORNADA = '#d03b3b'; // critical
 const COLOR_DESCANSO_NO_EFECTIVO = '#fab219'; // warning
+const COLOR_NEUTRO = '#2a78d6'; // categorical slot 1 (azul), para series únicas
+
+// Paleta categórica validada (orden fijo, no se ciclan los tonos) para
+// "Registros por cargo", donde cada porción es una categoría distinta.
+const PALETA_CATEGORICA = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 
 interface RegistroRow {
     id: number;
@@ -37,11 +42,16 @@ interface RegistroRow {
     nombres: string | null;
     cargo: string | null;
     grupo: string | null;
+    permiso: string | null;
+    turno: string | null;
     entrada: string | null;
     salida_descanso: string | null;
     ingreso_descanso: string | null;
     salida: string | null;
     horas_trabajadas: string | null;
+    hea: string | null;
+    hec: string | null;
+    hnt: string | null;
     exceso_jornada: boolean;
     horas_descanso_previo: string | null;
     descanso_no_efectivo: boolean;
@@ -81,6 +91,22 @@ interface TopEmpleado {
     total_descanso_no_efectivo: number;
 }
 
+interface PorGrupo {
+    grupo: string;
+    exceso_jornada: number;
+    descanso_no_efectivo: number;
+}
+
+interface PorCargo {
+    cargo: string;
+    total: number;
+}
+
+interface HorasPorCargo {
+    cargo: string;
+    horas: number;
+}
+
 interface Indicadores {
     resumen: {
         total_registros: number;
@@ -91,6 +117,19 @@ interface Indicadores {
     };
     tendencia_diaria: TendenciaDia[];
     top_empleados: TopEmpleado[];
+    por_grupo: PorGrupo[];
+    distribucion_cargo: PorCargo[];
+    horas_promedio_cargo: HorasPorCargo[];
+}
+
+interface Hoy {
+    fecha: string;
+    registros: RegistroRow[];
+    resumen: {
+        total: number;
+        exceso_jornada: number;
+        descanso_no_efectivo: number;
+    };
 }
 
 interface Opciones {
@@ -133,18 +172,24 @@ function nombreCompleto(registro: RegistroRow): string {
     return [registro.nombres, registro.apellidos].filter(Boolean).join(' ') || registro.identificador;
 }
 
+function EmptyChart({ children }: { children: React.ReactNode }) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
+}
+
 export default function GeovictoriaAsistenciaIndex({
     registros,
     indicadores,
+    hoy,
     filters,
     opciones,
 }: {
     registros: RegistrosPaginator;
     indicadores: Indicadores;
+    hoy: Hoy;
     filters: Filters;
     opciones: Opciones;
 }) {
-    const [vista, setVista] = useState<Vista>('indicadores');
+    const [vista, setVista] = useState<Vista>('hoy');
     const [search, setSearch] = useState(filters.search);
     const isFirstRender = useRef(true);
 
@@ -168,6 +213,7 @@ export default function GeovictoriaAsistenciaIndex({
     };
 
     const sinTendencia = indicadores.tendencia_diaria.every((dia) => dia.exceso_jornada + dia.descanso_no_efectivo === 0);
+    const sinPorGrupo = indicadores.por_grupo.every((g) => g.exceso_jornada + g.descanso_no_efectivo === 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -179,6 +225,9 @@ export default function GeovictoriaAsistenciaIndex({
                         description="Exceso de jornada y descanso no efectivo, calculados automáticamente cada día."
                     />
                     <div className="flex rounded-md border border-sidebar-border/70 p-1">
+                        <Button type="button" variant={vista === 'hoy' ? 'default' : 'ghost'} size="sm" onClick={() => setVista('hoy')}>
+                            Hoy
+                        </Button>
                         <Button
                             type="button"
                             variant={vista === 'indicadores' ? 'default' : 'ghost'}
@@ -193,7 +242,83 @@ export default function GeovictoriaAsistenciaIndex({
                     </div>
                 </div>
 
-                {vista === 'indicadores' ? (
+                {vista === 'hoy' ? (
+                    <div className="flex flex-col gap-6">
+                        <div className="flex items-center gap-2">
+                            <CalendarClock className="size-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Registros del día en curso</span>
+                            <Badge variant="outline">{hoy.fecha}</Badge>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <KpiCard kpi={{ label: 'Registros hoy', valor: hoy.resumen.total, icon: Clock, color: '#0ca30c' }} />
+                            <KpiCard
+                                kpi={{ label: 'Exceso de jornada', valor: hoy.resumen.exceso_jornada, icon: Timer, color: COLOR_EXCESO_JORNADA }}
+                            />
+                            <KpiCard
+                                kpi={{
+                                    label: 'Descanso no efectivo',
+                                    valor: hoy.resumen.descanso_no_efectivo,
+                                    icon: BedDouble,
+                                    color: COLOR_DESCANSO_NO_EFECTIVO,
+                                }}
+                            />
+                        </div>
+
+                        <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Identificador</TableHead>
+                                        <TableHead>Nombre</TableHead>
+                                        <TableHead>Cargo</TableHead>
+                                        <TableHead>Grupo</TableHead>
+                                        <TableHead>Turno</TableHead>
+                                        <TableHead>Permiso</TableHead>
+                                        <TableHead>Entrada</TableHead>
+                                        <TableHead>Salida descanso</TableHead>
+                                        <TableHead>Ingreso descanso</TableHead>
+                                        <TableHead>Salida</TableHead>
+                                        <TableHead>HEA</TableHead>
+                                        <TableHead>HEC</TableHead>
+                                        <TableHead>HT</TableHead>
+                                        <TableHead>HNT</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {hoy.registros.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={14} className="text-muted-foreground py-6 text-center">
+                                                Todavía no hay registros de hoy.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {hoy.registros.map((registro) => (
+                                        <TableRow
+                                            key={registro.id}
+                                            className={registro.exceso_jornada || registro.descanso_no_efectivo ? 'bg-destructive/5' : undefined}
+                                        >
+                                            <TableCell>{registro.identificador}</TableCell>
+                                            <TableCell className="font-medium">{nombreCompleto(registro)}</TableCell>
+                                            <TableCell>{registro.cargo ?? '—'}</TableCell>
+                                            <TableCell>{registro.grupo ?? '—'}</TableCell>
+                                            <TableCell>{registro.turno ?? '—'}</TableCell>
+                                            <TableCell>{registro.permiso ?? '—'}</TableCell>
+                                            <TableCell>{registro.entrada ?? '—'}</TableCell>
+                                            <TableCell>{registro.salida_descanso ?? '—'}</TableCell>
+                                            <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
+                                            <TableCell>{registro.salida ?? '—'}</TableCell>
+                                            <TableCell>{registro.hea ?? '—'}</TableCell>
+                                            <TableCell>{registro.hec ?? '—'}</TableCell>
+                                            <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
+                                            <TableCell>{registro.hnt ?? '—'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                ) : vista === 'indicadores' ? (
                     <div className="flex flex-col gap-6">
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <KpiCard kpi={{ label: 'Empleados monitoreados', valor: indicadores.resumen.empleados, icon: Users, color: '#0ca30c' }} />
@@ -224,71 +349,169 @@ export default function GeovictoriaAsistenciaIndex({
                             />
                         </div>
 
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Incidencias por día (últimos 30 días)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {sinTendencia ? (
-                                    <p className="py-8 text-center text-sm text-muted-foreground">Todavía no hay incidencias registradas en este rango.</p>
-                                ) : (
-                                    <ResponsiveContainer width="100%" height={280}>
-                                        <BarChart data={indicadores.tendencia_diaria}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="fecha" tickFormatter={formatFechaCorta} tick={{ fontSize: 12 }} interval={2} />
-                                            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                                            <Tooltip labelFormatter={(label) => formatFechaCorta(String(label))} />
-                                            <Legend
-                                                formatter={(value: string) =>
-                                                    value === 'exceso_jornada' ? 'Exceso de jornada' : 'Descanso no efectivo'
-                                                }
-                                            />
-                                            <Bar dataKey="exceso_jornada" stackId="dia" name="exceso_jornada" fill={COLOR_EXCESO_JORNADA} />
-                                            <Bar
-                                                dataKey="descanso_no_efectivo"
-                                                stackId="dia"
-                                                name="descanso_no_efectivo"
-                                                radius={[4, 4, 0, 0]}
-                                                fill={COLOR_DESCANSO_NO_EFECTIVO}
-                                            />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Incidencias por día (últimos 30 días)
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {sinTendencia ? (
+                                        <EmptyChart>Todavía no hay incidencias registradas en este rango.</EmptyChart>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={indicadores.tendencia_diaria}>
+                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                                <XAxis dataKey="fecha" tickFormatter={formatFechaCorta} tick={{ fontSize: 12 }} interval={2} />
+                                                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                                <Tooltip labelFormatter={(label) => formatFechaCorta(String(label))} />
+                                                <Legend
+                                                    formatter={(value: string) =>
+                                                        value === 'exceso_jornada' ? 'Exceso de jornada' : 'Descanso no efectivo'
+                                                    }
+                                                />
+                                                <Bar dataKey="exceso_jornada" stackId="dia" name="exceso_jornada" fill={COLOR_EXCESO_JORNADA} />
+                                                <Bar
+                                                    dataKey="descanso_no_efectivo"
+                                                    stackId="dia"
+                                                    name="descanso_no_efectivo"
+                                                    radius={[4, 4, 0, 0]}
+                                                    fill={COLOR_DESCANSO_NO_EFECTIVO}
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium text-muted-foreground">Empleados con más incidencias (histórico)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {indicadores.top_empleados.length === 0 ? (
-                                    <p className="py-8 text-center text-sm text-muted-foreground">Ningún empleado ha registrado incidencias todavía.</p>
-                                ) : (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={indicadores.top_empleados}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="nombre" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={70} />
-                                            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                                            <Tooltip />
-                                            <Legend
-                                                formatter={(value: string) =>
-                                                    value === 'total_exceso_jornada' ? 'Exceso de jornada' : 'Descanso no efectivo'
-                                                }
-                                            />
-                                            <Bar dataKey="total_exceso_jornada" name="total_exceso_jornada" stackId="emp" fill={COLOR_EXCESO_JORNADA} />
-                                            <Bar
-                                                dataKey="total_descanso_no_efectivo"
-                                                name="total_descanso_no_efectivo"
-                                                stackId="emp"
-                                                radius={[4, 4, 0, 0]}
-                                                fill={COLOR_DESCANSO_NO_EFECTIVO}
-                                            />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                )}
-                            </CardContent>
-                        </Card>
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Incidencias por grupo</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {sinPorGrupo ? (
+                                        <EmptyChart>Todavía no hay incidencias registradas.</EmptyChart>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={indicadores.por_grupo}>
+                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                                <XAxis dataKey="grupo" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
+                                                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                                <Tooltip />
+                                                <Legend
+                                                    formatter={(value: string) =>
+                                                        value === 'exceso_jornada' ? 'Exceso de jornada' : 'Descanso no efectivo'
+                                                    }
+                                                />
+                                                <Bar dataKey="exceso_jornada" name="exceso_jornada" fill={COLOR_EXCESO_JORNADA} />
+                                                <Bar
+                                                    dataKey="descanso_no_efectivo"
+                                                    name="descanso_no_efectivo"
+                                                    radius={[4, 4, 0, 0]}
+                                                    fill={COLOR_DESCANSO_NO_EFECTIVO}
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Registros por cargo</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {indicadores.distribucion_cargo.length === 0 ? (
+                                        <EmptyChart>Todavía no hay registros.</EmptyChart>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={indicadores.distribucion_cargo}
+                                                    dataKey="total"
+                                                    nameKey="cargo"
+                                                    innerRadius={50}
+                                                    outerRadius={90}
+                                                    paddingAngle={2}
+                                                >
+                                                    {indicadores.distribucion_cargo.map((entry, index) => (
+                                                        <Cell key={entry.cargo} fill={PALETA_CATEGORICA[index % PALETA_CATEGORICA.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend wrapperStyle={{ fontSize: 12 }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Top 10 empleados con más incidencias
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {indicadores.top_empleados.length === 0 ? (
+                                        <EmptyChart>Ningún empleado ha registrado incidencias todavía.</EmptyChart>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={indicadores.top_empleados}>
+                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                                <XAxis dataKey="nombre" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
+                                                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                                <Tooltip />
+                                                <Legend
+                                                    formatter={(value: string) =>
+                                                        value === 'total_exceso_jornada' ? 'Exceso de jornada' : 'Descanso no efectivo'
+                                                    }
+                                                />
+                                                <Bar
+                                                    dataKey="total_exceso_jornada"
+                                                    name="total_exceso_jornada"
+                                                    stackId="emp"
+                                                    fill={COLOR_EXCESO_JORNADA}
+                                                />
+                                                <Bar
+                                                    dataKey="total_descanso_no_efectivo"
+                                                    name="total_descanso_no_efectivo"
+                                                    stackId="emp"
+                                                    radius={[4, 4, 0, 0]}
+                                                    fill={COLOR_DESCANSO_NO_EFECTIVO}
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                                        Horas trabajadas promedio por cargo
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {indicadores.horas_promedio_cargo.length === 0 ? (
+                                        <EmptyChart>Todavía no hay turnos completados.</EmptyChart>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={indicadores.horas_promedio_cargo}>
+                                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                                <XAxis dataKey="cargo" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
+                                                <YAxis tick={{ fontSize: 12 }} />
+                                                <Tooltip />
+                                                <Bar dataKey="horas" name="Horas promedio" fill={COLOR_NEUTRO} radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -357,6 +580,14 @@ export default function GeovictoriaAsistenciaIndex({
                                     onChange={(e) => applyFilters({ fecha_hasta: e.target.value })}
                                 />
                             </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => applyFilters({ fecha_desde: hoy.fecha, fecha_hasta: hoy.fecha })}
+                            >
+                                Hoy
+                            </Button>
                         </div>
 
                         <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
@@ -365,19 +596,23 @@ export default function GeovictoriaAsistenciaIndex({
                                     <TableRow>
                                         <TableHead>#</TableHead>
                                         <TableHead>Fecha</TableHead>
+                                        <TableHead>Identificador</TableHead>
                                         <TableHead>Empleado</TableHead>
                                         <TableHead>Cargo</TableHead>
                                         <TableHead>Grupo</TableHead>
                                         <TableHead>Entrada</TableHead>
+                                        <TableHead>Salida descanso</TableHead>
+                                        <TableHead>Ingreso descanso</TableHead>
                                         <TableHead>Salida</TableHead>
                                         <TableHead>Horas trabajadas</TableHead>
+                                        <TableHead>Descanso previo</TableHead>
                                         <TableHead>Incidencias</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {registros.data.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="text-muted-foreground py-6 text-center">
+                                            <TableCell colSpan={13} className="text-muted-foreground py-6 text-center">
                                                 No se encontraron registros.
                                             </TableCell>
                                         </TableRow>
@@ -389,12 +624,16 @@ export default function GeovictoriaAsistenciaIndex({
                                         >
                                             <TableCell className="text-muted-foreground">{(registros.from ?? 1) + index}</TableCell>
                                             <TableCell>{registro.fecha}</TableCell>
+                                            <TableCell>{registro.identificador}</TableCell>
                                             <TableCell className="font-medium">{nombreCompleto(registro)}</TableCell>
                                             <TableCell>{registro.cargo ?? '—'}</TableCell>
                                             <TableCell>{registro.grupo ?? '—'}</TableCell>
                                             <TableCell>{registro.entrada ?? '—'}</TableCell>
+                                            <TableCell>{registro.salida_descanso ?? '—'}</TableCell>
+                                            <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
                                             <TableCell>{registro.salida ?? '—'}</TableCell>
                                             <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
+                                            <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
                                                     {registro.exceso_jornada && (

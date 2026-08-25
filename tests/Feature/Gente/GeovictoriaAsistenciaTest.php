@@ -109,4 +109,80 @@ class GeovictoriaAsistenciaTest extends TestCase
         $response = $this->actingAs($user)->get(route('gente.asistencia-geovictoria.index', ['tipo' => 'exceso_jornada']));
         $response->assertInertia(fn ($page) => $page->has('registros.data', 1));
     }
+
+    public function test_hoy_shows_only_todays_registros_with_marcacion_fields_and_resumen(): void
+    {
+        $user = $this->actingAsRole('Gente');
+        $this->registro([
+            'identificador' => 'A1',
+            'turno' => 'Diurno',
+            'permiso' => 'Ninguno',
+            'salida_descanso' => '10:00',
+            'ingreso_descanso' => '10:30',
+            'hea' => '01:00',
+            'hec' => '00:30',
+            'hnt' => '00:00',
+            'exceso_jornada' => true,
+            'descanso_no_efectivo' => false,
+        ]);
+        $this->registro(['identificador' => 'A2', 'exceso_jornada' => false, 'descanso_no_efectivo' => true]);
+        // Registro de ayer: no debe aparecer en "hoy".
+        $this->registro(['identificador' => 'A3', 'fecha' => now()->subDay()->toDateString()]);
+
+        $response = $this->actingAs($user)->get(route('gente.asistencia-geovictoria.index'));
+
+        $response->assertInertia(function ($page) {
+            $hoy = $page->toArray()['props']['hoy'];
+
+            $this->assertSame(2, $hoy['resumen']['total']);
+            $this->assertSame(1, $hoy['resumen']['exceso_jornada']);
+            $this->assertSame(1, $hoy['resumen']['descanso_no_efectivo']);
+
+            $registros = collect($hoy['registros'])->keyBy('identificador');
+            $this->assertCount(2, $registros);
+            $this->assertSame('Diurno', $registros['A1']['turno']);
+            $this->assertSame('Ninguno', $registros['A1']['permiso']);
+            $this->assertSame('10:00', $registros['A1']['salida_descanso']);
+            $this->assertSame('01:00', $registros['A1']['hea']);
+            $this->assertSame('00:30', $registros['A1']['hec']);
+            $this->assertSame('00:00', $registros['A1']['hnt']);
+        });
+    }
+
+    public function test_por_grupo_cargo_and_horas_indicators_are_computed_correctly(): void
+    {
+        $user = $this->actingAsRole('Gente');
+        $this->registro([
+            'identificador' => 'A1', 'grupo' => 'Bogota', 'cargo' => 'Movilizador',
+            'exceso_jornada' => true, 'descanso_no_efectivo' => false, 'horas_trabajadas' => '10:00',
+        ]);
+        $this->registro([
+            'identificador' => 'A2', 'grupo' => 'Bogota', 'cargo' => 'Conductor',
+            'exceso_jornada' => false, 'descanso_no_efectivo' => true, 'horas_trabajadas' => '08:00',
+        ]);
+        $this->registro([
+            'identificador' => 'A3', 'grupo' => 'Medellin', 'cargo' => 'Conductor',
+            'exceso_jornada' => false, 'descanso_no_efectivo' => false, 'horas_trabajadas' => '06:00',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('gente.asistencia-geovictoria.index'));
+
+        $response->assertInertia(function ($page) {
+            $indicadores = $page->toArray()['props']['indicadores'];
+
+            $porGrupo = collect($indicadores['por_grupo'])->keyBy('grupo');
+            $this->assertSame(1, $porGrupo['Bogota']['exceso_jornada']);
+            $this->assertSame(1, $porGrupo['Bogota']['descanso_no_efectivo']);
+            $this->assertSame(0, $porGrupo['Medellin']['exceso_jornada']);
+            $this->assertSame(0, $porGrupo['Medellin']['descanso_no_efectivo']);
+
+            $porCargo = collect($indicadores['distribucion_cargo'])->keyBy('cargo');
+            $this->assertSame(1, $porCargo['Movilizador']['total']);
+            $this->assertSame(2, $porCargo['Conductor']['total']);
+
+            $horasPorCargo = collect($indicadores['horas_promedio_cargo'])->keyBy('cargo');
+            $this->assertEquals(10.0, $horasPorCargo['Movilizador']['horas']);
+            $this->assertEquals(7.0, $horasPorCargo['Conductor']['horas']);
+        });
+    }
 }

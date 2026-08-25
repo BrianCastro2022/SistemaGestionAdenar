@@ -27,11 +27,16 @@ class GeovictoriaAsistenciaController extends Controller
             'nombres' => $registro['nombres'] ?? null,
             'cargo' => $registro['cargo'] ?? null,
             'grupo' => $registro['grupo'] ?? null,
+            'permiso' => $registro['permiso'] ?? null,
+            'turno' => $registro['turno'] ?? null,
             'entrada' => $registro['entrada'] ?? null,
             'salida_descanso' => $registro['salida_descanso'] ?? null,
             'ingreso_descanso' => $registro['ingreso_descanso'] ?? null,
             'salida' => $registro['salida'] ?? null,
             'horas_trabajadas' => $registro['horas_trabajadas'] ?? null,
+            'hea' => $registro['hea'] ?? null,
+            'hec' => $registro['hec'] ?? null,
+            'hnt' => $registro['hnt'] ?? null,
             'exceso_jornada' => $registro['exceso_jornada'],
             'horas_descanso_previo' => $registro['horas_descanso_previo'] ?? null,
             'descanso_no_efectivo' => $registro['descanso_no_efectivo'],
@@ -43,8 +48,8 @@ class GeovictoriaAsistenciaController extends Controller
             $filas,
             ['identificador', 'fecha'],
             [
-                'apellidos', 'nombres', 'cargo', 'grupo', 'entrada', 'salida_descanso',
-                'ingreso_descanso', 'salida', 'horas_trabajadas', 'exceso_jornada',
+                'apellidos', 'nombres', 'cargo', 'grupo', 'permiso', 'turno', 'entrada', 'salida_descanso',
+                'ingreso_descanso', 'salida', 'horas_trabajadas', 'hea', 'hec', 'hnt', 'exceso_jornada',
                 'horas_descanso_previo', 'descanso_no_efectivo', 'updated_at',
             ]
         );

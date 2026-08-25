@@ -42,6 +42,12 @@ class GeovictoriaAsistenciaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $hoy = CarbonImmutable::now();
+        $registrosHoy = GeovictoriaAsistencia::query()
+            ->whereDate('fecha', $hoy->toDateString())
+            ->orderBy('apellidos')
+            ->get();
+
         return Inertia::render('gente/geovictoria-asistencia/index', [
             'registros' => $registros,
             'filters' => [
@@ -56,10 +62,22 @@ class GeovictoriaAsistenciaController extends Controller
                 'grupos' => $this->valoresDistintos('grupo'),
                 'cargos' => $this->valoresDistintos('cargo'),
             ],
+            'hoy' => [
+                'fecha' => $hoy->toDateString(),
+                'registros' => $registrosHoy,
+                'resumen' => [
+                    'total' => $registrosHoy->count(),
+                    'exceso_jornada' => $registrosHoy->where('exceso_jornada', true)->count(),
+                    'descanso_no_efectivo' => $registrosHoy->where('descanso_no_efectivo', true)->count(),
+                ],
+            ],
             'indicadores' => [
                 'resumen' => $this->resumen(),
                 'tendencia_diaria' => $this->tendenciaDiaria(),
                 'top_empleados' => $this->topEmpleadosConIncidencias(),
+                'por_grupo' => $this->incidenciasPorGrupo(),
+                'distribucion_cargo' => $this->distribucionPorCargo(),
+                'horas_promedio_cargo' => $this->horasPromedioPorCargo(),
             ],
         ]);
     }
@@ -95,23 +113,28 @@ class GeovictoriaAsistenciaController extends Controller
     /**
      * 'horas_trabajadas' llega como texto "HH:MM" desde el reporte de
      * GeoVictoria (columna HT), no como un intervalo de tipo de dato en la
-     * base, así que el promedio se calcula en PHP convirtiendo a minutos.
+     * base, así que se convierte a minutos en PHP para poder promediarlo.
+     * Null si el turno todavía está en curso (sin marca de salida) o el
+     * texto no tiene el formato esperado.
      */
+    private function minutosTrabajados(?string $valor): ?int
+    {
+        if (! $valor || ! preg_match('/^(-?)(\d{1,3}):(\d{2})/', $valor, $m)) {
+            return null;
+        }
+
+        $signo = $m[1] === '-' ? -1 : 1;
+
+        return $signo * ((int) $m[2] * 60 + (int) $m[3]);
+    }
+
     private function promedioHorasTrabajadas(): ?string
     {
         $minutos = GeovictoriaAsistencia::query()
             ->whereNotNull('horas_trabajadas')
             ->where('horas_trabajadas', '!=', '')
             ->pluck('horas_trabajadas')
-            ->map(function (string $valor) {
-                if (! preg_match('/^(-?)(\d{1,3}):(\d{2})/', $valor, $m)) {
-                    return null;
-                }
-
-                $signo = $m[1] === '-' ? -1 : 1;
-
-                return $signo * ((int) $m[2] * 60 + (int) $m[3]);
-            })
+            ->map(fn (string $valor) => $this->minutosTrabajados($valor))
             ->filter(fn ($valor) => $valor !== null);
 
         if ($minutos->isEmpty()) {
@@ -181,6 +204,65 @@ class GeovictoriaAsistenciaController extends Controller
                 'total_exceso_jornada' => (int) $fila->total_exceso_jornada,
                 'total_descanso_no_efectivo' => (int) $fila->total_descanso_no_efectivo,
             ])
+            ->all();
+    }
+
+    /**
+     * Incidencias por grupo en todo el histórico (incluye grupos sin
+     * ninguna incidencia, con 0/0, para que el gráfico muestre siempre el
+     * mismo conjunto de grupos).
+     */
+    private function incidenciasPorGrupo(): array
+    {
+        return GeovictoriaAsistencia::query()
+            ->get(['grupo', 'exceso_jornada', 'descanso_no_efectivo'])
+            ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->grupo ?: 'Sin grupo')
+            ->map(fn ($registros, $grupo) => [
+                'grupo' => $grupo,
+                'exceso_jornada' => $registros->where('exceso_jornada', true)->count(),
+                'descanso_no_efectivo' => $registros->where('descanso_no_efectivo', true)->count(),
+            ])
+            ->sortBy('grupo')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Distribución de registros por cargo (composición del histórico, no
+     * solo de las incidencias).
+     */
+    private function distribucionPorCargo(): array
+    {
+        return GeovictoriaAsistencia::query()
+            ->get(['cargo'])
+            ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->cargo ?: 'Sin cargo')
+            ->map(fn ($registros, $cargo) => ['cargo' => $cargo, 'total' => $registros->count()])
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Horas trabajadas promedio por cargo, solo con turnos ya completados
+     * (con hora de salida marcada), igual que el promedio general.
+     */
+    private function horasPromedioPorCargo(): array
+    {
+        return GeovictoriaAsistencia::query()
+            ->whereNotNull('horas_trabajadas')
+            ->where('horas_trabajadas', '!=', '')
+            ->get(['cargo', 'horas_trabajadas'])
+            ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->cargo ?: 'Sin cargo')
+            ->map(function ($registros, $cargo) {
+                $minutos = $registros
+                    ->map(fn (GeovictoriaAsistencia $registro) => $this->minutosTrabajados($registro->horas_trabajadas))
+                    ->filter(fn ($valor) => $valor !== null);
+
+                return $minutos->isEmpty() ? null : ['cargo' => $cargo, 'horas' => round($minutos->avg() / 60, 1)];
+            })
+            ->filter()
+            ->sortByDesc('horas')
+            ->values()
             ->all();
     }
 }
