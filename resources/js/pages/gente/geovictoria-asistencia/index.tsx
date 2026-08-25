@@ -279,12 +279,15 @@ export default function GeovictoriaAsistenciaIndex({
                                         <TableHead>HEC</TableHead>
                                         <TableHead>HT</TableHead>
                                         <TableHead>HNT</TableHead>
+                                        <TableHead>Exceso jornada</TableHead>
+                                        <TableHead>Descanso previo</TableHead>
+                                        <TableHead>Descanso no efectivo</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {hoy.registros.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={14} className="text-muted-foreground py-6 text-center">
+                                            <TableCell colSpan={17} className="text-muted-foreground py-6 text-center">
                                                 Todavía no hay registros de hoy.
                                             </TableCell>
                                         </TableRow>
@@ -308,6 +311,31 @@ export default function GeovictoriaAsistenciaIndex({
                                             <TableCell>{registro.hec ?? '—'}</TableCell>
                                             <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
                                             <TableCell>{registro.hnt ?? '—'}</TableCell>
+                                            <TableCell>
+                                                {registro.exceso_jornada ? (
+                                                    <Badge variant="destructive" className="gap-1">
+                                                        <Timer className="size-3" />
+                                                        Sí
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        No
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
+                                            <TableCell>
+                                                {registro.descanso_no_efectivo ? (
+                                                    <Badge variant="secondary" className="gap-1">
+                                                        <AlertTriangle className="size-3" />
+                                                        Sí
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        No
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

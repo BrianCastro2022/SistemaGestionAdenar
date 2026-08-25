@@ -124,6 +124,7 @@ class GeovictoriaAsistenciaTest extends TestCase
             'hnt' => '00:00',
             'exceso_jornada' => true,
             'descanso_no_efectivo' => false,
+            'horas_descanso_previo' => '9h 30m',
         ]);
         $this->registro(['identificador' => 'A2', 'exceso_jornada' => false, 'descanso_no_efectivo' => true]);
         // Registro de ayer: no debe aparecer en "hoy".
@@ -146,6 +147,10 @@ class GeovictoriaAsistenciaTest extends TestCase
             $this->assertSame('01:00', $registros['A1']['hea']);
             $this->assertSame('00:30', $registros['A1']['hec']);
             $this->assertSame('00:00', $registros['A1']['hnt']);
+            // Mismos campos de incidencia que trae la tabla de Detalle.
+            $this->assertTrue($registros['A1']['exceso_jornada']);
+            $this->assertFalse($registros['A1']['descanso_no_efectivo']);
+            $this->assertSame('9h 30m', $registros['A1']['horas_descanso_previo']);
         });
     }
 
