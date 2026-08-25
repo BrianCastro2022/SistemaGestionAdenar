@@ -172,6 +172,88 @@ function EmptyChart({ children }: { children: React.ReactNode }) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
+// Tabla compartida por "Hoy" y "Detalle": mismas columnas en el mismo
+// orden en ambas pestañas. "Hoy" la usa sin paginación (from=1, sin lista
+// de links); "Detalle" le pasa la página actual del paginador.
+function RegistroTable({ data, from, emptyMessage }: { data: RegistroRow[]; from: number; emptyMessage: string }) {
+    return (
+        <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Identificador</TableHead>
+                        <TableHead>Empleado</TableHead>
+                        <TableHead>Cargo</TableHead>
+                        <TableHead>Grupo</TableHead>
+                        <TableHead>Entrada</TableHead>
+                        <TableHead>Salida descanso</TableHead>
+                        <TableHead>Ingreso descanso</TableHead>
+                        <TableHead>Salida</TableHead>
+                        <TableHead>Horas trabajadas</TableHead>
+                        <TableHead>Exceso jornada</TableHead>
+                        <TableHead>Descanso previo</TableHead>
+                        <TableHead>Descanso no efectivo</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {data.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={14} className="text-muted-foreground py-6 text-center">
+                                {emptyMessage}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {data.map((registro, index) => (
+                        <TableRow
+                            key={registro.id}
+                            className={registro.exceso_jornada || registro.descanso_no_efectivo ? 'bg-destructive/5' : undefined}
+                        >
+                            <TableCell className="text-muted-foreground">{from + index}</TableCell>
+                            <TableCell>{registro.fecha}</TableCell>
+                            <TableCell>{registro.identificador}</TableCell>
+                            <TableCell className="font-medium">{nombreCompleto(registro)}</TableCell>
+                            <TableCell>{registro.cargo ?? '—'}</TableCell>
+                            <TableCell>{registro.grupo ?? '—'}</TableCell>
+                            <TableCell>{registro.entrada ?? '—'}</TableCell>
+                            <TableCell>{registro.salida_descanso ?? '—'}</TableCell>
+                            <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
+                            <TableCell>{registro.salida ?? '—'}</TableCell>
+                            <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
+                            <TableCell>
+                                {registro.exceso_jornada ? (
+                                    <Badge variant="destructive" className="gap-1">
+                                        <Timer className="size-3" />
+                                        Sí
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-muted-foreground">
+                                        No
+                                    </Badge>
+                                )}
+                            </TableCell>
+                            <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
+                            <TableCell>
+                                {registro.descanso_no_efectivo ? (
+                                    <Badge variant="secondary" className="gap-1">
+                                        <AlertTriangle className="size-3" />
+                                        Sí
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-muted-foreground">
+                                        No
+                                    </Badge>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+}
+
 export default function GeovictoriaAsistenciaIndex({
     registros,
     indicadores,
@@ -261,86 +343,7 @@ export default function GeovictoriaAsistenciaIndex({
                             />
                         </div>
 
-                        <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Identificador</TableHead>
-                                        <TableHead>Nombre</TableHead>
-                                        <TableHead>Cargo</TableHead>
-                                        <TableHead>Grupo</TableHead>
-                                        <TableHead>Turno</TableHead>
-                                        <TableHead>Permiso</TableHead>
-                                        <TableHead>Entrada</TableHead>
-                                        <TableHead>Salida descanso</TableHead>
-                                        <TableHead>Ingreso descanso</TableHead>
-                                        <TableHead>Salida</TableHead>
-                                        <TableHead>HEA</TableHead>
-                                        <TableHead>HEC</TableHead>
-                                        <TableHead>HT</TableHead>
-                                        <TableHead>HNT</TableHead>
-                                        <TableHead>Exceso jornada</TableHead>
-                                        <TableHead>Descanso previo</TableHead>
-                                        <TableHead>Descanso no efectivo</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {hoy.registros.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={17} className="text-muted-foreground py-6 text-center">
-                                                Todavía no hay registros de hoy.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    {hoy.registros.map((registro) => (
-                                        <TableRow
-                                            key={registro.id}
-                                            className={registro.exceso_jornada || registro.descanso_no_efectivo ? 'bg-destructive/5' : undefined}
-                                        >
-                                            <TableCell>{registro.identificador}</TableCell>
-                                            <TableCell className="font-medium">{nombreCompleto(registro)}</TableCell>
-                                            <TableCell>{registro.cargo ?? '—'}</TableCell>
-                                            <TableCell>{registro.grupo ?? '—'}</TableCell>
-                                            <TableCell>{registro.turno ?? '—'}</TableCell>
-                                            <TableCell>{registro.permiso ?? '—'}</TableCell>
-                                            <TableCell>{registro.entrada ?? '—'}</TableCell>
-                                            <TableCell>{registro.salida_descanso ?? '—'}</TableCell>
-                                            <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
-                                            <TableCell>{registro.salida ?? '—'}</TableCell>
-                                            <TableCell>{registro.hea ?? '—'}</TableCell>
-                                            <TableCell>{registro.hec ?? '—'}</TableCell>
-                                            <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
-                                            <TableCell>{registro.hnt ?? '—'}</TableCell>
-                                            <TableCell>
-                                                {registro.exceso_jornada ? (
-                                                    <Badge variant="destructive" className="gap-1">
-                                                        <Timer className="size-3" />
-                                                        Sí
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-muted-foreground">
-                                                        No
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
-                                            <TableCell>
-                                                {registro.descanso_no_efectivo ? (
-                                                    <Badge variant="secondary" className="gap-1">
-                                                        <AlertTriangle className="size-3" />
-                                                        Sí
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-muted-foreground">
-                                                        No
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                        <RegistroTable data={hoy.registros} from={1} emptyMessage="Todavía no hay registros de hoy." />
                     </div>
                 ) : vista === 'indicadores' ? (
                     <div className="flex flex-col gap-6">
@@ -649,80 +652,7 @@ export default function GeovictoriaAsistenciaIndex({
                             </Button>
                         </div>
 
-                        <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>#</TableHead>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Identificador</TableHead>
-                                        <TableHead>Empleado</TableHead>
-                                        <TableHead>Cargo</TableHead>
-                                        <TableHead>Grupo</TableHead>
-                                        <TableHead>Entrada</TableHead>
-                                        <TableHead>Salida descanso</TableHead>
-                                        <TableHead>Ingreso descanso</TableHead>
-                                        <TableHead>Salida</TableHead>
-                                        <TableHead>Horas trabajadas</TableHead>
-                                        <TableHead>Exceso jornada</TableHead>
-                                        <TableHead>Descanso previo</TableHead>
-                                        <TableHead>Descanso no efectivo</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {registros.data.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={14} className="text-muted-foreground py-6 text-center">
-                                                No se encontraron registros.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    {registros.data.map((registro, index) => (
-                                        <TableRow
-                                            key={registro.id}
-                                            className={registro.exceso_jornada || registro.descanso_no_efectivo ? 'bg-destructive/5' : undefined}
-                                        >
-                                            <TableCell className="text-muted-foreground">{(registros.from ?? 1) + index}</TableCell>
-                                            <TableCell>{registro.fecha}</TableCell>
-                                            <TableCell>{registro.identificador}</TableCell>
-                                            <TableCell className="font-medium">{nombreCompleto(registro)}</TableCell>
-                                            <TableCell>{registro.cargo ?? '—'}</TableCell>
-                                            <TableCell>{registro.grupo ?? '—'}</TableCell>
-                                            <TableCell>{registro.entrada ?? '—'}</TableCell>
-                                            <TableCell>{registro.salida_descanso ?? '—'}</TableCell>
-                                            <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
-                                            <TableCell>{registro.salida ?? '—'}</TableCell>
-                                            <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
-                                            <TableCell>
-                                                {registro.exceso_jornada ? (
-                                                    <Badge variant="destructive" className="gap-1">
-                                                        <Timer className="size-3" />
-                                                        Sí
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-muted-foreground">
-                                                        No
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
-                                            <TableCell>
-                                                {registro.descanso_no_efectivo ? (
-                                                    <Badge variant="secondary" className="gap-1">
-                                                        <AlertTriangle className="size-3" />
-                                                        Sí
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-muted-foreground">
-                                                        No
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                        <RegistroTable data={registros.data} from={registros.from ?? 1} emptyMessage="No se encontraron registros." />
 
                         {registros.links.length > 3 && (
                             <div className="flex flex-wrap gap-1">
