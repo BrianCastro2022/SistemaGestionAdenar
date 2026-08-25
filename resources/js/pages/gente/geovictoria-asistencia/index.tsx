@@ -11,7 +11,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, BedDouble, CalendarClock, Clock, Search, Timer, Users, type LucideIcon } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -29,10 +29,6 @@ type Vista = 'hoy' | 'indicadores' | 'detalle';
 const COLOR_EXCESO_JORNADA = '#d03b3b'; // critical
 const COLOR_DESCANSO_NO_EFECTIVO = '#fab219'; // warning
 const COLOR_NEUTRO = '#2a78d6'; // categorical slot 1 (azul), para series únicas
-
-// Paleta categórica validada (orden fijo, no se ciclan los tonos) para
-// "Registros por cargo", donde cada porción es una categoría distinta.
-const PALETA_CATEGORICA = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
 
 interface RegistroRow {
     id: number;
@@ -320,6 +316,45 @@ export default function GeovictoriaAsistenciaIndex({
                     </div>
                 ) : vista === 'indicadores' ? (
                     <div className="flex flex-col gap-6">
+                        <div className="flex flex-wrap items-end gap-2">
+                            <div className="grid gap-1">
+                                <Label className="text-xs text-muted-foreground">Desde</Label>
+                                <Input
+                                    type="date"
+                                    className="w-40"
+                                    value={filters.fecha_desde}
+                                    onChange={(e) => applyFilters({ fecha_desde: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-1">
+                                <Label className="text-xs text-muted-foreground">Hasta</Label>
+                                <Input
+                                    type="date"
+                                    className="w-40"
+                                    value={filters.fecha_hasta}
+                                    onChange={(e) => applyFilters({ fecha_hasta: e.target.value })}
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => applyFilters({ fecha_desde: hoy.fecha, fecha_hasta: hoy.fecha })}
+                            >
+                                Hoy
+                            </Button>
+                            {(filters.fecha_desde !== '' || filters.fecha_hasta !== '') && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => applyFilters({ fecha_desde: '', fecha_hasta: '' })}
+                                >
+                                    Limpiar rango
+                                </Button>
+                            )}
+                        </div>
+
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <KpiCard kpi={{ label: 'Empleados monitoreados', valor: indicadores.resumen.empleados, icon: Users, color: '#0ca30c' }} />
                             <KpiCard kpi={{ label: 'Registros totales', valor: indicadores.resumen.total_registros, icon: Clock, color: '#0ca30c' }} />
@@ -353,7 +388,8 @@ export default function GeovictoriaAsistenciaIndex({
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                                 <CardHeader>
                                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                                        Incidencias por día (últimos 30 días)
+                                        Incidencias por día
+                                        {filters.fecha_desde || filters.fecha_hasta ? ' (rango seleccionado)' : ' (últimos 30 días)'}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -418,37 +454,32 @@ export default function GeovictoriaAsistenciaIndex({
                             </Card>
                         </div>
 
-                        <div className="grid gap-4 lg:grid-cols-3">
-                            <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                                <CardHeader>
-                                    <CardTitle className="text-sm font-medium text-muted-foreground">Registros por cargo</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {indicadores.distribucion_cargo.length === 0 ? (
-                                        <EmptyChart>Todavía no hay registros.</EmptyChart>
-                                    ) : (
-                                        <ResponsiveContainer width="100%" height={280}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={indicadores.distribucion_cargo}
-                                                    dataKey="total"
-                                                    nameKey="cargo"
-                                                    innerRadius={50}
-                                                    outerRadius={90}
-                                                    paddingAngle={2}
-                                                >
-                                                    {indicadores.distribucion_cargo.map((entry, index) => (
-                                                        <Cell key={entry.cargo} fill={PALETA_CATEGORICA[index % PALETA_CATEGORICA.length]} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip />
-                                                <Legend wrapperStyle={{ fontSize: 12 }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    )}
-                                </CardContent>
-                            </Card>
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium text-muted-foreground">Registros por cargo</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {indicadores.distribucion_cargo.length === 0 ? (
+                                    <EmptyChart>Todavía no hay registros.</EmptyChart>
+                                ) : (
+                                    // Barras horizontales en vez de dona: con muchos cargos distintos
+                                    // (esta empresa tiene más de 15) cada categoría ya se distingue por
+                                    // su fila/etiqueta, no por color — así se evita una leyenda
+                                    // imposible de leer y colores que tendrían que ciclarse.
+                                    <ResponsiveContainer width="100%" height={Math.max(280, indicadores.distribucion_cargo.length * 32)}>
+                                        <BarChart data={indicadores.distribucion_cargo} layout="vertical" margin={{ left: 8, right: 16 }}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                                            <YAxis type="category" dataKey="cargo" width={170} tick={{ fontSize: 11 }} interval={0} />
+                                            <Tooltip />
+                                            <Bar dataKey="total" name="Registros" fill={COLOR_NEUTRO} radius={[0, 4, 4, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </CardContent>
+                        </Card>
 
+                        <div className="grid gap-4 lg:grid-cols-2">
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                                 <CardHeader>
                                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -605,14 +636,15 @@ export default function GeovictoriaAsistenciaIndex({
                                         <TableHead>Ingreso descanso</TableHead>
                                         <TableHead>Salida</TableHead>
                                         <TableHead>Horas trabajadas</TableHead>
+                                        <TableHead>Exceso jornada</TableHead>
                                         <TableHead>Descanso previo</TableHead>
-                                        <TableHead>Incidencias</TableHead>
+                                        <TableHead>Descanso no efectivo</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {registros.data.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={13} className="text-muted-foreground py-6 text-center">
+                                            <TableCell colSpan={14} className="text-muted-foreground py-6 text-center">
                                                 No se encontraron registros.
                                             </TableCell>
                                         </TableRow>
@@ -633,25 +665,30 @@ export default function GeovictoriaAsistenciaIndex({
                                             <TableCell>{registro.ingreso_descanso ?? '—'}</TableCell>
                                             <TableCell>{registro.salida ?? '—'}</TableCell>
                                             <TableCell>{registro.horas_trabajadas ?? '—'}</TableCell>
+                                            <TableCell>
+                                                {registro.exceso_jornada ? (
+                                                    <Badge variant="destructive" className="gap-1">
+                                                        <Timer className="size-3" />
+                                                        Sí
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        No
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
                                             <TableCell>{registro.horas_descanso_previo ?? '—'}</TableCell>
                                             <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {registro.exceso_jornada && (
-                                                        <Badge variant="destructive" className="gap-1">
-                                                            <Timer className="size-3" />
-                                                            Exceso jornada
-                                                        </Badge>
-                                                    )}
-                                                    {registro.descanso_no_efectivo && (
-                                                        <Badge variant="secondary" className="gap-1">
-                                                            <AlertTriangle className="size-3" />
-                                                            Descanso no efectivo
-                                                        </Badge>
-                                                    )}
-                                                    {!registro.exceso_jornada && !registro.descanso_no_efectivo && (
-                                                        <span className="text-muted-foreground">—</span>
-                                                    )}
-                                                </div>
+                                                {registro.descanso_no_efectivo ? (
+                                                    <Badge variant="secondary" className="gap-1">
+                                                        <AlertTriangle className="size-3" />
+                                                        Sí
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        No
+                                                    </Badge>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}

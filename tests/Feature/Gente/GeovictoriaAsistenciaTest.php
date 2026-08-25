@@ -185,4 +185,39 @@ class GeovictoriaAsistenciaTest extends TestCase
             $this->assertEquals(7.0, $horasPorCargo['Conductor']['horas']);
         });
     }
+
+    public function test_indicadores_respect_the_fecha_desde_and_fecha_hasta_filters(): void
+    {
+        $user = $this->actingAsRole('Gente');
+        $this->registro([
+            'identificador' => 'A1', 'fecha' => '2026-08-01', 'cargo' => 'Movilizador',
+            'exceso_jornada' => true, 'descanso_no_efectivo' => false, 'horas_trabajadas' => '10:00',
+        ]);
+        // Fuera del rango que se va a filtrar: no debe contar en ningún indicador.
+        $this->registro([
+            'identificador' => 'A2', 'fecha' => '2026-07-01', 'cargo' => 'Conductor',
+            'exceso_jornada' => true, 'descanso_no_efectivo' => true, 'horas_trabajadas' => '05:00',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('gente.asistencia-geovictoria.index', [
+            'fecha_desde' => '2026-08-01',
+            'fecha_hasta' => '2026-08-31',
+        ]));
+
+        $response->assertInertia(function ($page) {
+            $indicadores = $page->toArray()['props']['indicadores'];
+
+            $this->assertSame(1, $indicadores['resumen']['total_registros']);
+            $this->assertSame(1, $indicadores['resumen']['empleados']);
+            $this->assertEquals(100.0, $indicadores['resumen']['pct_exceso_jornada']);
+
+            $tendencia = collect($indicadores['tendencia_diaria'])->keyBy('fecha');
+            $this->assertSame(1, $tendencia['2026-08-01']['exceso_jornada']);
+            $this->assertArrayNotHasKey('2026-07-01', $tendencia);
+
+            $porCargo = collect($indicadores['distribucion_cargo'])->keyBy('cargo');
+            $this->assertSame(1, $porCargo['Movilizador']['total']);
+            $this->assertArrayNotHasKey('Conductor', $porCargo);
+        });
+    }
 }

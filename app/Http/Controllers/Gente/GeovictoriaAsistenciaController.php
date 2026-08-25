@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Gente;
 use App\Http\Controllers\Controller;
 use App\Models\GeovictoriaAsistencia;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -35,8 +36,7 @@ class GeovictoriaAsistenciaController extends Controller
             ->when($cargo !== '', fn ($query) => $query->where('cargo', $cargo))
             ->when($tipo === 'exceso_jornada', fn ($query) => $query->where('exceso_jornada', true))
             ->when($tipo === 'descanso_no_efectivo', fn ($query) => $query->where('descanso_no_efectivo', true))
-            ->when($fechaDesde !== '', fn ($query) => $query->whereDate('fecha', '>=', $fechaDesde))
-            ->when($fechaHasta !== '', fn ($query) => $query->whereDate('fecha', '<=', $fechaHasta))
+            ->tap(fn ($query) => $this->scopeFechas($query, $fechaDesde, $fechaHasta))
             ->orderByDesc('fecha')
             ->orderBy('apellidos')
             ->paginate(20)
@@ -72,14 +72,26 @@ class GeovictoriaAsistenciaController extends Controller
                 ],
             ],
             'indicadores' => [
-                'resumen' => $this->resumen(),
-                'tendencia_diaria' => $this->tendenciaDiaria(),
-                'top_empleados' => $this->topEmpleadosConIncidencias(),
-                'por_grupo' => $this->incidenciasPorGrupo(),
-                'distribucion_cargo' => $this->distribucionPorCargo(),
-                'horas_promedio_cargo' => $this->horasPromedioPorCargo(),
+                'resumen' => $this->resumen($fechaDesde, $fechaHasta),
+                'tendencia_diaria' => $this->tendenciaDiaria($fechaDesde, $fechaHasta),
+                'top_empleados' => $this->topEmpleadosConIncidencias($fechaDesde, $fechaHasta),
+                'por_grupo' => $this->incidenciasPorGrupo($fechaDesde, $fechaHasta),
+                'distribucion_cargo' => $this->distribucionPorCargo($fechaDesde, $fechaHasta),
+                'horas_promedio_cargo' => $this->horasPromedioPorCargo($fechaDesde, $fechaHasta),
             ],
         ]);
+    }
+
+    /**
+     * Filtro de rango de fechas compartido por todos los indicadores y por
+     * el detalle, igual que el histórico de la automatización (desde/hasta
+     * afecta tanto las gráficas como la tabla, ver app.py::index()).
+     */
+    private function scopeFechas(Builder $query, string $fechaDesde, string $fechaHasta): void
+    {
+        $query
+            ->when($fechaDesde !== '', fn ($q) => $q->whereDate('fecha', '>=', $fechaDesde))
+            ->when($fechaHasta !== '', fn ($q) => $q->whereDate('fecha', '<=', $fechaHasta));
     }
 
     private function valoresDistintos(string $columna): array
@@ -94,19 +106,21 @@ class GeovictoriaAsistenciaController extends Controller
             ->all();
     }
 
-    private function resumen(): array
+    private function resumen(string $fechaDesde, string $fechaHasta): array
     {
-        $total = GeovictoriaAsistencia::count();
-        $conExceso = GeovictoriaAsistencia::where('exceso_jornada', true)->count();
-        $conDescanso = GeovictoriaAsistencia::where('descanso_no_efectivo', true)->count();
-        $empleados = GeovictoriaAsistencia::query()->distinct()->count('identificador');
+        $base = fn () => GeovictoriaAsistencia::query()->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta));
+
+        $total = $base()->count();
+        $conExceso = $base()->where('exceso_jornada', true)->count();
+        $conDescanso = $base()->where('descanso_no_efectivo', true)->count();
+        $empleados = $base()->distinct()->count('identificador');
 
         return [
             'total_registros' => $total,
             'empleados' => $empleados,
             'pct_exceso_jornada' => $total > 0 ? round($conExceso * 100 / $total, 1) : 0,
             'pct_descanso_no_efectivo' => $total > 0 ? round($conDescanso * 100 / $total, 1) : 0,
-            'promedio_horas_trabajadas' => $this->promedioHorasTrabajadas(),
+            'promedio_horas_trabajadas' => $this->promedioHorasTrabajadas($fechaDesde, $fechaHasta),
         ];
     }
 
@@ -128,9 +142,10 @@ class GeovictoriaAsistenciaController extends Controller
         return $signo * ((int) $m[2] * 60 + (int) $m[3]);
     }
 
-    private function promedioHorasTrabajadas(): ?string
+    private function promedioHorasTrabajadas(string $fechaDesde, string $fechaHasta): ?string
     {
         $minutos = GeovictoriaAsistencia::query()
+            ->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta))
             ->whereNotNull('horas_trabajadas')
             ->where('horas_trabajadas', '!=', '')
             ->pluck('horas_trabajadas')
@@ -149,23 +164,31 @@ class GeovictoriaAsistenciaController extends Controller
     }
 
     /**
-     * Incidencias por día en los últimos 30 días (para el stacked bar de
-     * tendencia). Se agrupa en PHP en vez de con funciones de fecha de SQL
-     * para que el resultado sea igual en MySQL (producción) y sqlite
-     * (tests), y se rellenan los días sin datos.
+     * Incidencias por día (para el stacked bar de tendencia). Si no se
+     * pasa un rango de fechas, muestra los últimos 30 días por defecto
+     * para no graficar todo el histórico de una vez; si se pasa un rango,
+     * grafica exactamente ese rango (igual que la automatización). Se
+     * agrupa en PHP en vez de con funciones de fecha de SQL para que el
+     * resultado sea igual en MySQL (producción) y sqlite (tests), y se
+     * rellenan los días sin datos.
      */
-    private function tendenciaDiaria(): array
+    private function tendenciaDiaria(string $fechaDesde, string $fechaHasta): array
     {
-        $desde = CarbonImmutable::now()->subDays(29)->startOfDay();
+        $desde = $fechaDesde !== '' ? CarbonImmutable::parse($fechaDesde) : CarbonImmutable::now()->subDays(29)->startOfDay();
+        $hasta = $fechaHasta !== '' ? CarbonImmutable::parse($fechaHasta) : CarbonImmutable::now();
+
+        if ($desde->greaterThan($hasta)) {
+            return [];
+        }
 
         $porDia = GeovictoriaAsistencia::query()
-            ->where('fecha', '>=', $desde->toDateString())
+            ->tap(fn ($q) => $this->scopeFechas($q, $desde->toDateString(), $hasta->toDateString()))
             ->where(fn ($query) => $query->where('exceso_jornada', true)->orWhere('descanso_no_efectivo', true))
             ->get(['fecha', 'exceso_jornada', 'descanso_no_efectivo'])
             ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->fecha->format('Y-m-d'));
 
         $dias = [];
-        for ($fecha = $desde; $fecha <= CarbonImmutable::now(); $fecha = $fecha->addDay()) {
+        for ($fecha = $desde; $fecha <= $hasta; $fecha = $fecha->addDay()) {
             $clave = $fecha->format('Y-m-d');
             $delDia = $porDia->get($clave, collect());
 
@@ -181,11 +204,12 @@ class GeovictoriaAsistenciaController extends Controller
 
     /**
      * Empleados con más días de incidencia (exceso de jornada o descanso
-     * no efectivo) en todo el histórico, no solo el corte actual.
+     * no efectivo) en el rango seleccionado.
      */
-    private function topEmpleadosConIncidencias(): array
+    private function topEmpleadosConIncidencias(string $fechaDesde, string $fechaHasta): array
     {
         return GeovictoriaAsistencia::query()
+            ->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta))
             ->where(fn ($query) => $query->where('exceso_jornada', true)->orWhere('descanso_no_efectivo', true))
             ->select(
                 'identificador',
@@ -208,13 +232,14 @@ class GeovictoriaAsistenciaController extends Controller
     }
 
     /**
-     * Incidencias por grupo en todo el histórico (incluye grupos sin
+     * Incidencias por grupo en el rango seleccionado (incluye grupos sin
      * ninguna incidencia, con 0/0, para que el gráfico muestre siempre el
      * mismo conjunto de grupos).
      */
-    private function incidenciasPorGrupo(): array
+    private function incidenciasPorGrupo(string $fechaDesde, string $fechaHasta): array
     {
         return GeovictoriaAsistencia::query()
+            ->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta))
             ->get(['grupo', 'exceso_jornada', 'descanso_no_efectivo'])
             ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->grupo ?: 'Sin grupo')
             ->map(fn ($registros, $grupo) => [
@@ -228,12 +253,13 @@ class GeovictoriaAsistenciaController extends Controller
     }
 
     /**
-     * Distribución de registros por cargo (composición del histórico, no
-     * solo de las incidencias).
+     * Distribución de registros por cargo en el rango seleccionado
+     * (composición del histórico filtrado, no solo de las incidencias).
      */
-    private function distribucionPorCargo(): array
+    private function distribucionPorCargo(string $fechaDesde, string $fechaHasta): array
     {
         return GeovictoriaAsistencia::query()
+            ->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta))
             ->get(['cargo'])
             ->groupBy(fn (GeovictoriaAsistencia $registro) => $registro->cargo ?: 'Sin cargo')
             ->map(fn ($registros, $cargo) => ['cargo' => $cargo, 'total' => $registros->count()])
@@ -243,12 +269,14 @@ class GeovictoriaAsistenciaController extends Controller
     }
 
     /**
-     * Horas trabajadas promedio por cargo, solo con turnos ya completados
-     * (con hora de salida marcada), igual que el promedio general.
+     * Horas trabajadas promedio por cargo en el rango seleccionado, solo
+     * con turnos ya completados (con hora de salida marcada), igual que
+     * el promedio general.
      */
-    private function horasPromedioPorCargo(): array
+    private function horasPromedioPorCargo(string $fechaDesde, string $fechaHasta): array
     {
         return GeovictoriaAsistencia::query()
+            ->tap(fn ($q) => $this->scopeFechas($q, $fechaDesde, $fechaHasta))
             ->whereNotNull('horas_trabajadas')
             ->where('horas_trabajadas', '!=', '')
             ->get(['cargo', 'horas_trabajadas'])
