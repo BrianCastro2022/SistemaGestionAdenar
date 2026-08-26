@@ -57,6 +57,40 @@ class CompensacionVariableImportService
         return $num;
     }
 
+    private function parseMesNum($mes): ?int
+    {
+        if ($mes === null || $mes === '') return null;
+        $mesStr = mb_strtolower(trim((string)$mes), 'UTF-8');
+
+        if (is_numeric($mesStr)) {
+            $num = (int)$mesStr;
+            if ($num >= 1 && $num <= 12) return $num;
+        }
+
+        $map = [
+            'enero' => 1, 'ene' => 1,
+            'febrero' => 2, 'feb' => 2,
+            'marzo' => 3, 'mar' => 3,
+            'abril' => 4, 'abr' => 4,
+            'mayo' => 5, 'may' => 5,
+            'junio' => 6, 'jun' => 6,
+            'julio' => 7, 'jul' => 7,
+            'agosto' => 8, 'ago' => 8,
+            'septiembre' => 9, 'sep' => 9, 'setiembre' => 9,
+            'octubre' => 10, 'oct' => 10,
+            'noviembre' => 11, 'nov' => 11,
+            'diciembre' => 12, 'dic' => 12,
+        ];
+
+        foreach ($map as $key => $num) {
+            if (str_contains($mesStr, $key)) {
+                return $num;
+            }
+        }
+
+        return null;
+    }
+
     public function importar(array $rutasArchivos): array
     {
         $archivosProcesados = 0;
@@ -174,15 +208,18 @@ class CompensacionVariableImportService
 
                     $pagoVariableDt = round($pagoVariableDtCalculated, 2);
                     $anioVal = (int) $this->parseNumber($getValue('anio')) ?: (int) date('Y');
+                    $mesVal = $getValue('mes');
+                    $mesNum = $this->parseMesNum($mesVal);
 
                     $payload = [
                         'anio' => $anioVal,
-                        'mes' => $getValue('mes'),
+                        'mes' => $mesVal,
                         'mes2' => $getValue('mes2'),
                         'regional' => $getValue('regional'),
                         'cd' => $getValue('cd'),
                         'codigo_ob' => $getValue('codigo_ob'),
                         'codigo_gp' => $getValue('codigo_gp'),
+                        'identificador' => $identificador,
                         'nombre' => $nombre,
                         'cargo' => $getValue('cargo'),
                         'ausencia_justificada' => $this->parseNumber($getValue('ausencia_justificada')),
@@ -199,14 +236,28 @@ class CompensacionVariableImportService
                         'total_pago' => $pagoVariableDt,
                     ];
 
-                    // Use updateOrCreate to avoid duplicates per identificador
+                    // Composite Natural Unique Key: identificador + anio + mes
                     if ($identificador) {
-                        CompensacionVariable::updateOrCreate(
-                            ['identificador' => $identificador],
-                            $payload
-                        );
+                        $existing = CompensacionVariable::where('identificador', $identificador)
+                            ->where('anio', $anioVal)
+                            ->where(function ($q) use ($mesVal, $mesNum) {
+                                if ($mesVal !== null && $mesVal !== '') {
+                                    $q->where('mes', $mesVal);
+                                }
+                                if ($mesNum !== null) {
+                                    $q->orWhere('mes', (string)$mesNum)
+                                      ->orWhere('mes', sprintf('%02d', $mesNum));
+                                }
+                            })
+                            ->first();
+
+                        if ($existing) {
+                            $existing->update($payload);
+                        } else {
+                            CompensacionVariable::create($payload);
+                        }
                     } else {
-                        CompensacionVariable::create(array_merge(['identificador' => null], $payload));
+                        CompensacionVariable::create($payload);
                     }
 
                     $registrosCreados++;

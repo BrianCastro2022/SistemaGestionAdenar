@@ -135,7 +135,8 @@ export const modules: ModuleDef[] = [
         submodules: [
             { title: 'Calificaciones Negativas', slug: 'calificaciones-negativas', icon: Star },
             { title: 'Entrega en Rango', slug: 'entrega-en-rango', icon: MapPin },
-            { title: 'Modulación', slug: 'modulacion', icon: BarChart3 },
+            { title: 'Planeación de ruta', slug: 'modulacion', icon: BarChart3 },
+            { title: 'Historial de Planeaciones', slug: 'modulacion-historial', icon: FileStack },
             { title: 'Compensación Variable', slug: 'compensacion-variable', icon: DollarSign },
         ],
     },
