@@ -84,7 +84,7 @@ function Campo({ label, valor }: { label: string; valor: React.ReactNode }) {
 function ColaboradorLink({ colaborador, textoAlterno }: { colaborador: ColaboradorLigero | null; textoAlterno: string | null }) {
     if (colaborador) {
         return (
-            <Link href={route('seguridad.colaboradores.show', colaborador.id)} className="text-sm text-primary hover:underline">
+            <Link href={route('gente.colaboradores.show', colaborador.id)} className="text-sm text-primary hover:underline">
                 {colaborador.nombres} {colaborador.apellidos} — {colaborador.cedula}
             </Link>
         );

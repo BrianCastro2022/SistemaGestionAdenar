@@ -7,6 +7,7 @@ import {
     BookOpen,
     BellRing,
     Car,
+    Clock,
     ClipboardCheck,
     ClipboardList,
     Cpu,
@@ -15,6 +16,7 @@ import {
     Folder,
     Fuel,
     Gauge,
+    Gavel,
     GraduationCap,
     Grid3x3,
     HeartHandshake,
@@ -44,6 +46,14 @@ export interface SubModuleDef {
     icon: LucideIcon;
     /** Presente en los ítems que agrupan otros submódulos (se despliegan en el sidebar en vez de navegar). */
     submodules?: SubModuleDef[];
+    /**
+     * Para ítems inyectados dinámicamente dentro de la sección de OTRO rol
+     * (ej. el enlace de solo lectura a Colaboradores que se agrega a la
+     * sección de Seguridad/Reparto/Flota — ver `colaboradoresReadOnlySubmodule`
+     * y app-sidebar.tsx). Si se omite, la URL usa el slug del módulo padre
+     * como de costumbre.
+     */
+    moduleSlugOverride?: string;
 }
 
 export interface ModuleDef {
@@ -62,7 +72,6 @@ export const modules: ModuleDef[] = [
         icon: ShieldCheck,
         accent: '#3F7A22',
         submodules: [
-            { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
             {
                 title: 'Alcoholimetría',
                 icon: Wine,
@@ -136,9 +145,11 @@ export const modules: ModuleDef[] = [
         icon: Users,
         accent: '#E3A11E',
         submodules: [
+            { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
             { title: 'Malas Marcaciones', slug: 'malas-marcaciones', icon: Ban },
             { title: 'Inducciones', slug: 'inducciones', icon: Megaphone },
             { title: 'Plan Padrinos', slug: 'plan-padrinos', icon: HeartHandshake },
+            { title: 'Asistencia GeoVictoria', slug: 'asistencia-geovictoria', icon: Clock },
         ],
     },
     {
@@ -151,6 +162,7 @@ export const modules: ModuleDef[] = [
             { title: 'Checklist', slug: 'checklist', icon: ClipboardCheck },
             { title: 'Combustible', slug: 'combustible', icon: Fuel },
             { title: 'Calibración de Llantas', slug: 'calibracion-llantas', icon: Gauge },
+            { title: 'Consultas SIMIT', slug: 'simit-consultas', icon: Gavel },
         ],
     },
     {
@@ -163,6 +175,32 @@ export const modules: ModuleDef[] = [
         ],
     },
 ];
+
+/**
+ * Entrada de "Colaboradores" que app-sidebar.tsx inyecta como submódulo de
+ * solo lectura dentro de la sección propia de Seguridad, Reparto o Flota
+ * (los roles que no son dueños del módulo pero conservan acceso de solo
+ * lectura). La entrada "real", con permisos de escritura, vive en
+ * `modules` bajo Gente.submodules.
+ */
+export const colaboradoresReadOnlySubmodule: SubModuleDef = {
+    title: 'Colaboradores',
+    slug: 'colaboradores',
+    icon: UserCheck,
+    moduleSlugOverride: 'gente',
+};
+
+/**
+ * Entrada de "Asistencia GeoVictoria" que app-sidebar.tsx inyecta como
+ * submódulo de solo lectura dentro de la sección de Reparto (la ruta real
+ * vive bajo Gente, ver routes/gente.php: role Administrador|Gente|Reparto).
+ */
+export const geovictoriaAsistenciaReadOnlySubmodule: SubModuleDef = {
+    title: 'Asistencia GeoVictoria',
+    slug: 'asistencia-geovictoria',
+    icon: Clock,
+    moduleSlugOverride: 'gente',
+};
 
 export function findModule(moduleSlug: string): ModuleDef | undefined {
     return modules.find((mod) => mod.slug === moduleSlug);
