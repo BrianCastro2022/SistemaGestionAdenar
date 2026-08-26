@@ -31,6 +31,9 @@ Route::middleware(['auth', 'active'])->group(function () {
             if ($module === 'reparto' && $submodule === 'compensacion-variable') {
                 return (new \App\Http\Controllers\Reparto\CompensacionVariableController)->index($request);
             }
+            if ($module === 'reparto' && $submodule === 'modulacion') {
+                return (new \App\Http\Controllers\Reparto\ModulacionController)->index($request);
+            }
             return Inertia::render('modules/submodule', ['module' => $module, 'submodule' => $submodule]);
         })->whereIn('module', ['seguridad', 'reparto', 'gente', 'flota'])->name('modules.submodule');
     });
