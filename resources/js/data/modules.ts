@@ -36,6 +36,7 @@ import {
     UserCheck,
     Users,
     Wine,
+    Wrench,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -162,6 +163,7 @@ export const modules: ModuleDef[] = [
             { title: 'Combustible', slug: 'combustible', icon: Fuel },
             { title: 'Calibración de Llantas', slug: 'calibracion-llantas', icon: Gauge },
             { title: 'Consultas SIMIT', slug: 'simit-consultas', icon: Gavel },
+            { title: 'Control de Varadas', slug: 'varadas', icon: Wrench },
         ],
     },
     {
