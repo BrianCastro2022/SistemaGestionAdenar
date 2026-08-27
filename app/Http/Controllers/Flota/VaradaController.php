@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Flota;
 
 use App\Http\Controllers\Controller;
 use App\Models\Flota\Varada;
+use App\Models\Flota\Vehiculo;
 use App\Services\Flota\VaradaImportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -20,8 +21,10 @@ class VaradaController extends Controller
         $filtros = [
             'anio' => $request->integer('anio') ?: null,
             'mes' => $request->integer('mes') ?: null,
-            'placa' => array_filter((array) $request->input('placa', [])),
-            'sistema' => array_filter((array) $request->input('sistema', [])),
+            'placa' => $request->string('placa')->trim()->toString(),
+            'sistema' => $request->string('sistema')->trim()->toString(),
+            'fecha_desde' => $request->string('fecha_desde')->trim()->toString(),
+            'fecha_hasta' => $request->string('fecha_hasta')->trim()->toString(),
         ];
 
         $data = $this->filteredQuery($filtros)
@@ -38,6 +41,9 @@ class VaradaController extends Controller
                 'placas' => Varada::query()->distinct()->whereNotNull('placa')->orderBy('placa')->pluck('placa'),
                 'sistemas' => Varada::query()->distinct()->whereNotNull('sistema')->orderBy('sistema')->pluck('sistema'),
                 'anios' => Varada::query()->pluck('fecha_reportada')->map(fn ($fecha) => $fecha->year)->unique()->sort()->values(),
+                // Placas de la flota (Documentación de Flota) para el formulario de
+                // registro manual: se elige el vehículo, no se digita la placa.
+                'placas_flota' => Vehiculo::query()->where('is_active', true)->orderBy('placa')->pluck('placa'),
             ],
             'indicadores' => $this->indicadores($registros),
             'mapa_puntos' => $this->mapaPuntos($registros),
@@ -49,8 +55,10 @@ class VaradaController extends Controller
         return Varada::query()
             ->when($filtros['anio'], fn ($q, $anio) => $q->whereYear('fecha_reportada', $anio))
             ->when($filtros['mes'], fn ($q, $mes) => $q->whereMonth('fecha_reportada', $mes))
-            ->when($filtros['placa'] !== [], fn ($q) => $q->whereIn('placa', $filtros['placa']))
-            ->when($filtros['sistema'] !== [], fn ($q) => $q->whereIn('sistema', $filtros['sistema']));
+            ->when($filtros['placa'] !== '', fn ($q) => $q->where('placa', $filtros['placa']))
+            ->when($filtros['sistema'] !== '', fn ($q) => $q->where('sistema', $filtros['sistema']))
+            ->when($filtros['fecha_desde'] !== '', fn ($q) => $q->whereDate('fecha_reportada', '>=', $filtros['fecha_desde']))
+            ->when($filtros['fecha_hasta'] !== '', fn ($q) => $q->whereDate('fecha_reportada', '<=', $filtros['fecha_hasta']));
     }
 
     public function store(Request $request): RedirectResponse

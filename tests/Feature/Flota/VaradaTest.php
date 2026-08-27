@@ -4,9 +4,12 @@ namespace Tests\Feature\Flota;
 
 use App\Models\Flota\Varada;
 use App\Models\Flota\VaradaUbicacion;
+use App\Models\Flota\Vehiculo;
 use App\Models\User;
 use App\Services\Flota\VaradaImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Role;
@@ -149,6 +152,22 @@ class VaradaTest extends TestCase
         });
     }
 
+    public function test_catalogo_de_placas_solo_trae_vehiculos_activos_de_flota(): void
+    {
+        $user = $this->actingAsRole('Flota');
+        Vehiculo::create(['placa' => 'ABC123', 'is_active' => true]);
+        Vehiculo::create(['placa' => 'ZZZ999', 'is_active' => true]);
+        Vehiculo::create(['placa' => 'OLD001', 'is_active' => false]);
+
+        $response = $this->actingAs($user)->get(route('flota.varadas.index'));
+
+        $response->assertInertia(function ($page) {
+            $placas = $page->toArray()['props']['catalogos']['placas_flota'];
+
+            $this->assertSame(['ABC123', 'ZZZ999'], array_values($placas));
+        });
+    }
+
     public function test_it_filters_by_anio_mes_placa_and_sistema(): void
     {
         $user = $this->actingAsRole('Flota');
@@ -158,11 +177,28 @@ class VaradaTest extends TestCase
         $response = $this->actingAs($user)->get(route('flota.varadas.index', ['anio' => 2026, 'mes' => 4]));
         $response->assertInertia(fn ($page) => $page->has('registros.data', 1));
 
-        $response = $this->actingAs($user)->get(route('flota.varadas.index', ['placa' => ['DEF456']]));
+        $response = $this->actingAs($user)->get(route('flota.varadas.index', ['placa' => 'DEF456']));
         $response->assertInertia(fn ($page) => $page->has('registros.data', 1));
 
-        $response = $this->actingAs($user)->get(route('flota.varadas.index', ['sistema' => ['FRENOS']]));
+        $response = $this->actingAs($user)->get(route('flota.varadas.index', ['sistema' => 'FRENOS']));
         $response->assertInertia(fn ($page) => $page->has('registros.data', 1));
+    }
+
+    public function test_it_filters_by_fecha_desde_and_fecha_hasta(): void
+    {
+        $user = $this->actingAsRole('Flota');
+        $this->varada(['placa' => 'ABC123', 'fecha_reportada' => '2026-04-16 07:06:00']);
+        $this->varada(['placa' => 'DEF456', 'fecha_reportada' => '2026-05-16 07:06:00']);
+
+        $response = $this->actingAs($user)->get(route('flota.varadas.index', [
+            'fecha_desde' => '2026-04-01',
+            'fecha_hasta' => '2026-04-30',
+        ]));
+
+        $response->assertInertia(function ($page) {
+            $page->has('registros.data', 1);
+            $this->assertSame('ABC123', $page->toArray()['props']['registros']['data'][0]['placa']);
+        });
     }
 
     /**
@@ -173,13 +209,13 @@ class VaradaTest extends TestCase
      */
     private function celdaFecha($hoja, string $coordenada, string $fechaHora): void
     {
-        $hoja->setCellValue($coordenada, \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel(new \DateTime($fechaHora)));
+        $hoja->setCellValue($coordenada, Date::PHPToExcel(new \DateTime($fechaHora)));
         $hoja->getStyle($coordenada)->getNumberFormat()->setFormatCode('dd/mm/yyyy hh:mm');
     }
 
     private function crearExcelDePrueba(): string
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
 
         $varadas = $spreadsheet->getActiveSheet();
         $varadas->setTitle('Varadas');
@@ -212,7 +248,7 @@ class VaradaTest extends TestCase
     public function test_import_service_parses_dates_coordinates_and_dedupes_on_reimport(): void
     {
         $path = $this->crearExcelDePrueba();
-        $service = new VaradaImportService();
+        $service = new VaradaImportService;
 
         $resultado = $service->importar([$path => 'prueba.xlsx']);
 
@@ -249,7 +285,7 @@ class VaradaTest extends TestCase
         $path = $this->crearExcelDePrueba();
 
         $response = $this->actingAs($user)->post(route('flota.varadas.importar'), [
-            'archivos' => [new \Illuminate\Http\UploadedFile($path, 'prueba.xlsx', null, null, true)],
+            'archivos' => [new UploadedFile($path, 'prueba.xlsx', null, null, true)],
         ]);
 
         $response->assertRedirect(route('flota.varadas.index'));

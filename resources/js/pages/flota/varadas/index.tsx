@@ -3,7 +3,6 @@ import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { MUNICIPIOS_NARINO } from '@/data/municipios-narino';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
@@ -29,7 +29,7 @@ import {
     Wrench,
     type LucideIcon,
 } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -44,6 +44,20 @@ const COLOR_PRIMARIO = '#2B6CB0';
 const COLOR_ALERTA = '#d03b3b';
 const COLOR_ADVERTENCIA = '#fab219';
 const TODOS = 'todos';
+
+const SISTEMAS_FIJOS = [
+    'CARROCERIA',
+    'ELECTRICO',
+    'FLUIDOS',
+    'FRENOS',
+    'INYECCION',
+    'LLANTAS',
+    'MOTOR',
+    'REFRIGERACION',
+    'TELEMETRIA',
+    'TRANSMISION',
+];
+const SISTEMA_OTRO = '__otro__';
 
 interface VaradaRow {
     id: number;
@@ -87,14 +101,17 @@ interface VaradasPaginator {
 interface Filters {
     anio: number | null;
     mes: number | null;
-    placa: string[];
-    sistema: string[];
+    placa: string;
+    sistema: string;
+    fecha_desde: string;
+    fecha_hasta: string;
 }
 
 interface Catalogos {
     placas: string[];
     sistemas: string[];
     anios: number[];
+    placas_flota: string[];
 }
 
 interface Resumen {
@@ -190,12 +207,20 @@ export default function VaradasIndex({
     const [openImportModal, setOpenImportModal] = useState(false);
     const [openFormModal, setOpenFormModal] = useState(false);
     const [editing, setEditing] = useState<VaradaRow | null>(null);
+    const [sistemaOtro, setSistemaOtro] = useState(false);
 
     const applyFilters = (overrides: Partial<Filters>) => {
         const next = { ...filters, ...overrides };
         router.get(
             route('flota.varadas.index'),
-            { anio: next.anio ?? undefined, mes: next.mes ?? undefined, placa: next.placa, sistema: next.sistema },
+            {
+                anio: next.anio ?? undefined,
+                mes: next.mes ?? undefined,
+                placa: next.placa,
+                sistema: next.sistema,
+                fecha_desde: next.fecha_desde,
+                fecha_hasta: next.fecha_hasta,
+            },
             { preserveState: true, preserveScroll: true, replace: true },
         );
     };
@@ -232,11 +257,13 @@ export default function VaradasIndex({
     const openCreate = () => {
         setEditing(null);
         resetForm();
+        setSistemaOtro(false);
         setOpenFormModal(true);
     };
 
     const openEdit = (row: VaradaRow) => {
         setEditing(row);
+        setSistemaOtro(row.sistema !== null && row.sistema !== '' && !SISTEMAS_FIJOS.includes(row.sistema));
         setFormData({
             placa: row.placa,
             fecha_reportada: row.fecha_reportada ? row.fecha_reportada.slice(0, 16) : '',
@@ -272,6 +299,38 @@ export default function VaradasIndex({
         } else {
             postForm(route('flota.varadas.store'), { onSuccess });
         }
+    };
+
+    // Si se está editando una varada cuyo vehículo ya no está activo en
+    // Flota, su placa no aparecería en catalogos.placas_flota: se agrega
+    // igual para no dejar el selector vacío/roto al abrir el formulario.
+    const placaOptions = useMemo(() => {
+        if (editing && editing.placa && !catalogos.placas_flota.includes(editing.placa)) {
+            return [editing.placa, ...catalogos.placas_flota];
+        }
+        return catalogos.placas_flota;
+    }, [catalogos.placas_flota, editing]);
+
+    const handleSistemaChange = (value: string) => {
+        if (value === SISTEMA_OTRO) {
+            setSistemaOtro(true);
+            if (SISTEMAS_FIJOS.includes(formData.sistema)) {
+                setFormData('sistema', '');
+            }
+            return;
+        }
+        setSistemaOtro(false);
+        setFormData('sistema', value);
+    };
+
+    const handleLugarChange = (value: string) => {
+        const municipio = MUNICIPIOS_NARINO.find((m) => m.lugar === value);
+        setFormData((data) => ({
+            ...data,
+            lugar: value,
+            latitud: municipio ? String(municipio.latitud) : data.latitud,
+            longitud: municipio ? String(municipio.longitud) : data.longitud,
+        }));
     };
 
     const handleDelete = (row: VaradaRow) => {
@@ -361,10 +420,63 @@ export default function VaradasIndex({
                             </SelectContent>
                         </Select>
                     </div>
-                    <ChipMultiSelect label="Placa" options={catalogos.placas} value={filters.placa} onChange={(v) => applyFilters({ placa: v })} />
-                    <ChipMultiSelect label="Sistema" options={catalogos.sistemas} value={filters.sistema} onChange={(v) => applyFilters({ sistema: v })} />
-                    {(filters.anio || filters.mes || filters.placa.length > 0 || filters.sistema.length > 0) && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => applyFilters({ anio: null, mes: null, placa: [], sistema: [] })}>
+                    <div className="grid gap-1">
+                        <Label className="text-xs text-muted-foreground">Placa</Label>
+                        <Select value={filters.placa || TODOS} onValueChange={(v) => applyFilters({ placa: v === TODOS ? '' : v })}>
+                            <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Placa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={TODOS}>Todas</SelectItem>
+                                {catalogos.placas.map((placa) => (
+                                    <SelectItem key={placa} value={placa}>
+                                        {placa}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-1">
+                        <Label className="text-xs text-muted-foreground">Sistema</Label>
+                        <Select value={filters.sistema || TODOS} onValueChange={(v) => applyFilters({ sistema: v === TODOS ? '' : v })}>
+                            <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Sistema" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={TODOS}>Todos</SelectItem>
+                                {catalogos.sistemas.map((sistema) => (
+                                    <SelectItem key={sistema} value={sistema}>
+                                        {sistema}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-1">
+                        <Label className="text-xs text-muted-foreground">Desde</Label>
+                        <Input
+                            type="date"
+                            className="w-40"
+                            value={filters.fecha_desde}
+                            onChange={(e) => applyFilters({ fecha_desde: e.target.value })}
+                        />
+                    </div>
+                    <div className="grid gap-1">
+                        <Label className="text-xs text-muted-foreground">Hasta</Label>
+                        <Input
+                            type="date"
+                            className="w-40"
+                            value={filters.fecha_hasta}
+                            onChange={(e) => applyFilters({ fecha_hasta: e.target.value })}
+                        />
+                    </div>
+                    {(filters.anio || filters.mes || filters.placa !== '' || filters.sistema !== '' || filters.fecha_desde !== '' || filters.fecha_hasta !== '') && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => applyFilters({ anio: null, mes: null, placa: '', sistema: '', fecha_desde: '', fecha_hasta: '' })}
+                        >
                             Limpiar filtros
                         </Button>
                     )}
@@ -716,12 +828,44 @@ export default function VaradasIndex({
                         <form onSubmit={submitForm} className="grid gap-4 sm:grid-cols-2">
                             <div className="grid gap-1.5">
                                 <Label>Placa</Label>
-                                <Input value={formData.placa} onChange={(e) => setFormData('placa', e.target.value.toUpperCase())} required />
+                                <Select value={formData.placa} onValueChange={(value) => setFormData('placa', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona la placa" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {placaOptions.map((placa) => (
+                                            <SelectItem key={placa} value={placa}>
+                                                {placa}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Vehículos activos en Documentación de Flota.</p>
                                 {formErrors.placa && <p className="text-xs text-destructive">{formErrors.placa}</p>}
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Sistema</Label>
-                                <Input value={formData.sistema} onChange={(e) => setFormData('sistema', e.target.value)} />
+                                <Select value={sistemaOtro ? SISTEMA_OTRO : formData.sistema} onValueChange={handleSistemaChange}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona el sistema" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SISTEMAS_FIJOS.map((sistema) => (
+                                            <SelectItem key={sistema} value={sistema}>
+                                                {sistema}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value={SISTEMA_OTRO}>Otro</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {sistemaOtro && (
+                                    <Input
+                                        value={formData.sistema}
+                                        onChange={(e) => setFormData('sistema', e.target.value)}
+                                        placeholder="Escribe el sistema"
+                                        className="mt-1"
+                                    />
+                                )}
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Fecha y hora reportada</Label>
@@ -769,7 +913,19 @@ export default function VaradasIndex({
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Lugar</Label>
-                                <Input value={formData.lugar} onChange={(e) => setFormData('lugar', e.target.value)} placeholder="Ej. CD Pasto" />
+                                <Select value={formData.lugar} onValueChange={handleLugarChange}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona el municipio" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {MUNICIPIOS_NARINO.map((municipio) => (
+                                            <SelectItem key={municipio.lugar} value={municipio.lugar}>
+                                                {municipio.lugar}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Autocompleta latitud/longitud del municipio.</p>
                             </div>
                             <div className="grid gap-1.5">
                                 <Label>Proveedor</Label>
