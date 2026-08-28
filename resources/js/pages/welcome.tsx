@@ -1,11 +1,14 @@
 import Aurora from '@/components/Aurora';
+import ClickSpark from '@/components/ClickSpark';
 import { CountUp } from '@/components/count-up';
 import { GlowBorder } from '@/components/glow-border';
 import GradientText from '@/components/GradientText';
 import { Reveal } from '@/components/reveal';
+import RotatingText from '@/components/RotatingText';
 import { ShinyText } from '@/components/shiny-text';
 import SplitText from '@/components/SplitText';
 import { SpotlightCard } from '@/components/spotlight-card';
+import TiltedCard from '@/components/TiltedCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -154,8 +157,8 @@ export default function Welcome() {
                             {/* Fondo real de React Bits (WebGL vía `ogl`), en vez del blob CSS
                                 anterior — la paleta de marca (verde Adenar, dorado, rojo Bavaria)
                                 como stops de color. Ver components.json -> registro @react-bits. */}
-                            <div className="absolute inset-0 opacity-40 dark:opacity-30">
-                                <Aurora colorStops={[adenar, gold, bavaria]} amplitude={0.9} blend={0.6} speed={0.6} />
+                            <div className="absolute inset-0 opacity-70 dark:opacity-60">
+                                <Aurora colorStops={[adenar, gold, bavaria]} amplitude={1.6} blend={0.5} speed={1.1} />
                             </div>
                             <div className="bg-dot-grid absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
                             <div className="bg-grain absolute inset-0 opacity-[0.035] mix-blend-overlay" />
@@ -175,18 +178,32 @@ export default function Welcome() {
                                     </Badge>
                                 </div>
 
-                                <h1 className="text-4xl leading-tight font-bold tracking-tight text-balance sm:text-5xl">
+                                <h1 className="text-4xl leading-tight font-bold tracking-tight text-balance sm:text-6xl">
                                     <SplitText
                                         text="Sistema Integral de Gestión"
                                         tag="span"
                                         className="inline"
-                                        splitType="words"
+                                        splitType="chars"
                                         textAlign="left"
-                                        delay={30}
-                                        duration={0.8}
+                                        delay={18}
+                                        duration={0.7}
                                     />{' '}
                                     <ShinyText color={adenar}>ADENAR S.A.S.</ShinyText>
                                 </h1>
+
+                                <div className="flex flex-wrap items-center gap-2 text-xl font-semibold sm:text-2xl">
+                                    <span className="text-muted-foreground">Control total de</span>
+                                    <RotatingText
+                                        texts={modules.map((module) => module.title)}
+                                        mainClassName="rounded-lg px-3 py-1 text-white shadow-sm"
+                                        style={{ backgroundImage: `linear-gradient(135deg, ${adenar}, ${adenarDark})` }}
+                                        splitLevelClassName="overflow-hidden"
+                                        staggerFrom="last"
+                                        staggerDuration={0.02}
+                                        rotationInterval={2200}
+                                        transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+                                    />
+                                </div>
 
                                 <p className="text-lg leading-relaxed text-pretty text-muted-foreground">
                                     Plataforma interna para administrar los pilares operativos de ADENAR S.A.S., distribuidor autorizado de Bavaria
@@ -195,23 +212,32 @@ export default function Welcome() {
 
                                 <div className="flex flex-wrap gap-3">
                                     {auth.user ? (
-                                        <Button size="lg" className="shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]" asChild>
-                                            <Link href={route('dashboard')}>Ir al Dashboard</Link>
-                                        </Button>
+                                        <div className="inline-flex rounded-md">
+                                            <ClickSpark sparkColor={adenar} sparkCount={10} sparkRadius={20} sparkSize={12}>
+                                                <Button
+                                                    size="lg"
+                                                    className="shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
+                                                    asChild
+                                                >
+                                                    <Link href={route('dashboard')}>Ir al Dashboard</Link>
+                                                </Button>
+                                            </ClickSpark>
+                                        </div>
                                     ) : (
-                                        <>
-                                            <Button
-                                                size="lg"
-                                                className="group shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
-                                                asChild
-                                            >
-                                                <Link href={route('login')}>
-                                                    Iniciar sesión
-                                                    <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                                                </Link>
-                                            </Button>
-
-                                        </>
+                                        <div className="inline-flex rounded-md">
+                                            <ClickSpark sparkColor={adenar} sparkCount={10} sparkRadius={20} sparkSize={12}>
+                                                <Button
+                                                    size="lg"
+                                                    className="group shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
+                                                    asChild
+                                                >
+                                                    <Link href={route('login')}>
+                                                        Iniciar sesión
+                                                        <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                                                    </Link>
+                                                </Button>
+                                            </ClickSpark>
+                                        </div>
                                     )}
                                 </div>
 
@@ -242,11 +268,22 @@ export default function Welcome() {
                             <Reveal delay={150} className="relative">
                                 <GlowBorder colors={[adenar, gold, bavaria]} className="animate-float" rounded="rounded-2xl">
                                     <div className="relative rounded-2xl bg-white p-6 shadow-2xl" style={{ animationDuration: '7s' }}>
-                                        <img
-                                            src="/images/Logo adenar.png"
-                                            alt="ADENAR S.A.S. — Almacén Distribuidora Nariño S.A.S., distribuidor autorizado de Bavaria"
-                                            className="w-full rounded-lg"
-                                        />
+                                        {/* Relación 2:1 real del logo (1774×887px) para que TiltedCard
+                                            no recorte ni distorsione la imagen al aplicar object-cover. */}
+                                        <div className="aspect-[2/1] w-full overflow-hidden rounded-lg">
+                                            <TiltedCard
+                                                imageSrc="/images/Logo adenar.png"
+                                                altText="ADENAR S.A.S. — Almacén Distribuidora Nariño S.A.S., distribuidor autorizado de Bavaria"
+                                                containerWidth="100%"
+                                                containerHeight="100%"
+                                                imageWidth="100%"
+                                                imageHeight="100%"
+                                                rotateAmplitude={10}
+                                                scaleOnHover={1.04}
+                                                showMobileWarning={false}
+                                                showTooltip={false}
+                                            />
+                                        </div>
                                     </div>
                                 </GlowBorder>
 
@@ -284,7 +321,7 @@ export default function Welcome() {
                         <div className="mx-auto max-w-6xl px-6 py-16">
                             <Reveal className="mb-10 text-center">
                                 <h2 className="text-3xl font-semibold tracking-tight">
-                                    <GradientText colors={[adenar, gold, adenar]} animationSpeed={6} className="inline">
+                                    <GradientText colors={[adenar, gold, adenar]} animationSpeed={3.5} className="inline">
                                         Quiénes somos
                                     </GradientText>
                                 </h2>
@@ -335,7 +372,7 @@ export default function Welcome() {
                                     Un sistema, cuatro pilares
                                 </Badge>
                                 <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-                                    <GradientText colors={[adenar, gold, bavaria, gold, adenar]} animationSpeed={8} className="inline">
+                                    <GradientText colors={[adenar, gold, bavaria, gold, adenar]} animationSpeed={4.5} className="inline">
                                         Todo lo que gestionamos, en un solo lugar
                                     </GradientText>
                                 </h2>
@@ -404,7 +441,7 @@ export default function Welcome() {
                                     </div>
 
                                     <h2 className="relative text-3xl font-semibold tracking-tight">
-                                        <GradientText colors={[adenar, gold, bavaria]} animationSpeed={5} className="inline">
+                                        <GradientText colors={[adenar, gold, bavaria]} animationSpeed={3} className="inline">
                                             ¿Listo para optimizar tu operación?
                                         </GradientText>
                                     </h2>
@@ -415,27 +452,32 @@ export default function Welcome() {
 
                                     <div className="relative mt-8 flex flex-wrap justify-center gap-3">
                                         {auth.user ? (
-                                            <Button
-                                                size="lg"
-                                                className="shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
-                                                asChild
-                                            >
-                                                <Link href={route('dashboard')}>Ir al Dashboard</Link>
-                                            </Button>
+                                            <div className="inline-flex rounded-md">
+                                                <ClickSpark sparkColor={bavaria} sparkCount={10} sparkRadius={20} sparkSize={12}>
+                                                    <Button
+                                                        size="lg"
+                                                        className="shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
+                                                        asChild
+                                                    >
+                                                        <Link href={route('dashboard')}>Ir al Dashboard</Link>
+                                                    </Button>
+                                                </ClickSpark>
+                                            </div>
                                         ) : (
-                                            <>
-                                                <Button
-                                                    size="lg"
-                                                    className="group shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
-                                                    asChild
-                                                >
-                                                    <Link href={route('login')}>
-                                                        Iniciar sesión
-                                                        <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                                                    </Link>
-                                                </Button>
-
-                                            </>
+                                            <div className="inline-flex rounded-md">
+                                                <ClickSpark sparkColor={bavaria} sparkCount={10} sparkRadius={20} sparkSize={12}>
+                                                    <Button
+                                                        size="lg"
+                                                        className="group shadow-[0_8px_30px_-10px_rgba(63,122,34,0.55)] transition-shadow duration-300 hover:shadow-[0_12px_36px_-8px_rgba(63,122,34,0.7)]"
+                                                        asChild
+                                                    >
+                                                        <Link href={route('login')}>
+                                                            Iniciar sesión
+                                                            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                                                        </Link>
+                                                    </Button>
+                                                </ClickSpark>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
