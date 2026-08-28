@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { MUNICIPIOS_NARINO } from '@/data/municipios-narino';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -27,7 +28,6 @@ import {
     Trash2,
     Upload,
     Wrench,
-    type LucideIcon,
 } from 'lucide-react';
 import { FormEventHandler, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -148,21 +148,6 @@ function formatFecha(fecha: string | null): string {
     return new Date(fecha).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function KpiCard({ label, valor, icon: Icon, color }: { label: string; valor: string | number; icon: LucideIcon; color: string }) {
-    return (
-        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-                <div className="flex size-9 items-center justify-center rounded-full" style={{ backgroundColor: color + '1a', color }}>
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-semibold">{valor}</p>
-            </CardContent>
-        </Card>
-    );
-}
 
 function EmptyChart({ children }: { children: React.ReactNode }) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
@@ -484,24 +469,26 @@ export default function VaradasIndex({
 
                 {vista === 'indicadores' ? (
                     <div className="flex flex-col gap-6">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                            <KpiCard label="Total varadas" valor={indicadores.resumen.total} icon={Wrench} color={COLOR_PRIMARIO} />
-                            <KpiCard label="Abiertas" valor={indicadores.resumen.abiertas} icon={AlertTriangle} color={COLOR_ALERTA} />
-                            <KpiCard label="% Repetitivas" valor={`${indicadores.resumen.pct_repetitivas}%`} icon={Repeat} color={COLOR_ADVERTENCIA} />
+                        <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-6">
+                            <KpiCard label="Total varadas" value={indicadores.resumen.total} icon={Wrench} color={COLOR_PRIMARIO} />
+                            <KpiCard label="Abiertas" value={indicadores.resumen.abiertas} icon={AlertTriangle} color={COLOR_ALERTA} />
+                            <KpiCard label="% Repetitivas" value={indicadores.resumen.pct_repetitivas} suffix="%" decimals={1} icon={Repeat} color={COLOR_ADVERTENCIA} />
                             <KpiCard
                                 label="Prom. TFS (horas)"
-                                valor={indicadores.resumen.promedio_tfs_horas ?? '—'}
+                                value={indicadores.resumen.promedio_tfs_horas ?? '—'}
+                                decimals={2}
                                 icon={Clock}
                                 color={COLOR_PRIMARIO}
                             />
                             <KpiCard
                                 label="Prom. gestión (horas)"
-                                valor={indicadores.resumen.promedio_gt_horas ?? '—'}
+                                value={indicadores.resumen.promedio_gt_horas ?? '—'}
+                                decimals={2}
                                 icon={Clock}
                                 color={COLOR_PRIMARIO}
                             />
-                            <KpiCard label="Gravedad promedio" valor={indicadores.resumen.promedio_gravedad} icon={Gauge} color={COLOR_ADVERTENCIA} />
-                        </div>
+                            <KpiCard label="Gravedad promedio" value={indicadores.resumen.promedio_gravedad} decimals={1} icon={Gauge} color={COLOR_ADVERTENCIA} />
+                        </KpiCardGrid>
 
                         <div className="grid gap-4 lg:grid-cols-2">
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border">

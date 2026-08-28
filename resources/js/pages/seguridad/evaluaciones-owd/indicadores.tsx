@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, ClipboardList, ListTodo, Target, Users, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ClipboardList, ListTodo, Target, Users } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -77,13 +78,6 @@ interface GrupoCumplimiento {
     porcentaje: number;
 }
 
-interface KpiCard {
-    label: string;
-    valor: string;
-    icon: LucideIcon;
-    color: string;
-}
-
 export default function EvaluacionesOwdIndicadores({
     filtros,
     resumen,
@@ -107,16 +101,16 @@ export default function EvaluacionesOwdIndicadores({
         router.get(route('seguridad.evaluaciones-owd.indicadores'), { ...filtros, ...cambios, page: 1 }, { preserveState: true, replace: true });
     };
 
-    const kpis: KpiCard[] = [
-        { label: 'Colaboradores evaluados', valor: String(resumen.colaboradores_evaluados), icon: Users, color: '#3F7A22' },
+    const kpis = [
+        { label: 'Colaboradores evaluados', valor: resumen.colaboradores_evaluados, icon: Users, color: '#3F7A22' },
         {
             label: 'Cumplen OWD (100%)',
             valor: `${resumen.porcentaje_cumplimiento}% (${resumen.cumplen_owd}/${resumen.colaboradores_evaluados})`,
             icon: Target,
             color: '#0369A1',
         },
-        { label: 'Preguntas no conformes', valor: String(resumen.total_preguntas_no_conformes), icon: AlertTriangle, color: '#B91C1C' },
-        { label: 'Planes de acción', valor: String(resumen.total_planes_accion), icon: ListTodo, color: '#B45309' },
+        { label: 'Preguntas no conformes', valor: resumen.total_preguntas_no_conformes, icon: AlertTriangle, color: '#B91C1C' },
+        { label: 'Planes de acción', valor: resumen.total_planes_accion, icon: ListTodo, color: '#B45309' },
     ];
 
     const datosTendencia = evaluacionesPorMes.map((fila) => ({ ...fila, etiqueta: formatearPeriodo(fila.periodo) }));
@@ -155,24 +149,11 @@ export default function EvaluacionesOwdIndicadores({
                     </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-4">
                     {kpis.map((kpi) => (
-                        <Card key={kpi.label} className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                                <div
-                                    className="flex size-9 items-center justify-center rounded-full"
-                                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
-                                >
-                                    <kpi.icon className="size-4" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-2xl font-semibold tracking-tight">{kpi.valor}</p>
-                            </CardContent>
-                        </Card>
+                        <KpiCard key={kpi.label} label={kpi.label} value={kpi.valor} icon={kpi.icon} color={kpi.color} />
                     ))}
-                </div>
+                </KpiCardGrid>
 
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border">

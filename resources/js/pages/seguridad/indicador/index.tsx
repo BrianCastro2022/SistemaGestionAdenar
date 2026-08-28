@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -62,24 +63,11 @@ export default function IndicadorIndex({
                     description="Estado del día de todos los colaboradores. Se actualiza automáticamente cada 10 segundos."
                 />
 
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <KpiCardGrid className="grid-cols-2 lg:grid-cols-4">
                     {tarjetas.map((tarjeta) => (
-                        <Card key={tarjeta.label} className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{tarjeta.label}</CardTitle>
-                                <div
-                                    className="flex size-9 items-center justify-center rounded-full"
-                                    style={{ backgroundColor: `${tarjeta.color}1a`, color: tarjeta.color }}
-                                >
-                                    <tarjeta.icon className="size-4" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-semibold tracking-tight">{tarjeta.valor}</p>
-                            </CardContent>
-                        </Card>
+                        <KpiCard key={tarjeta.label} label={tarjeta.label} value={tarjeta.valor} icon={tarjeta.icon} color={tarjeta.color} />
                     ))}
-                </div>
+                </KpiCardGrid>
 
                 {Object.keys(novedadesPorTurno).length > 0 && (
                     <div className="space-y-3">

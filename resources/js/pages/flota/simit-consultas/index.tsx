@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, Gavel, Image, Search, Truck, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Gavel, Image, Search, Truck } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -101,32 +102,6 @@ interface Indicadores {
     top_placas_comparendos: TopPlaca[];
 }
 
-interface KpiTile {
-    label: string;
-    valor: number;
-    icon: LucideIcon;
-    color: string;
-}
-
-function KpiCard({ kpi }: { kpi: KpiTile }) {
-    return (
-        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                <div
-                    className="flex size-9 items-center justify-center rounded-full"
-                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
-                >
-                    <kpi.icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-semibold">{kpi.valor}</p>
-            </CardContent>
-        </Card>
-    );
-}
-
 function formatFechaCorta(fecha: string): string {
     const [, mes, dia] = fecha.split('-');
     return `${dia}/${mes}`;
@@ -211,33 +186,27 @@ export default function SimitConsultasIndex({
 
                 {vista === 'indicadores' ? (
                     <div className="flex flex-col gap-6">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <KpiCard kpi={{ label: 'Placas monitoreadas', valor: indicadores.resumen.total_placas, icon: Truck, color: '#0ca30c' }} />
+                        <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-4">
+                            <KpiCard label="Placas monitoreadas" value={indicadores.resumen.total_placas} icon={Truck} color="#0ca30c" />
                             <KpiCard
-                                kpi={{
-                                    label: 'Con comparendos pendientes',
-                                    valor: indicadores.resumen.con_comparendos,
-                                    icon: Gavel,
-                                    color: '#d03b3b',
-                                }}
+                                label="Con comparendos pendientes"
+                                value={indicadores.resumen.con_comparendos}
+                                icon={Gavel}
+                                color="#d03b3b"
                             />
                             <KpiCard
-                                kpi={{
-                                    label: 'Sin comparendos',
-                                    valor: indicadores.resumen.sin_comparendos,
-                                    icon: CheckCircle2,
-                                    color: '#0ca30c',
-                                }}
+                                label="Sin comparendos"
+                                value={indicadores.resumen.sin_comparendos}
+                                icon={CheckCircle2}
+                                color="#0ca30c"
                             />
                             <KpiCard
-                                kpi={{
-                                    label: 'Requieren revisión manual',
-                                    valor: indicadores.resumen.requieren_atencion,
-                                    icon: AlertTriangle,
-                                    color: '#fab219',
-                                }}
+                                label="Requieren revisión manual"
+                                value={indicadores.resumen.requieren_atencion}
+                                icon={AlertTriangle}
+                                color="#fab219"
                             />
-                        </div>
+                        </KpiCardGrid>
 
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                             <CardHeader>

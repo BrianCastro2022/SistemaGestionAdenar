@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, ClipboardList, QrCode, Target, Users, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ClipboardList, QrCode, Target, Users } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -67,13 +68,6 @@ interface ColaboradoresMetaPaginator {
     total: number;
 }
 
-interface KpiCard {
-    label: string;
-    valor: string;
-    icon: LucideIcon;
-    color: string;
-}
-
 const PROXIMAMENTE = [
     { titulo: 'Seguimientos ACIS', nota: 'Se habilita con el módulo de Seguimiento SKAP (Fase 3).' },
     { titulo: 'Acciones de mejora', nota: 'Se habilita con el módulo de Acciones de mejora (Fase 3).' },
@@ -102,16 +96,16 @@ export default function AcisIndicadores({
         router.get(route('seguridad.acis.indicadores'), { ...filtros, ...cambios, page: 1 }, { preserveState: true, replace: true });
     };
 
-    const kpis: KpiCard[] = [
-        { label: 'Total ACI del mes', valor: String(resumen.total_aci_mes), icon: ClipboardList, color: '#3F7A22' },
+    const kpis = [
+        { label: 'Total ACI del mes', valor: resumen.total_aci_mes, icon: ClipboardList, color: '#3F7A22' },
         {
             label: 'Cumplimiento meta (4 ACI)',
             valor: `${resumen.porcentaje_cumplimiento}% (${resumen.cumplen_meta}/${resumen.colaboradores_en_programa})`,
             icon: Target,
             color: '#0369A1',
         },
-        { label: 'QR SKAP activos', valor: String(resumen.qr_skap_activos), icon: QrCode, color: '#B45309' },
-        { label: 'Problemáticas detectadas', valor: String(resumen.problematicas_detectadas), icon: AlertTriangle, color: '#B91C1C' },
+        { label: 'QR SKAP activos', valor: resumen.qr_skap_activos, icon: QrCode, color: '#B45309' },
+        { label: 'Problemáticas detectadas', valor: resumen.problematicas_detectadas, icon: AlertTriangle, color: '#B91C1C' },
     ];
 
     const datosTendencia = aciPorMes.map((fila) => ({ ...fila, etiqueta: formatearPeriodo(fila.periodo) }));
@@ -150,24 +144,11 @@ export default function AcisIndicadores({
                     </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-4">
                     {kpis.map((kpi) => (
-                        <Card key={kpi.label} className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                                <div
-                                    className="flex size-9 items-center justify-center rounded-full"
-                                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
-                                >
-                                    <kpi.icon className="size-4" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-2xl font-semibold tracking-tight">{kpi.valor}</p>
-                            </CardContent>
-                        </Card>
+                        <KpiCard key={kpi.label} label={kpi.label} value={kpi.valor} icon={kpi.icon} color={kpi.color} />
                     ))}
-                </div>
+                </KpiCardGrid>
 
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border">

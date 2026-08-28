@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, CalendarClock, Clock, Search, Timer, Users, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, BedDouble, CalendarClock, Clock, Search, Timer, Users } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -131,32 +132,6 @@ interface Hoy {
 interface Opciones {
     grupos: string[];
     cargos: string[];
-}
-
-interface KpiTile {
-    label: string;
-    valor: string | number;
-    icon: LucideIcon;
-    color: string;
-}
-
-function KpiCard({ kpi }: { kpi: KpiTile }) {
-    return (
-        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                <div
-                    className="flex size-9 items-center justify-center rounded-full"
-                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
-                >
-                    <kpi.icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-semibold">{kpi.valor}</p>
-            </CardContent>
-        </Card>
-    );
 }
 
 function formatFechaCorta(fecha: string): string {
@@ -328,20 +303,16 @@ export default function GeovictoriaAsistenciaIndex({
                             <Badge variant="outline">{hoy.fecha}</Badge>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <KpiCard kpi={{ label: 'Registros hoy', valor: hoy.resumen.total, icon: Clock, color: '#0ca30c' }} />
+                        <KpiCardGrid className="sm:grid-cols-3">
+                            <KpiCard label="Registros hoy" value={hoy.resumen.total} icon={Clock} color="#0ca30c" />
+                            <KpiCard label="Exceso de jornada" value={hoy.resumen.exceso_jornada} icon={Timer} color={COLOR_EXCESO_JORNADA} />
                             <KpiCard
-                                kpi={{ label: 'Exceso de jornada', valor: hoy.resumen.exceso_jornada, icon: Timer, color: COLOR_EXCESO_JORNADA }}
+                                label="Descanso no efectivo"
+                                value={hoy.resumen.descanso_no_efectivo}
+                                icon={BedDouble}
+                                color={COLOR_DESCANSO_NO_EFECTIVO}
                             />
-                            <KpiCard
-                                kpi={{
-                                    label: 'Descanso no efectivo',
-                                    valor: hoy.resumen.descanso_no_efectivo,
-                                    icon: BedDouble,
-                                    color: COLOR_DESCANSO_NO_EFECTIVO,
-                                }}
-                            />
-                        </div>
+                        </KpiCardGrid>
 
                         <RegistroTable data={hoy.registros} from={1} emptyMessage="Todavía no hay registros de hoy." />
                     </div>
@@ -386,34 +357,32 @@ export default function GeovictoriaAsistenciaIndex({
                             )}
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                            <KpiCard kpi={{ label: 'Empleados monitoreados', valor: indicadores.resumen.empleados, icon: Users, color: '#0ca30c' }} />
-                            <KpiCard kpi={{ label: 'Registros totales', valor: indicadores.resumen.total_registros, icon: Clock, color: '#0ca30c' }} />
+                        <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-5">
+                            <KpiCard label="Empleados monitoreados" value={indicadores.resumen.empleados} icon={Users} color="#0ca30c" />
+                            <KpiCard label="Registros totales" value={indicadores.resumen.total_registros} icon={Clock} color="#0ca30c" />
                             <KpiCard
-                                kpi={{
-                                    label: 'Exceso de jornada',
-                                    valor: `${indicadores.resumen.pct_exceso_jornada}%`,
-                                    icon: Timer,
-                                    color: COLOR_EXCESO_JORNADA,
-                                }}
+                                label="Exceso de jornada"
+                                value={indicadores.resumen.pct_exceso_jornada}
+                                suffix="%"
+                                decimals={1}
+                                icon={Timer}
+                                color={COLOR_EXCESO_JORNADA}
                             />
                             <KpiCard
-                                kpi={{
-                                    label: 'Descanso no efectivo',
-                                    valor: `${indicadores.resumen.pct_descanso_no_efectivo}%`,
-                                    icon: BedDouble,
-                                    color: COLOR_DESCANSO_NO_EFECTIVO,
-                                }}
+                                label="Descanso no efectivo"
+                                value={indicadores.resumen.pct_descanso_no_efectivo}
+                                suffix="%"
+                                decimals={1}
+                                icon={BedDouble}
+                                color={COLOR_DESCANSO_NO_EFECTIVO}
                             />
                             <KpiCard
-                                kpi={{
-                                    label: 'Promedio horas trabajadas',
-                                    valor: indicadores.resumen.promedio_horas_trabajadas ?? '—',
-                                    icon: Clock,
-                                    color: '#0ca30c',
-                                }}
+                                label="Promedio horas trabajadas"
+                                value={indicadores.resumen.promedio_horas_trabajadas ?? '—'}
+                                icon={Clock}
+                                color="#0ca30c"
                             />
-                        </div>
+                        </KpiCardGrid>
 
                         <div className="grid gap-4 lg:grid-cols-2">
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border">

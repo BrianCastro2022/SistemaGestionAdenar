@@ -1,4 +1,5 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -73,40 +74,12 @@ export default function CumplimientoColaborador({
                     </Badge>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Preguntas evaluadas</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-2xl font-semibold">{cumplimiento.total_preguntas}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Preguntas OK</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-2xl font-semibold">{cumplimiento.preguntas_ok}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">No conformes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-2xl font-semibold">{cumplimiento.preguntas_no_conformes}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Faltan para el 100%</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-2xl font-semibold">{cumplimiento.faltantes}</p>
-                        </CardContent>
-                    </Card>
-                </div>
+                <KpiCardGrid className="sm:grid-cols-2 lg:grid-cols-4">
+                    <KpiCard label="Preguntas evaluadas" value={cumplimiento.total_preguntas} />
+                    <KpiCard label="Preguntas OK" value={cumplimiento.preguntas_ok} />
+                    <KpiCard label="No conformes" value={cumplimiento.preguntas_no_conformes} />
+                    <KpiCard label="Faltan para el 100%" value={cumplimiento.faltantes} />
+                </KpiCardGrid>
 
                 {evolucion && evolucion.length > 0 && (
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border">

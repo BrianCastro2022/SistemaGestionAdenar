@@ -1,10 +1,11 @@
 import HeadingSmall from '@/components/heading-small';
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { CheckCircle2, ClipboardList, Stethoscope, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Stethoscope } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -29,13 +30,6 @@ interface Cobertura {
     programados: number;
     ejecutados: number;
     porcentaje: number;
-}
-
-interface KpiCard {
-    label: string;
-    valor: string;
-    icon: LucideIcon;
-    color: string;
 }
 
 function DistribucionChart({ titulo, datos, color }: { titulo: string; datos: Distribucion[]; color: string }) {
@@ -125,10 +119,10 @@ export default function ExamenesMedicosIndicadores({
     estadoExamen: Distribucion[];
     programacionExamenes: Distribucion[];
 }) {
-    const kpis: KpiCard[] = [
-        { label: 'Cobertura de ejecución', valor: `${cobertura.porcentaje}%`, icon: CheckCircle2, color: '#3F7A22' },
-        { label: 'Exámenes ejecutados', valor: String(cobertura.ejecutados), icon: ClipboardList, color: '#0369A1' },
-        { label: 'Exámenes programados', valor: String(cobertura.programados), icon: Stethoscope, color: '#B45309' },
+    const kpis = [
+        { label: 'Cobertura de ejecución', valor: cobertura.porcentaje, suffix: '%', decimals: 1, icon: CheckCircle2, color: '#3F7A22' },
+        { label: 'Exámenes ejecutados', valor: cobertura.ejecutados, icon: ClipboardList, color: '#0369A1' },
+        { label: 'Exámenes programados', valor: cobertura.programados, icon: Stethoscope, color: '#B45309' },
     ];
 
     return (
@@ -140,24 +134,19 @@ export default function ExamenesMedicosIndicadores({
                     description="Panel general del programa de evaluaciones médicas ocupacionales."
                 />
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <KpiCardGrid className="sm:grid-cols-3">
                     {kpis.map((kpi) => (
-                        <Card key={kpi.label} className="border-sidebar-border/70 dark:border-sidebar-border">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                                <div
-                                    className="flex size-9 items-center justify-center rounded-full"
-                                    style={{ backgroundColor: kpi.color + '1a', color: kpi.color }}
-                                >
-                                    <kpi.icon className="size-4" />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-2xl font-semibold tracking-tight">{kpi.valor}</p>
-                            </CardContent>
-                        </Card>
+                        <KpiCard
+                            key={kpi.label}
+                            label={kpi.label}
+                            value={kpi.valor}
+                            suffix={kpi.suffix}
+                            decimals={kpi.decimals}
+                            icon={kpi.icon}
+                            color={kpi.color}
+                        />
                     ))}
-                </div>
+                </KpiCardGrid>
 
                 <div className="grid gap-4 lg:grid-cols-3">
                     <DistribucionChart titulo="Por tipo de evaluación" datos={porTipoEvaluacion} color="#3F7A22" />

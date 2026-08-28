@@ -6,15 +6,18 @@ interface CountUpProps {
     duration?: number;
     prefix?: string;
     suffix?: string;
+    /** Decimales a mostrar (y a animar sin perder precisión). Por defecto 0 (entero). */
+    decimals?: number;
 }
 
-export function CountUp({ end, duration = 1400, prefix = '', suffix = '' }: CountUpProps) {
+export function CountUp({ end, duration = 1400, prefix = '', suffix = '', decimals = 0 }: CountUpProps) {
     const { ref, isInView } = useInView<HTMLSpanElement>();
     const [value, setValue] = useState(0);
 
     useEffect(() => {
         if (!isInView) return;
 
+        const factor = 10 ** decimals;
         let frame: number;
         let start: number | null = null;
 
@@ -22,18 +25,18 @@ export function CountUp({ end, duration = 1400, prefix = '', suffix = '' }: Coun
             if (start === null) start = timestamp;
             const progress = Math.min((timestamp - start) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setValue(Math.round(eased * end));
+            setValue(Math.round(eased * end * factor) / factor);
             if (progress < 1) frame = requestAnimationFrame(step);
         };
 
         frame = requestAnimationFrame(step);
         return () => cancelAnimationFrame(frame);
-    }, [isInView, end, duration]);
+    }, [isInView, end, duration, decimals]);
 
     return (
         <span ref={ref}>
             {prefix}
-            {value}
+            {value.toFixed(decimals)}
             {suffix}
         </span>
     );
