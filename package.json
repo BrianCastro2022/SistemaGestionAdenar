@@ -53,6 +53,7 @@
         "leaflet": "^1.9.4",
         "lucide-react": "^0.475.0",
         "motion": "^12.43.0",
+        "ogl": "^1.0.11",
         "qrcode.react": "^4.2.0",
         "react": "^19.0.0",
         "react-chartjs-2": "^5.3.1",

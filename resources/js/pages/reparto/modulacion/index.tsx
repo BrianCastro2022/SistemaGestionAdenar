@@ -1,9 +1,11 @@
+import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -21,7 +23,6 @@ import {
     Save,
     Search,
     Trash2,
-    Truck,
     UserPlus,
     Users,
 } from 'lucide-react';
@@ -178,6 +179,11 @@ const NARINO_MUNICIPIOS_FALLBACK = [
     'Yacuanquer',
 ];
 
+// Paleta de acento del módulo Reparto
+const ACCENT = '#D4102A';
+const SUCCESS = '#0ca30c';
+const CLIENTE_CLEAR = '__clear__';
+
 // Generador de IDs con respaldo
 const generateId = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -250,16 +256,16 @@ function NarinoMunicipioInput({
     return (
         <div className="grid grid-cols-2 gap-2">
             <div>
-                <Label className="text-[10px] text-gray-500 uppercase font-semibold">Departamento</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">Departamento</Label>
                 <Input
                     type="text"
                     value="Nariño"
                     readOnly
-                    className="h-8 text-xs mt-0.5 bg-gray-100 dark:bg-gray-800 font-medium text-gray-700 dark:text-gray-300"
+                    className="h-8 text-xs mt-0.5 bg-muted font-medium text-muted-foreground"
                 />
             </div>
             <div>
-                <Label className="text-[10px] text-gray-500 uppercase font-semibold">Municipio / Destino</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">Municipio / Destino</Label>
                 <Input
                     id={`${baseId}-municipio`}
                     list={`${baseId}-municipios-list`}
@@ -267,7 +273,7 @@ function NarinoMunicipioInput({
                     placeholder="Seleccione o escriba municipio"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="h-8 text-xs mt-0.5 bg-white"
+                    className="h-8 text-xs mt-0.5"
                     autoComplete="off"
                 />
                 <datalist id={`${baseId}-municipios-list`}>
@@ -931,15 +937,10 @@ export default function ModulacionIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Planeación de ruta" />
 
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
                 {/* Header título */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            <Truck className="h-7 w-7 text-red-600" />
-                            Planeación de ruta
-                        </h1>
-                    </div>
+                    <HeadingSmall title="Planeación de ruta" />
                     <div className="flex items-center gap-2">
                         {readOnly && (
                             <Link href={route('reparto.modulacion.historial')}>
@@ -952,17 +953,18 @@ export default function ModulacionIndex({
                 </div>
 
                 {/* CARD DE FILTROS — solo en modo edición */}
-                <Card className="shadow-sm border bg-white dark:bg-gray-900" style={{ display: isEditing ? 'block' : 'none' }}>
+                {isEditing && (
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="pb-2 border-b">
-                        <CardTitle className="text-sm font-semibold flex items-center justify-between text-gray-700 dark:text-gray-200">
-                            <span className="flex items-center gap-2 uppercase tracking-wider text-xs font-bold">
-                                <Filter className="h-4 w-4 text-gray-500" />
+                        <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                            <span className="flex items-center gap-2 uppercase tracking-wider text-xs font-bold text-muted-foreground">
+                                <Filter className="h-4 w-4 text-muted-foreground" />
                                 {'Filtros de Fecha y Placa'}
                             </span>
                             <Button
                                 type="button"
                                 onClick={handleExportExcel}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8 px-3 shadow-sm"
+                                className="text-xs h-8 px-3"
                             >
                                 <FileSpreadsheet className="h-4 w-4 mr-1.5" />
                                 {'Exportar Excel'}
@@ -973,8 +975,8 @@ export default function ModulacionIndex({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Selector de Fecha con Calendario */}
                             <div>
-                                <Label htmlFor="filtro-fecha" className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                                    <Calendar className="h-3.5 w-3.5 text-red-600" />
+                                <Label htmlFor="filtro-fecha" className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                    <Calendar className="h-3.5 w-3.5" style={{ color: ACCENT }} />
                                     {'Fecha de la Planeación (Calendario)'}
                                 </Label>
                                 <Input
@@ -982,41 +984,44 @@ export default function ModulacionIndex({
                                     type="date"
                                     value={fechaTexto}
                                     onChange={(e) => handleFechaChange(e.target.value)}
-                                    className="mt-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                    className="mt-1"
                                 />
                             </div>
 
                             {/* Filtro por Placa */}
                             <div>
-                                <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase flex items-center gap-1">
-                                    <Filter className="h-3.5 w-3.5 text-gray-400" />
+                                <Label className="text-xs font-semibold uppercase flex items-center gap-1">
+                                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
                                     {'Filtro por Placa'}
                                 </Label>
-                                <select
-                                    value={filterTablePlaca}
-                                    onChange={(e) => setFilterTablePlaca(e.target.value)}
-                                    className="h-10 text-xs mt-1 w-full rounded-md border border-input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                >
-                                    <option value="todas">-- Todas las Placas --</option>
-                                    {uniquePlacasInRutas.map((placa) => (
-                                        <option key={placa} value={placa}>
-                                            {placa}
-                                        </option>
-                                    ))}
-                                </select>
+                                <Select value={filterTablePlaca} onValueChange={setFilterTablePlaca}>
+                                    <SelectTrigger className="h-10 text-xs mt-1 w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="todas">-- Todas las Placas --</SelectItem>
+                                        {uniquePlacasInRutas.map((placa) => (
+                                            <SelectItem key={placa} value={placa}>
+                                                {placa}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
+                )}
                 {/* fin card filtros */}
 
                 {/* FORMULARIO NUEVA SALIDA — solo en modo edición */}
-                <form onSubmit={handleGuardarRutaLocal} className="space-y-6" style={{ display: isEditing ? 'block' : 'none' }}>
+                {isEditing && (
+                <form onSubmit={handleGuardarRutaLocal} className="space-y-6">
                     {/* FORMULARIO DE RUTA UNIFICADO (CARD NUEVA SALIDA) */}
-                    <Card className="shadow-sm border-t-4 border-t-red-600 relative">
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border border-t-4 relative" style={{ borderTopColor: ACCENT }}>
                         <CardHeader className="pb-3 border-b">
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Badge className="bg-red-600 text-white">
+                                <Badge style={{ backgroundColor: ACCENT, color: '#fff' }}>
                                     {editingIndex !== null ? `Editando Ruta #${editingIndex + 1}` : 'Nueva Salida'}
                                 </Badge>
                                 {currentRoute.placa ? <span>{`Placa: ${currentRoute.placa}`}</span> : null}
@@ -1025,16 +1030,16 @@ export default function ModulacionIndex({
 
                         <CardContent className="space-y-6 pt-4">
                             {/* DATOS GENERALES DE LA SALIDA */}
-                            <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-lg border border-red-100 dark:border-red-900/40 space-y-4">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-red-800 dark:text-red-300 flex items-center gap-1.5">
-                                    <FileText className="h-4 w-4 text-red-600" />
+                            <div className="p-4 rounded-lg border border-sidebar-border/70 dark:border-sidebar-border space-y-4">
+                                <Label className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: ACCENT }}>
+                                    <FileText className="h-4 w-4" style={{ color: ACCENT }} />
                                     Datos Generales de la Salida
                                 </Label>
 
                                 {/* Fila 1: Programado Por, Despachado Por */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="ud_programado_por" className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                        <Label htmlFor="ud_programado_por" className="text-xs font-semibold uppercase tracking-wider">
                                             UD Programado Por
                                         </Label>
                                         <Input
@@ -1043,12 +1048,12 @@ export default function ModulacionIndex({
                                             placeholder="Nombre del usuario programador"
                                             value={udProgramadoPor}
                                             onChange={(e) => setUdProgramadoPor(e.target.value)}
-                                            className="mt-1 bg-white dark:bg-gray-800"
+                                            className="mt-1"
                                         />
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="despachado_por" className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                        <Label htmlFor="despachado_por" className="text-xs font-semibold uppercase tracking-wider">
                                             Despachado Por (Colaborador)
                                         </Label>
                                         <Input
@@ -1057,41 +1062,40 @@ export default function ModulacionIndex({
                                             value={despachadoPorNombre}
                                             onChange={(e) => setDespachadoPorNombre(e.target.value)}
                                             placeholder="Despachado Por"
-                                            className="mt-1 bg-white dark:bg-gray-800 font-medium"
+                                            className="mt-1 font-medium"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Fila 2: Placa */}
-                                <div className="pt-2 border-t border-red-100 dark:border-red-900/30">
+                                <div className="pt-2 border-t border-sidebar-border/70 dark:border-sidebar-border">
                                     <div>
-                                        <Label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                            Placa <span className="text-red-500">*</span>
+                                        <Label className="text-xs font-semibold uppercase tracking-wider">
+                                            Placa <span style={{ color: ACCENT }}>*</span>
                                         </Label>
                                         <div className="flex gap-2 mt-1">
                                             <Input
                                                 placeholder="Ej: ABC123"
                                                 value={currentRoute.placa}
                                                 onChange={(e) => handleCurrentRouteFieldChange('placa', e.target.value.toUpperCase())}
-                                                className="uppercase font-mono bg-white dark:bg-gray-800 flex-1"
+                                                className="uppercase font-mono flex-1"
                                             />
                                             {vehiculos.length > 0 && (
-                                                <select
-                                                    value={vehiculos.includes(currentRoute.placa) ? currentRoute.placa : ''}
-                                                    onChange={(e) => {
-                                                        if (e.target.value) {
-                                                            handleCurrentRouteFieldChange('placa', e.target.value);
-                                                        }
-                                                    }}
-                                                    className="w-[110px] h-10 rounded-md border border-input bg-white dark:bg-gray-800 px-2 py-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                <Select
+                                                    value={vehiculos.includes(currentRoute.placa) ? currentRoute.placa : undefined}
+                                                    onValueChange={(v) => handleCurrentRouteFieldChange('placa', v)}
                                                 >
-                                                    <option value="">Flota</option>
-                                                    {vehiculos.map((v) => (
-                                                        <option key={v} value={String(v)}>
-                                                            {String(v)}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-[110px] h-10 text-xs">
+                                                        <SelectValue placeholder="Flota" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {vehiculos.map((v) => (
+                                                            <SelectItem key={v} value={String(v)}>
+                                                                {String(v)}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             )}
                                         </div>
                                     </div>
@@ -1099,19 +1103,19 @@ export default function ModulacionIndex({
                             </div>
 
                             {/* SECCIÓN TRIPULACIÓN: CHECKLIST CON FILTRO */}
-                            <div className="border rounded-lg p-4 bg-gray-50/70 dark:bg-gray-900/40 space-y-4">
+                            <div className="border border-sidebar-border/70 dark:border-sidebar-border rounded-lg p-4 space-y-4">
                                 <div className="border-b pb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Users className="h-4 w-4 text-blue-600" />
+                                    <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                        <Users className="h-4 w-4 text-muted-foreground" />
                                         Tripulación de la Ruta (Solo colaboradores libres para la fecha)
                                     </h3>
                                 </div>
 
                                 {/* BARRA DE FILTROS Y BUSCADOR */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white dark:bg-gray-800 p-3 rounded-md border">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-md border">
                                     <div>
-                                        <Label className="text-[11px] font-semibold text-gray-600 uppercase flex items-center gap-1">
-                                            <Search className="h-3 w-3 text-gray-400" />
+                                        <Label className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                                            <Search className="h-3 w-3 text-muted-foreground" />
                                             Buscar por Nombre o Cédula
                                         </Label>
                                         <Input
@@ -1124,34 +1128,35 @@ export default function ModulacionIndex({
                                     </div>
 
                                     <div>
-                                        <Label className="text-[11px] font-semibold text-gray-600 uppercase flex items-center gap-1">
-                                            <Filter className="h-3 w-3 text-gray-400" />
+                                        <Label className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                                            <Filter className="h-3 w-3 text-muted-foreground" />
                                             Filtrar por Cargo
                                         </Label>
-                                        <select
-                                            value={cargoFilter}
-                                            onChange={(e) => setCargoFilter(e.target.value)}
-                                            className="h-8 text-xs mt-1 w-full rounded-md border border-input bg-white px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                        >
-                                            <option value="todos">-- Todos los Cargos --</option>
-                                            {cargos.map((cg) => (
-                                                <option key={cg} value={String(cg)}>
-                                                    {String(cg)}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <Select value={cargoFilter} onValueChange={setCargoFilter}>
+                                            <SelectTrigger className="h-8 text-xs mt-1 w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="todos">-- Todos los Cargos --</SelectItem>
+                                                {cargos.map((cg) => (
+                                                    <SelectItem key={cg} value={String(cg)}>
+                                                        {String(cg)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 
                                 {/* CHECKLIST DE COLABORADORES DISPONIBLES */}
-                                <div className="bg-white dark:bg-gray-800 rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
-                                    <Label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 border-b pb-1">
-                                        <CheckSquare className="h-3.5 w-3.5 text-blue-500" />
+                                <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
+                                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 border-b pb-1">
+                                        <CheckSquare className="h-3.5 w-3.5 text-muted-foreground" />
                                         Marcar colaboradores libres al día para la Tripulación ({allChecklistColaboradores.length} disponibles)
                                     </Label>
 
                                     {allChecklistColaboradores.length === 0 ? (
-                                        <p className="text-xs text-gray-400 py-2 text-center">
+                                        <p className="text-xs text-muted-foreground py-2 text-center">
                                             No se encontraron colaboradores libres para la fecha seleccionada.
                                         </p>
                                     ) : (
@@ -1173,9 +1178,9 @@ export default function ModulacionIndex({
                                                         className={`flex items-center space-x-2 p-1.5 rounded border transition-colors ${
                                                             isChecked
                                                                 ? isFijo
-                                                                    ? 'bg-green-50 border-green-400 ring-1 ring-green-300 dark:bg-green-950/50'
-                                                                    : 'bg-blue-50 border-blue-400 ring-1 ring-blue-300 dark:bg-blue-950/50'
-                                                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                                                    ? 'border-[#0ca30c]/50 bg-[#0ca30c]/10 ring-1 ring-[#0ca30c]/30'
+                                                                    : 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
+                                                                : 'hover:bg-muted/50'
                                                         }`}
                                                     >
                                                         <Checkbox
@@ -1188,26 +1193,26 @@ export default function ModulacionIndex({
                                                             htmlFor={`check-${col.id}`}
                                                             className="text-xs font-medium cursor-pointer leading-tight truncate flex-1"
                                                         >
-                                                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                                            <span className="font-semibold text-foreground">
                                                                 {String(col.nombre_completo ?? '')}
                                                             </span>
                                                             {col.cedula ? (
-                                                                <span className="text-[10px] text-gray-500 font-mono block">
+                                                                <span className="text-[10px] text-muted-foreground font-mono block">
                                                                     {'Cédula: ' + String(col.cedula ?? '')}
                                                                 </span>
                                                             ) : null}
                                                             {col.cargo ? (
-                                                                <span className="text-[10px] text-blue-600 dark:text-blue-400 block truncate">
+                                                                <span className="text-[10px] text-muted-foreground block truncate">
                                                                     {String(col.cargo ?? '')}
                                                                 </span>
                                                             ) : null}
                                                         </label>
                                                         {isFijo && isChecked ? (
-                                                            <Badge variant="default" className="text-[9px] px-1.5 py-0 bg-green-600">
+                                                            <Badge className="text-[9px] px-1.5 py-0" style={{ backgroundColor: SUCCESS, color: '#fff' }}>
                                                                 {'FIJO'}
                                                             </Badge>
                                                         ) : isChecked ? (
-                                                            <Badge variant="default" className="text-[9px] px-1.5 py-0 bg-blue-600">
+                                                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
                                                                 {'Seleccionado'}
                                                             </Badge>
                                                         ) : null}
@@ -1220,10 +1225,10 @@ export default function ModulacionIndex({
                             </div>
 
                             {/* SECCIÓN VIAJES DINÁMICOS CON LUGARES DE NARIÑO Y API */}
-                            <div className="border rounded-lg p-4 bg-gray-50/70 dark:bg-gray-900/40 space-y-3">
+                            <div className="border border-sidebar-border/70 dark:border-sidebar-border rounded-lg p-4 space-y-3">
                                 <div className="flex items-center justify-between border-b pb-2">
-                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
-                                        <MapPin className="h-4 w-4 text-red-500" />
+                                    <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                        <MapPin className="h-4 w-4" style={{ color: ACCENT }} />
                                         Viajes de la Ruta (Destinos Nariño, Cliente y Peso por Fila)
                                     </h3>
                                     <Button
@@ -1231,7 +1236,8 @@ export default function ModulacionIndex({
                                         variant="outline"
                                         size="sm"
                                         onClick={handleAddViaje}
-                                        className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                                        className="text-xs"
+                                        style={{ color: ACCENT }}
                                     >
                                         <Plus className="h-3.5 w-3.5 mr-1" />
                                         Aumentar Más Viajes
@@ -1242,20 +1248,23 @@ export default function ModulacionIndex({
                                     {currentRoute.viajes.map((viaje, vIdx) => (
                                         <div
                                             key={viaje.id ?? `form-viaje-${vIdx}`}
-                                            className="p-3 border rounded-md bg-white dark:bg-gray-800 space-y-2 relative shadow-sm"
+                                            className="p-3 border rounded-md space-y-2 relative"
                                         >
                                             <div className="flex items-center justify-between border-b pb-1">
-                                                <span className="text-xs font-bold text-red-600">
+                                                <span className="text-xs font-bold" style={{ color: ACCENT }}>
                                                     {`Viaje ${vIdx + 1}`}
                                                 </span>
                                                 {currentRoute.viajes.length > 1 && (
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        variant="ghost"
+                                                        size="icon"
                                                         onClick={() => handleRemoveViaje(vIdx)}
-                                                        className="text-gray-400 hover:text-red-600 text-xs"
+                                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                                        aria-label="Eliminar viaje"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
-                                                    </button>
+                                                    </Button>
                                                 )}
                                             </div>
 
@@ -1265,25 +1274,31 @@ export default function ModulacionIndex({
                                             />
 
                                             <div>
-                                                <Label className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">
                                                     Cliente (0 - 60)
                                                 </Label>
-                                                <select
-                                                    value={String(viaje.cliente ?? '')}
-                                                    onChange={(e) => handleViajeChange(vIdx, 'cliente', e.target.value)}
-                                                    className="h-8 text-xs mt-0.5 w-full rounded-md border border-input bg-white px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                <Select
+                                                    value={viaje.cliente ? String(viaje.cliente) : undefined}
+                                                    onValueChange={(v) =>
+                                                        handleViajeChange(vIdx, 'cliente', v === CLIENTE_CLEAR ? '' : v)
+                                                    }
                                                 >
-                                                    <option value="">-- Seleccionar --</option>
-                                                    {clienteOptions.map((n) => (
-                                                        <option key={n} value={String(n)}>
-                                                            {String(n)}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="h-8 text-xs mt-0.5 w-full">
+                                                        <SelectValue placeholder="-- Seleccionar --" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value={CLIENTE_CLEAR}>-- Seleccionar --</SelectItem>
+                                                        {clienteOptions.map((n) => (
+                                                            <SelectItem key={n} value={String(n)}>
+                                                                {String(n)}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             <div>
-                                                <Label className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">
                                                     Peso (Toneladas)
                                                 </Label>
                                                 <Input
@@ -1305,23 +1320,21 @@ export default function ModulacionIndex({
 
                     {/* BOTÓN GUARDAR RUTA INDIVIDUAL */}
                     <div className="flex justify-end pt-2">
-                        <Button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-6 py-2 font-semibold shadow-sm"
-                        >
+                        <Button type="submit" className="text-sm px-6 py-2 font-semibold">
                             <Plus className="h-4 w-4 mr-1.5" />
                             {editingIndex !== null ? 'Actualizar Ruta en Lista' : 'Guardar Ruta'}
                         </Button>
                     </div>
                 </form>
+                )}
                 {/* fin formulario */}
 
                 {/* 3. TABLA 1: PLANEACIÓN DE RUTA */}
-                <Card className="shadow-sm border-t-4 border-t-red-600">
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border border-t-4" style={{ borderTopColor: ACCENT }}>
                     <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b">
                         <div className="flex items-center gap-2">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-red-600" />
+                                <FileText className="h-5 w-5" style={{ color: ACCENT }} />
                                 {'Planeación de Ruta'}
                                 {filteredRutasTable.length > 0 && (
                                     <Badge variant="secondary" className="ml-2">
@@ -1333,18 +1346,18 @@ export default function ModulacionIndex({
 
                         {/* METADATOS */}
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center gap-3 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-md border">
+                            <div className="flex items-center gap-3 text-xs bg-muted px-3 py-1.5 rounded-md border">
                                 <div>
-                                    <span className="font-semibold text-gray-500 uppercase">Fecha:</span>{' '}
-                                    <span className="font-bold text-gray-900 dark:text-gray-100">{fechaTexto}</span>
+                                    <span className="font-semibold text-muted-foreground uppercase">Fecha:</span>{' '}
+                                    <span className="font-bold text-foreground">{fechaTexto}</span>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-gray-500 uppercase">Programado Por:</span>{' '}
-                                    <span className="font-bold text-gray-900 dark:text-gray-100">{udProgramadoPor || '-'}</span>
+                                    <span className="font-semibold text-muted-foreground uppercase">Programado Por:</span>{' '}
+                                    <span className="font-bold text-foreground">{udProgramadoPor || '-'}</span>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-gray-500 uppercase">Despachado Por:</span>{' '}
-                                    <span className="font-bold text-gray-900 dark:text-gray-100">{despachadoPorNombre || '-'}</span>
+                                    <span className="font-semibold text-muted-foreground uppercase">Despachado Por:</span>{' '}
+                                    <span className="font-bold text-foreground">{despachadoPorNombre || '-'}</span>
                                 </div>
                             </div>
                         </div>
@@ -1354,7 +1367,7 @@ export default function ModulacionIndex({
                         {/* TABLA DE RUTAS */}
                         <div className="rounded-md border overflow-x-auto">
                             <Table>
-                                <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
+                                <TableHeader className="bg-muted/50">
                                     <TableRow>
                                         <TableHead className="w-10 text-center">{'#'}</TableHead>
                                         <TableHead className="font-semibold">{'Placa'}</TableHead>
@@ -1366,7 +1379,7 @@ export default function ModulacionIndex({
                                 <TableBody>
                                     {filteredRutasTable.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                                 {rutas.length === 0
                                                     ? 'No hay rutas registradas para esta fecha. Complete los campos arriba y presione Guardar Ruta.'
                                                     : 'No hay rutas que coincidan con los filtros aplicados.'}
@@ -1378,11 +1391,11 @@ export default function ModulacionIndex({
                                             const viajesList = Array.isArray(item.viajes) ? item.viajes : [];
 
                                             return (
-                                                <TableRow key={item.id ?? `ruta-${item.placa}-${idx}`} className="hover:bg-gray-50/80 dark:hover:bg-gray-800/40">
-                                                    <TableCell className="text-center text-xs text-gray-500 font-mono">
+                                                <TableRow key={item.id ?? `ruta-${item.placa}-${idx}`} className="hover:bg-muted/50">
+                                                    <TableCell className="text-center text-xs text-muted-foreground font-mono">
                                                         {String(idx + 1)}
                                                     </TableCell>
-                                                    <TableCell className="font-semibold font-mono text-sm text-red-600">
+                                                    <TableCell className="font-semibold font-mono text-sm" style={{ color: ACCENT }}>
                                                         {String(item.placa ?? '')}
                                                     </TableCell>
 
@@ -1393,23 +1406,23 @@ export default function ModulacionIndex({
                                                                 {tripMembers.map((m, mIdx) => {
                                                                     const memberIsFijo = fijosColaboradorIds.has(String(m.colaborador_id)) || (m.cedula && fijosColaboradorIds.has(`cedula:${m.cedula.trim()}`));
                                                                     return (
-                                                                        <div key={`trip-${m.colaborador_id ?? m.cedula}`} className={`p-1.5 rounded border flex items-center justify-between gap-2 ${memberIsFijo ? 'bg-green-50 dark:bg-green-900/30 border-green-300' : 'bg-gray-50 dark:bg-gray-800'}`}>
+                                                                        <div key={`trip-${m.colaborador_id ?? m.cedula}`} className={`p-1.5 rounded border flex items-center justify-between gap-2 ${memberIsFijo ? 'border-[#0ca30c]/40 bg-[#0ca30c]/10' : 'bg-muted/50'}`}>
                                                                             <div className="flex items-center gap-1.5 truncate">
                                                                                 <Badge variant="outline" className="font-mono text-[10px] shrink-0">
                                                                                     {String(m.cedula ?? 'S/I')}
                                                                                 </Badge>
-                                                                                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                                                <span className="font-semibold text-foreground truncate">
                                                                                     {String(m.nombres ?? 'Sin nombre')}
                                                                                 </span>
                                                                             </div>
                                                                             <div className="flex items-center gap-1 shrink-0">
                                                                                 {m.cargo ? (
-                                                                                    <span className="text-[10px] text-blue-600 font-medium">
+                                                                                    <span className="text-[10px] text-muted-foreground font-medium">
                                                                                         {String(m.cargo)}
                                                                                     </span>
                                                                                 ) : null}
                                                                                 {memberIsFijo ? (
-                                                                                    <Badge className="text-[9px] px-1 py-0 bg-green-600 text-white">FIJO</Badge>
+                                                                                    <Badge className="text-[9px] px-1 py-0" style={{ backgroundColor: SUCCESS, color: '#fff' }}>FIJO</Badge>
                                                                                 ) : null}
                                                                             </div>
                                                                         </div>
@@ -1417,7 +1430,7 @@ export default function ModulacionIndex({
                                                                 })}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-400">{'-'}</span>
+                                                            <span className="text-muted-foreground">{'-'}</span>
                                                         )}
                                                     </TableCell>
 
@@ -1426,19 +1439,19 @@ export default function ModulacionIndex({
                                                         {viajesList.length > 0 ? (
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                                 {viajesList.map((v, vIdx) => (
-                                                                    <div key={v.id ?? `viaje-${v.lugares}-${v.cliente}-${vIdx}`} className="p-2 bg-gray-50 dark:bg-gray-800 rounded border space-y-1">
-                                                                        <div className="font-bold text-[10px] text-red-600 border-b pb-0.5">
+                                                                    <div key={v.id ?? `viaje-${v.lugares}-${v.cliente}-${vIdx}`} className="p-2 bg-muted/50 rounded border space-y-1">
+                                                                        <div className="font-bold text-[10px] border-b pb-0.5" style={{ color: ACCENT }}>
                                                                             {'Viaje ' + String(vIdx + 1)}
                                                                         </div>
-                                                                        <div className="text-[11px] text-gray-700 dark:text-gray-300">
+                                                                        <div className="text-[11px] text-muted-foreground">
                                                                             <span className="font-semibold">{'Lugar: '}</span>
                                                                             {v.lugares ? `Nariño - ${v.lugares}` : '-'}
                                                                         </div>
-                                                                        <div className="text-[11px] text-gray-700 dark:text-gray-300">
+                                                                        <div className="text-[11px] text-muted-foreground">
                                                                             <span className="font-semibold">{'Cliente: '}</span>
                                                                             {String(v.cliente ?? '-')}
                                                                         </div>
-                                                                        <div className="text-[11px] text-gray-700 dark:text-gray-300">
+                                                                        <div className="text-[11px] text-muted-foreground">
                                                                             <span className="font-semibold">{'Peso: '}</span>
                                                                             {v.peso ? `${v.peso} ton` : '-'}
                                                                         </div>
@@ -1446,7 +1459,7 @@ export default function ModulacionIndex({
                                                                 ))}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-400">{'-'}</span>
+                                                            <span className="text-muted-foreground">{'-'}</span>
                                                         )}
                                                     </TableCell>
 
@@ -1457,18 +1470,19 @@ export default function ModulacionIndex({
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => handleEditRoute(idx)}
-                                                                className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 border-blue-200"
+                                                                className="h-8 px-2 text-xs"
                                                             >
                                                                 <Pencil className="h-3.5 w-3.5 mr-1" />
                                                                 {'Editar'}
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
-                                                                size="sm"
+                                                                size="icon"
                                                                 onClick={() => handleRemoveRutaFromList(idx)}
-                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                                                className="h-8 w-8"
+                                                                aria-label="Eliminar ruta"
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                <Trash2 className="h-4 w-4 text-destructive" />
                                                             </Button>
                                                         </div>
                                                     </TableCell>
@@ -1483,42 +1497,49 @@ export default function ModulacionIndex({
                 </Card>
 
                 {/* 4. TABLA 2: NOVEDADES DE COLABORADORES AGREGADOS — solo en modo edición */}
-                <Card className="shadow-sm border-t-2 border-t-blue-600" style={{ display: isEditing ? 'block' : 'none' }}>
+                {isEditing && (
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-blue-600" />
+                            <Users className="h-5 w-5 text-muted-foreground" />
                             {'Tabla 2: Novedades de Colaboradores Agregados'}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* FORMULARIO SUPERIOR MANUAL */}
-                        <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
-                            <Label className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wider flex items-center gap-1.5">
-                                <UserPlus className="h-4 w-4 text-blue-600" />
+                        <div className="p-3 rounded-lg border border-sidebar-border/70 dark:border-sidebar-border space-y-3">
+                            <Label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                <UserPlus className="h-4 w-4 text-muted-foreground" />
                                 {'Ingresar Colaborador a Novedades'}
                             </Label>
                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
                                 <div>
-                                    <Label className="text-[11px] text-gray-600 uppercase font-semibold">
+                                    <Label className="text-[11px] text-muted-foreground uppercase font-semibold">
                                         {'Seleccionar Colaborador'}
                                     </Label>
-                                    <select
-                                        value={nuevaNovedad.colaborador_id}
-                                        onChange={(e) => handleNuevaNovedadSelectColaborador(e.target.value)}
-                                        className="h-8 text-xs mt-1 w-full rounded-md border border-input bg-white px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    <Select
+                                        value={nuevaNovedad.colaborador_id || undefined}
+                                        onValueChange={(v) =>
+                                            handleNuevaNovedadSelectColaborador(v === CLIENTE_CLEAR ? '' : v)
+                                        }
                                     >
-                                        <option value="">-- Seleccionar colaborador --</option>
-                                        {colaboradores.map((col) => (
-                                            <option key={col.id} value={String(col.id)}>
-                                                {`${col.nombre_completo ?? ''} (${col.cedula ?? ''})`}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger className="h-8 text-xs mt-1 w-full">
+                                            <SelectValue placeholder="-- Seleccionar colaborador --" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={CLIENTE_CLEAR}>-- Seleccionar colaborador --</SelectItem>
+                                            {colaboradores.map((col) => (
+                                                <SelectItem key={col.id} value={String(col.id)}>
+                                                    {`${col.nombre_completo ?? ''} (${col.cedula ?? ''})`}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <Label className="text-[11px] text-gray-600 uppercase font-semibold">
+                                        <Label className="text-[11px] text-muted-foreground uppercase font-semibold">
                                             {'Cédula'}
                                         </Label>
                                         <Input
@@ -1526,11 +1547,11 @@ export default function ModulacionIndex({
                                             placeholder="Cédula"
                                             value={nuevaNovedad.cedula}
                                             onChange={(e) => setNuevaNovedad((prev) => ({ ...prev, cedula: e.target.value }))}
-                                            className="h-8 text-xs mt-1 bg-white font-mono"
+                                            className="h-8 text-xs mt-1 font-mono"
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-[11px] text-gray-600 uppercase font-semibold">
+                                        <Label className="text-[11px] text-muted-foreground uppercase font-semibold">
                                             {'Cargo'}
                                         </Label>
                                         <Input
@@ -1538,13 +1559,13 @@ export default function ModulacionIndex({
                                             placeholder="Cargo"
                                             value={nuevaNovedad.cargo}
                                             onChange={(e) => setNuevaNovedad((prev) => ({ ...prev, cargo: e.target.value }))}
-                                            className="h-8 text-xs mt-1 bg-white"
+                                            className="h-8 text-xs mt-1"
                                         />
                                     </div>
                                 </div>
 
                                 {/* CHECKBOX FIJO */}
-                                <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200">
+                                <div className="flex items-center gap-2 p-2 rounded-md border border-[#0ca30c]/30 bg-[#0ca30c]/10">
                                     <Checkbox
                                         id="nuevo-fijo"
                                         checked={nuevaNovedad.fijo}
@@ -1552,7 +1573,7 @@ export default function ModulacionIndex({
                                             setNuevaNovedad((prev) => ({ ...prev, fijo: Boolean(checked) }))
                                         }
                                     />
-                                    <label htmlFor="nuevo-fijo" className="text-xs font-semibold text-green-800 dark:text-green-300 cursor-pointer">
+                                    <label htmlFor="nuevo-fijo" className="text-xs font-semibold cursor-pointer" style={{ color: SUCCESS }}>
                                         FIJO (aparece en todas las rutas)
                                     </label>
                                 </div>
@@ -1561,7 +1582,7 @@ export default function ModulacionIndex({
                                     <Button
                                         type="button"
                                         onClick={handleAgregarNovedadTabla2}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 w-full"
+                                        className="font-semibold text-xs h-8 w-full"
                                     >
                                         <Plus className="h-4 w-4 mr-1" />
                                         {'+ Agregar a Novedades'}
@@ -1573,7 +1594,7 @@ export default function ModulacionIndex({
                         {/* TABLA DE NOVEDADES */}
                         <div className="rounded-md border overflow-x-auto">
                             <Table>
-                                <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
+                                <TableHeader className="bg-muted/50">
                                     <TableRow>
                                         <TableHead className="font-semibold">{'Identificación'}</TableHead>
                                         <TableHead className="font-semibold">{'Nombres'}</TableHead>
@@ -1588,7 +1609,7 @@ export default function ModulacionIndex({
                                 <TableBody>
                                     {!modulacion?.novedades || modulacion.novedades.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                                                 {'No hay colaboradores agregados en novedades para esta fecha. Utilice el formulario arriba para agregar uno.'}
                                             </TableCell>
                                         </TableRow>
@@ -1596,10 +1617,10 @@ export default function ModulacionIndex({
                                         modulacion.novedades.map((nov) => {
                                             const rowState = novedadesState[nov.id] || nov;
                                             return (
-                                                <TableRow key={nov.id} className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/40 ${rowState.fijo ? 'bg-green-50/50 dark:bg-green-950/20' : ''}`}>
+                                                <TableRow key={nov.id} className={`hover:bg-muted/50 ${rowState.fijo ? 'bg-[#0ca30c]/5' : ''}`}>
                                                     <TableCell className="font-mono text-sm">{String(nov.cedula ?? '-')}</TableCell>
                                                     <TableCell className="font-medium text-sm">{String(nov.nombres ?? '-')}</TableCell>
-                                                    <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                                                    <TableCell className="text-sm text-muted-foreground">
                                                         {String(nov.cargo ?? '-')}
                                                     </TableCell>
 
@@ -1646,12 +1667,13 @@ export default function ModulacionIndex({
                                                     {/* Acciones */}
                                                     <TableCell className="text-right">
                                                         <Button
-                                                            size="sm"
+                                                            size="icon"
                                                             variant="ghost"
                                                             onClick={() => handleDeleteNovedad(nov.id)}
-                                                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                            className="h-7 w-7"
+                                                            aria-label="Eliminar novedad"
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -1663,20 +1685,24 @@ export default function ModulacionIndex({
                         </div>
                     </CardContent>
                 </Card>
+                )}
                 {/* fin tabla 2 novedades */}
 
                 {/* BOTÓN GENERAL PARA GUARDAR LA PLANEACIÓN DE RUTA COMPLETA (TODAS LAS RUTAS Y NOVEDADES) — solo en modo edición */}
-                <div className="flex items-center justify-end pt-4 border-t" style={{ display: isEditing ? 'flex' : 'none' }}>
+                {isEditing && (
+                <div className="flex items-center justify-end pt-4 border-t">
                     <Button
                         type="button"
                         disabled={isSubmitting}
                         onClick={handleGuardarTodo}
-                        className="bg-red-600 hover:bg-red-700 text-white text-base px-8 py-3 font-semibold shadow-lg"
+                        className="text-base px-8 py-3 font-semibold"
+                        style={{ backgroundColor: ACCENT, color: '#fff' }}
                     >
                         <Save className="h-5 w-5 mr-2" />
                         Guardar Planeación de Ruta
                     </Button>
                 </div>
+                )}
                 {/* fin botón guardar todo */}
             </div>
         </AppLayout>

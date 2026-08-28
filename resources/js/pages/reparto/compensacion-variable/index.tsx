@@ -1,7 +1,13 @@
+import { KpiCard, KpiCardGrid } from '@/components/kpi-card';
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -65,6 +71,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reparto', href: '/modules/reparto' },
     { title: 'Compensación Variable', href: '/modules/reparto/compensacion-variable' },
 ];
+
+// Paleta validada de la app (ver resources/js/data/modules.ts): rojo de Reparto como acento del módulo,
+// verde/ámbar/rojo para estados positivo/advertencia/crítico.
+const COLOR_MODULO = '#D4102A';
+const COLOR_SUCCESS = '#3F7A22';
+const COLOR_WARNING = '#fab219';
+const COLOR_CRITICAL = '#d03b3b';
 
 export interface CompensacionRow {
     id: number;
@@ -243,7 +256,7 @@ export function GraficoHabilitadoresYAusenciasPorDia({
                 display: true,
                 position: 'top' as const,
                 align: 'start' as const,
-                labels: { font: { size: 9.5, weight: 'semibold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
+                labels: { font: { size: 9.5, weight: 'bold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
             },
             tooltip: {
                 backgroundColor: '#1e293b',
@@ -259,20 +272,19 @@ export function GraficoHabilitadoresYAusenciasPorDia({
     };
 
     return (
-        <div className="w-full space-y-2 text-left">
-            <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5">
-                    <Activity className="size-3.5 text-indigo-500" />
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                        Línea Desempeño y Ausentismos
-                    </span>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <Activity className="size-3.5" />
+                    Línea Desempeño y Ausentismos
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
+                    <Line data={chartData} options={options} />
                 </div>
-            </div>
-
-            <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
-                <Line data={chartData} options={options} />
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -323,7 +335,7 @@ export function GraficoRechazosPorDia({
                 position: 'top' as const,
                 align: 'start' as const,
                 labels: {
-                    font: { size: 10, weight: 'semibold' as const },
+                    font: { size: 10, weight: 'bold' as const },
                     color: '#334155',
                     usePointStyle: true,
                     boxWidth: 6,
@@ -353,25 +365,26 @@ export function GraficoRechazosPorDia({
     };
 
     return (
-        <div className="w-full space-y-2 text-left">
-            <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5">
-                    <ShieldAlert className="size-3.5 text-amber-500" />
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                        Rechazos de Mercado (POCs)
-                    </span>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="flex-row items-center justify-between gap-1.5 space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <ShieldAlert className="size-3.5" />
+                    Rechazos de Mercado (POCs)
+                </CardTitle>
+                <Badge
+                    variant="outline"
+                    className="border-transparent text-[11px] font-semibold"
+                    style={{ backgroundColor: `${COLOR_WARNING}1a`, color: COLOR_WARNING }}
+                >
+                    Rechazos: {promedio ?? 0} POCs
+                </Badge>
+            </CardHeader>
+            <CardContent>
+                <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
+                    <Bar data={data} options={options} />
                 </div>
-
-                <div className="flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 border border-amber-200 dark:border-amber-800 text-[11px]">
-                    <span className="font-semibold text-amber-700 dark:text-amber-300">Rechazos:</span>
-                    <strong className="font-extrabold text-amber-800 dark:text-amber-200">{promedio ?? 0} POCs</strong>
-                </div>
-            </div>
-
-            <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
-                <Bar data={data} options={options} />
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -420,7 +433,7 @@ export function GraficoAdherenciaPorDia({
                 display: true,
                 position: 'top' as const,
                 align: 'start' as const,
-                labels: { font: { size: 10, weight: 'semibold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
+                labels: { font: { size: 10, weight: 'bold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
             },
             tooltip: {
                 backgroundColor: '#1e293b',
@@ -437,25 +450,26 @@ export function GraficoAdherenciaPorDia({
     };
 
     return (
-        <div className="w-full space-y-2 text-left">
-            <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5">
-                    <TrendingUp className="size-3.5 text-emerald-500" />
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                        Adherencia GP por Día
-                    </span>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="flex-row items-center justify-between gap-1.5 space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <TrendingUp className="size-3.5" />
+                    Adherencia GP por Día
+                </CardTitle>
+                <Badge
+                    variant="outline"
+                    className="border-transparent text-[11px] font-semibold"
+                    style={{ backgroundColor: `${COLOR_SUCCESS}1a`, color: COLOR_SUCCESS }}
+                >
+                    Adherencia GP: {promedio ?? 0}%
+                </Badge>
+            </CardHeader>
+            <CardContent>
+                <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
+                    <Bar data={data} options={options} />
                 </div>
-
-                <div className="flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 border border-emerald-200 dark:border-emerald-800 text-[11px]">
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-300">Adherencia GP:</span>
-                    <strong className="font-extrabold text-emerald-800 dark:text-emerald-200">{promedio ?? 0}%</strong>
-                </div>
-            </div>
-
-            <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
-                <Bar data={data} options={options} />
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -504,7 +518,7 @@ export function GraficoPorcentajeRechazosPorDia({
                 display: true,
                 position: 'top' as const,
                 align: 'start' as const,
-                labels: { font: { size: 10, weight: 'semibold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
+                labels: { font: { size: 10, weight: 'bold' as const }, color: '#334155', usePointStyle: true, boxWidth: 6 },
             },
             tooltip: {
                 backgroundColor: '#1e293b',
@@ -521,25 +535,26 @@ export function GraficoPorcentajeRechazosPorDia({
     };
 
     return (
-        <div className="w-full space-y-2 text-left">
-            <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="size-3.5 text-rose-500" />
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                        % Rechazos por Día
-                    </span>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="flex-row items-center justify-between gap-1.5 space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <AlertTriangle className="size-3.5" />
+                    % Rechazos por Día
+                </CardTitle>
+                <Badge
+                    variant="outline"
+                    className="border-transparent text-[11px] font-semibold"
+                    style={{ backgroundColor: `${COLOR_CRITICAL}1a`, color: COLOR_CRITICAL }}
+                >
+                    % Rechazos: {promedio ?? 0}%
+                </Badge>
+            </CardHeader>
+            <CardContent>
+                <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
+                    <Bar data={data} options={options} />
                 </div>
-
-                <div className="flex items-center gap-1 rounded-md bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 border border-rose-200 dark:border-rose-800 text-[11px]">
-                    <span className="font-semibold text-rose-700 dark:text-rose-300">% Rechazos:</span>
-                    <strong className="font-extrabold text-rose-800 dark:text-rose-200">{promedio ?? 0}%</strong>
-                </div>
-            </div>
-
-            <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
-                <Bar data={data} options={options} />
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -639,7 +654,7 @@ export function RadarPagosMensuales({
                 position: 'top' as const,
                 align: 'start' as const,
                 labels: {
-                    font: { size: 10, weight: 'semibold' as const },
+                    font: { size: 10, weight: 'bold' as const },
                     usePointStyle: true,
                     boxWidth: 6,
                     padding: 10,
@@ -668,37 +683,37 @@ export function RadarPagosMensuales({
     };
 
     return (
-        <div className="space-y-2 text-left">
-            <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5 text-left">
-                    <RadarIcon className="size-3.5 text-emerald-500" />
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                        Comparativa de Pago Variable
-                    </span>
-                </div>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-1.5 space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <RadarIcon className="size-3.5" />
+                    Comparativa de Pago Variable
+                </CardTitle>
 
                 {onAnioChange && aniosDisponibles.length > 0 && (
-                    <div className="flex items-center gap-1 text-[11px]">
-                        <label className="font-semibold text-slate-500">Año:</label>
-                        <select
-                            value={anioActual}
-                            onChange={(e) => onAnioChange(Number(e.target.value))}
-                            className="h-6 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-1.5 py-0 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-2xs cursor-pointer focus:ring-1 focus:ring-emerald-500 outline-none"
-                        >
-                            {aniosDisponibles.map((yr) => (
-                                <option key={yr} value={yr}>
-                                    {yr}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                        <Label className="font-semibold text-muted-foreground">Año:</Label>
+                        <Select value={String(anioActual)} onValueChange={(v) => onAnioChange(Number(v))}>
+                            <SelectTrigger className="h-6 w-20 px-1.5 py-0 text-[11px] font-bold">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {aniosDisponibles.map((yr) => (
+                                    <SelectItem key={yr} value={String(yr)}>
+                                        {yr}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 )}
-            </div>
-
-            <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
-                <Radar data={data} options={options} />
-            </div>
-        </div>
+            </CardHeader>
+            <CardContent>
+                <div className="h-48 md:h-56 w-full flex justify-start items-center p-1">
+                    <Radar data={data} options={options} />
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -714,25 +729,27 @@ function FriendlyMonthPicker({
 }) {
     return (
         <div className="w-full">
-            <label className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 block mb-1 flex items-center gap-1">
-                <Calendar className="size-3.5 text-emerald-600" /> {label}
-            </label>
+            <Label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <Calendar className="size-3.5" /> {label}
+            </Label>
             <div className="relative">
-                <input
+                <Input
                     type="month"
                     value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
-                    className="h-8 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-2xs focus:outline-hidden font-medium cursor-pointer"
+                    className="h-8 cursor-pointer px-2.5 py-1 text-xs font-medium"
                 />
                 {value && (
-                    <button
+                    <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => onChange('')}
                         title="Limpiar fecha"
-                        className="absolute right-7 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                        className="absolute right-7 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground"
                     >
                         <X className="size-3" />
-                    </button>
+                    </Button>
                 )}
             </div>
         </div>
@@ -747,7 +764,7 @@ function MultiSelectSearchable({
     options = [],
     onChange,
     formatOption,
-    labelColorClass = 'text-slate-500',
+    labelColorClass = 'text-muted-foreground',
 }: {
     label?: string;
     placeholder: string;
@@ -810,23 +827,23 @@ function MultiSelectSearchable({
 
     return (
         <div className="relative w-full" ref={containerRef}>
-            {label && <label className={`text-[11px] font-semibold block mb-1 ${labelColorClass}`}>{label}</label>}
-            
+            {label && <Label className={`mb-1 block text-[11px] font-semibold ${labelColorClass}`}>{label}</Label>}
+
             {/* Direct Input Trigger Box */}
             <div
                 onClick={() => {
                     setOpen(true);
                     inputRef.current?.focus();
                 }}
-                className="flex h-8 w-full items-center justify-between rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 cursor-text focus-within:ring-1 focus-within:ring-emerald-500"
+                className="flex h-8 w-full cursor-text items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-xs shadow-2xs hover:bg-accent/40 focus-within:ring-1 focus-within:ring-ring"
             >
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     {selectedValues.length > 1 && !open && (
-                        <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] px-1.5 py-0 shrink-0">
+                        <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[10px]">
                             {selectedValues.length}
                         </Badge>
                     )}
-                    <input
+                    <Input
                         ref={inputRef}
                         type="text"
                         placeholder={open ? `Escribir para buscar ${placeholder.toLowerCase()}...` : (getDisplayText() || placeholder)}
@@ -836,39 +853,52 @@ function MultiSelectSearchable({
                             if (!open) setOpen(true);
                         }}
                         onFocus={() => setOpen(true)}
-                        className="w-full bg-transparent border-0 p-0 text-xs text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-400 font-medium truncate"
+                        className="h-auto w-full truncate border-0 bg-transparent p-0 text-xs font-medium text-foreground shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
                     />
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0 ml-1">
                     {selectedValues.length > 0 && (
-                        <span onClick={clearAll} title="Limpiar selección" className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={clearAll}
+                            title="Limpiar selección"
+                            className="h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
+                        >
                             <X className="size-3" />
-                        </span>
+                        </Button>
                     )}
-                    <ChevronsUpDown className="size-3.5 opacity-50 text-slate-400 cursor-pointer" />
+                    <ChevronsUpDown className="size-3.5 shrink-0 cursor-pointer text-muted-foreground opacity-50" />
                 </div>
             </div>
 
             {/* Checklist Dropdown Panel */}
             {open && (
-                <div className="absolute left-0 z-50 mt-1 max-h-60 w-full min-w-[180px] overflow-hidden rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
+                <div className="absolute left-0 z-50 mt-1 max-h-60 w-full min-w-[180px] overflow-hidden rounded-md border bg-popover p-1.5 text-popover-foreground shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95">
                     {/* Checkbox Quick Actions */}
-                    <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                        <button type="button" onClick={selectAllFiltered} className="hover:text-emerald-600 font-medium">
+                    <div className="flex items-center justify-between border-b px-2 py-1 text-[11px] text-muted-foreground">
+                        <Button type="button" variant="ghost" size="sm" onClick={selectAllFiltered} className="h-6 px-1.5 text-[11px] font-medium">
                             Marcar todos ({filteredOptions.length})
-                        </button>
+                        </Button>
                         {selectedValues.length > 0 && (
-                            <button type="button" onClick={() => onChange([])} className="hover:text-rose-600 font-medium">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onChange([])}
+                                className="h-6 px-1.5 text-[11px] font-medium text-destructive hover:text-destructive"
+                            >
                                 Limpiar ({selectedValues.length})
-                            </button>
+                            </Button>
                         )}
                     </div>
 
                     {/* Checklist Options */}
                     <div className="max-h-44 overflow-y-auto py-1 text-xs space-y-0.5">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-2 py-2 text-center text-slate-400 text-[11px]">Sin coincidencias</div>
+                            <div className="px-2 py-2 text-center text-[11px] text-muted-foreground">Sin coincidencias</div>
                         ) : (
                             filteredOptions.map((opt, idx) => {
                                 const strVal = String(opt);
@@ -877,20 +907,16 @@ function MultiSelectSearchable({
                                     <div
                                         key={idx}
                                         onClick={() => toggleOption(strVal)}
-                                        className={`flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 select-none ${
-                                            isChecked ? 'font-bold text-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40' : 'text-slate-700 dark:text-slate-200'
+                                        className={`flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 select-none hover:bg-accent ${
+                                            isChecked ? 'bg-accent/60 font-bold text-accent-foreground' : 'text-foreground'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => {}}
-                                                className="size-3.5 rounded-xs border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                            />
+                                            {/* onCheckedChange es no-op: el toggle real lo maneja el onClick del contenedor (toggleOption) */}
+                                            <Checkbox checked={isChecked} onCheckedChange={() => {}} className="size-3.5" />
                                             <span className="truncate">{formatOption ? formatOption(opt) : strVal}</span>
                                         </div>
-                                        {isChecked && <Check className="size-3.5 text-emerald-600 shrink-0" />}
+                                        {isChecked && <Check className="size-3.5 shrink-0" />}
                                     </div>
                                 );
                             })
@@ -898,38 +924,6 @@ function MultiSelectSearchable({
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-// Indicator Stat Card Component (Más pequeño y compacto)
-function StatCard({
-    title,
-    value,
-    subtext,
-    icon: Icon,
-    color,
-    bgColor,
-}: {
-    title: string;
-    value: string | number;
-    subtext?: string;
-    icon: React.ElementType;
-    color: string;
-    bgColor: string;
-}) {
-    return (
-        <div className="flex flex-col justify-between rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 shadow-2xs hover:shadow-xs transition-all">
-            <div className="flex items-center justify-between gap-1">
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider truncate">{title}</span>
-                <div className="rounded-md p-1 shrink-0" style={{ backgroundColor: bgColor, color: color }}>
-                    <Icon className="size-3.5" />
-                </div>
-            </div>
-            <div className="mt-1.5">
-                <div className="text-base font-extrabold text-slate-900 dark:text-slate-100">{value}</div>
-                {subtext && <p className="text-[10px] text-slate-400 mt-0.5 truncate">{subtext}</p>}
-            </div>
         </div>
     );
 }
@@ -1219,7 +1213,7 @@ export default function CompensacionVariableIndex({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Compensación Variable Semanal" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 md:p-5 bg-slate-50/50 dark:bg-slate-950/50">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
 
                 {/* Header Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1238,7 +1232,7 @@ export default function CompensacionVariableIndex({
                                 Exportar CSV
                             </a>
                         </Button>
-                        <Button variant="default" size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" onClick={() => setOpenImportModal(true)}>
+                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setOpenImportModal(true)}>
                             <Upload className="size-3.5 mr-1" />
                             Subir Excel
                         </Button>
@@ -1248,114 +1242,99 @@ export default function CompensacionVariableIndex({
                 {/* Flash Message Banner */}
                 {flash?.status && (
                     <div
-                        className={`flex items-center justify-between rounded-lg p-3 text-xs font-medium shadow-2xs ${
+                        className={`flex items-center justify-between rounded-lg border p-3 text-xs font-medium shadow-2xs ${
                             flash.status.type === 'success'
-                                ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                                : 'bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : 'border-destructive/30 bg-destructive/5 text-destructive'
                         }`}
                     >
                         <div className="flex items-center gap-2">
-                            {flash.status.type === 'success' ? <CheckCircle2 className="size-4 text-emerald-600" /> : <AlertTriangle className="size-4 text-rose-600" />}
+                            {flash.status.type === 'success' ? <CheckCircle2 className="size-4 text-emerald-600" /> : <AlertTriangle className="size-4" />}
                             <span>{flash.status.message}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Indicadores Globales Principales (Compactos y Más Pequeños) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-
-                    {/* Highlight Card Total Pago Variable DT (Más compacto) */}
-                    <div className="col-span-1 sm:col-span-2 flex flex-col justify-between rounded-lg bg-gradient-to-br from-emerald-600 to-teal-700 p-3 text-white shadow-2xs">
+                {/* Indicadores Globales Principales */}
+                <KpiCardGrid className="grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+                    {/* Highlight Card Total Pago Variable DT: se mantiene como tarjeta bespoke (no KpiCard) para
+                        preservar el énfasis visual del principal indicador del módulo, con la paleta validada. */}
+                    <div
+                        className="col-span-1 flex flex-col justify-between rounded-lg p-4 text-white shadow-2xs sm:col-span-2"
+                        style={{ backgroundImage: `linear-gradient(135deg, ${COLOR_SUCCESS}, #2c5719)` }}
+                    >
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">Total Pago Variable DT</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">Total Pago Variable DT</span>
                             <div className="rounded-full bg-white/20 p-1.5">
                                 <DollarSign className="size-4 text-white" />
                             </div>
                         </div>
                         <div className="mt-1">
                             <h2 className="text-lg md:text-xl font-extrabold tracking-tight">{formatCurrency(indicadores.total_pago_variable_dt)}</h2>
-                            <p className="text-[10px] text-emerald-100 mt-0.5">Suma total a pagar</p>
+                            <p className="mt-0.5 text-[10px] text-white/80">Suma total a pagar</p>
                         </div>
                     </div>
 
-                    <StatCard
-                        title="Total Salario Variable"
+                    <KpiCard
+                        label="Total Salario Variable"
                         value={formatCurrency(indicadores.total_salario_variable)}
-                        subtext="Base presupuestada"
+                        secondaryText="Base presupuestada"
                         icon={DollarSign}
-                        color="#0D9488"
-                        bgColor="#CCFBF1"
+                        color={COLOR_MODULO}
                     />
 
-                    <StatCard
-                        title="Total Registros"
+                    <KpiCard
+                        label="Total Registros"
                         value={indicadores.total_registros}
-                        subtext="Colaboradores evaluados"
+                        secondaryText="Colaboradores evaluados"
                         icon={Users}
-                        color="#3B82F6"
-                        bgColor="#DBEAFE"
+                        color={COLOR_WARNING}
                     />
-
-                </div>
+                </KpiCardGrid>
 
                 {/* 📊 SECCIÓN DE GRÁFICOS INTERACTIVOS (INCLUYE EL NUEVO GRÁFICO DE LÍNEAS PARA HABILITADORES Y AUSENCIAS) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
-                    {/* RADAR CHART PASTEL COMPACTO */}
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                        <RadarPagosMensuales
-                            pagosActual={radar_data?.pagos_actual}
-                            pagosAnterior={radar_data?.pagos_anterior}
-                            anioActual={radar_data?.anio_actual}
-                            anioAnterior={radar_data?.anio_anterior}
-                            aniosDisponibles={radar_data?.anios_disponibles}
-                            onAnioChange={handleAnioRadarChange}
-                        />
-                    </div>
+                    <RadarPagosMensuales
+                        pagosActual={radar_data?.pagos_actual}
+                        pagosAnterior={radar_data?.pagos_anterior}
+                        anioActual={radar_data?.anio_actual}
+                        anioAnterior={radar_data?.anio_anterior}
+                        aniosDisponibles={radar_data?.anios_disponibles}
+                        onAnioChange={handleAnioRadarChange}
+                    />
 
-                    {/* GRÁFICO DE LÍNEAS PARA HABILITADORES, AUSENCIAS JUSTIFICADAS/INJUSTIFICADAS Y TRI/FATALIDADES */}
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                        <GraficoHabilitadoresYAusenciasPorDia
-                            data={habilitadores_y_ausencias_por_dia}
-                            diasDisponibles={dias_disponibles}
-                        />
-                    </div>
+                    <GraficoHabilitadoresYAusenciasPorDia
+                        data={habilitadores_y_ausencias_por_dia}
+                        diasDisponibles={dias_disponibles}
+                    />
 
-                    {/* RECHAZOS DE MERCADO (POCS) POR DÍA COMPACTO */}
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                        <GraficoRechazosPorDia
-                            rechazosPorDia={rechazos_por_dia}
-                            diasDisponibles={dias_disponibles}
-                            promedio={indicadores.prom_market_refusals}
-                        />
-                    </div>
+                    <GraficoRechazosPorDia
+                        rechazosPorDia={rechazos_por_dia}
+                        diasDisponibles={dias_disponibles}
+                        promedio={indicadores.prom_market_refusals}
+                    />
 
-                    {/* ADHERENCIA GP POR DÍA COMPACTO */}
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                        <GraficoAdherenciaPorDia
-                            adherenciaPorDia={adherencia_por_dia}
-                            diasDisponibles={dias_disponibles}
-                            promedio={indicadores.prom_adherencia_gp}
-                        />
-                    </div>
+                    <GraficoAdherenciaPorDia
+                        adherenciaPorDia={adherencia_por_dia}
+                        diasDisponibles={dias_disponibles}
+                        promedio={indicadores.prom_adherencia_gp}
+                    />
 
-                    {/* % RECHAZOS POR DÍA COMPACTO */}
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                        <GraficoPorcentajeRechazosPorDia
-                            porcentajeRechazosPorDia={porcentaje_rechazos_por_dia}
-                            diasDisponibles={dias_disponibles}
-                            promedio={indicadores.prom_rechazos}
-                        />
-                    </div>
+                    <GraficoPorcentajeRechazosPorDia
+                        porcentajeRechazosPorDia={porcentaje_rechazos_por_dia}
+                        diasDisponibles={dias_disponibles}
+                        promedio={indicadores.prom_rechazos}
+                    />
                 </div>
 
                 {/* PANEL DE FILTROS: AUTOCOMPLETADO DIRECTO EN CUADRO & RANGO DE FECHAS AMIGABLE */}
-                <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                            <Filter className="size-3.5 text-emerald-600" />
+                <div className="rounded-lg border border-sidebar-border/70 bg-card p-3 shadow-2xs space-y-3 dark:border-sidebar-border">
+                    <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-foreground">
+                            <Filter className="size-3.5 text-muted-foreground" />
                             <span>Filtros Múltiples (Escritura Directa y Checklist)</span>
                         </div>
-                        <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px] text-slate-500 hover:text-slate-800" onClick={limpiarFiltros}>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px] text-muted-foreground hover:text-foreground" onClick={limpiarFiltros}>
                             <RotateCcw className="size-3 mr-1" />
                             Restablecer
                         </Button>
@@ -1399,7 +1378,7 @@ export default function CompensacionVariableIndex({
                     </div>
 
                     {/* Grupo 2: Desempeño, Ausentismos e Incentivos (Multi-Select Checklist) */}
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-xs">
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 pt-2.5 border-t text-xs">
                         <MultiSelectSearchable
                             label="Aus. Justificada"
                             placeholder="Aus. Just."
@@ -1407,7 +1386,7 @@ export default function CompensacionVariableIndex({
                             options={catalogos.ausencias_justificadas}
                             formatOption={(val) => `${val} días`}
                             onChange={handleMultiSelectChange('ausencia_justificada')}
-                            labelColorClass="text-amber-600 dark:text-amber-400"
+                            labelColorClass="text-[#fab219]"
                         />
                         <MultiSelectSearchable
                             label="Aus. Injustificada"
@@ -1416,7 +1395,7 @@ export default function CompensacionVariableIndex({
                             options={catalogos.ausencias_injustificadas}
                             formatOption={(val) => `${val} días`}
                             onChange={handleMultiSelectChange('ausencia_injustificada')}
-                            labelColorClass="text-rose-600 dark:text-rose-400"
+                            labelColorClass="text-destructive"
                         />
                         <MultiSelectSearchable
                             label="TRI / Fatalidades"
@@ -1424,7 +1403,7 @@ export default function CompensacionVariableIndex({
                             selectedValues={formFilters.tri_fatalidades}
                             options={catalogos.tri_fatalidades}
                             onChange={handleMultiSelectChange('tri_fatalidades')}
-                            labelColorClass="text-orange-600 dark:text-orange-400"
+                            labelColorClass="text-destructive"
                         />
                         <MultiSelectSearchable
                             label="Adherencia GP"
@@ -1432,7 +1411,7 @@ export default function CompensacionVariableIndex({
                             selectedValues={formFilters.adherencia_gp}
                             options={catalogos.adherencias_gp}
                             onChange={handleMultiSelectChange('adherencia_gp')}
-                            labelColorClass="text-emerald-600 dark:text-emerald-400"
+                            labelColorClass="text-[#3F7A22]"
                         />
                         <MultiSelectSearchable
                             label="Habilitadores"
@@ -1440,7 +1419,7 @@ export default function CompensacionVariableIndex({
                             selectedValues={formFilters.habilitadores}
                             options={catalogos.habilitadores}
                             onChange={handleMultiSelectChange('habilitadores')}
-                            labelColorClass="text-teal-600 dark:text-teal-400"
+                            labelColorClass="text-[#3F7A22]"
                         />
                         <MultiSelectSearchable
                             label="Market Refusals"
@@ -1448,7 +1427,7 @@ export default function CompensacionVariableIndex({
                             selectedValues={formFilters.market_refusals}
                             options={catalogos.market_refusals}
                             onChange={handleMultiSelectChange('market_refusals')}
-                            labelColorClass="text-yellow-600 dark:text-yellow-400"
+                            labelColorClass="text-[#fab219]"
                         />
                         <MultiSelectSearchable
                             label="Variable (%)"
@@ -1456,18 +1435,18 @@ export default function CompensacionVariableIndex({
                             selectedValues={formFilters.variable}
                             options={catalogos.variables}
                             onChange={handleMultiSelectChange('variable')}
-                            labelColorClass="text-indigo-600 dark:text-indigo-400"
+                            labelColorClass="text-muted-foreground"
                         />
                     </div>
                 </div>
 
                 {/* TABLA PRINCIPAL ORDENADA ALFABÉTICAMENTE CON CÓDIGO DESDE #1 */}
-                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+                <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 bg-card shadow-2xs dark:border-sidebar-border">
                     <Table className="text-[11px]">
-                        <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                        <TableHeader className="bg-muted/50">
                             <TableRow>
                                 <TableHead className="font-bold py-2">Código</TableHead>
-                                <TableHead className="font-bold text-emerald-700 dark:text-emerald-400 py-2">Mes</TableHead>
+                                <TableHead className="font-bold text-foreground py-2">Mes</TableHead>
                                 <TableHead className="font-bold py-2">Nombre</TableHead>
                                 <TableHead className="font-bold py-2">Cargo</TableHead>
                                 <TableHead className="font-bold py-2">Identificador</TableHead>
@@ -1481,14 +1460,14 @@ export default function CompensacionVariableIndex({
                                 <TableHead className="text-center font-bold py-2">Variable</TableHead>
                                 <TableHead className="text-center font-bold py-2">Días Trabajados</TableHead>
                                 <TableHead className="text-right font-bold py-2">Salario Variable</TableHead>
-                                <TableHead className="text-right font-bold text-emerald-700 dark:text-emerald-400 py-2">Pago Variable DT</TableHead>
+                                <TableHead className="text-right font-bold py-2" style={{ color: COLOR_SUCCESS }}>Pago Variable DT</TableHead>
                                 <TableHead className="text-center font-bold py-2">Acción</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {data.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={17} className="py-8 text-center text-slate-400">
+                                    <TableCell colSpan={17} className="py-8 text-center text-muted-foreground">
                                         No se encontraron registros de compensación variable para los filtros seleccionados.
                                     </TableCell>
                                 </TableRow>
@@ -1496,10 +1475,10 @@ export default function CompensacionVariableIndex({
                                 data.data.map((row, index) => {
                                     const rowNumber = (data.current_page - 1) * data.per_page + index + 1;
                                     return (
-                                        <TableRow key={row.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                                            <TableCell className="font-mono text-slate-500 font-semibold py-1.5">#{rowNumber}</TableCell>
-                                            <TableCell className="font-bold text-emerald-700 dark:text-emerald-300 py-1.5">{row.mes ?? '—'}</TableCell>
-                                            <TableCell className="font-semibold text-slate-800 dark:text-slate-100 py-1.5">{row.nombre ?? '—'}</TableCell>
+                                        <TableRow key={row.id} className="hover:bg-muted/50">
+                                            <TableCell className="font-mono text-muted-foreground font-semibold py-1.5">#{rowNumber}</TableCell>
+                                            <TableCell className="font-bold py-1.5" style={{ color: COLOR_SUCCESS }}>{row.mes ?? '—'}</TableCell>
+                                            <TableCell className="font-semibold text-foreground py-1.5">{row.nombre ?? '—'}</TableCell>
                                             <TableCell className="py-1.5">{row.cargo ?? '—'}</TableCell>
                                             <TableCell className="font-mono font-medium py-1.5">{row.identificador ?? '—'}</TableCell>
                                             <TableCell className="text-center py-1.5">{row.ausencia_justificada}</TableCell>
@@ -1516,13 +1495,14 @@ export default function CompensacionVariableIndex({
                                             <TableCell className="text-center py-1.5">{row.porcentaje_rechazos}%</TableCell>
                                             <TableCell className="text-center py-1.5">
                                                 <Badge
-                                                    className={`text-[9px] px-1.5 py-0 ${
-                                                        row.habilitadores >= 1
-                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                                            : row.habilitadores >= 0.8
-                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                                    }`}
+                                                    variant="outline"
+                                                    className="border-transparent text-[9px] px-1.5 py-0"
+                                                    style={{
+                                                        backgroundColor: `${
+                                                            row.habilitadores >= 1 ? COLOR_SUCCESS : row.habilitadores >= 0.8 ? COLOR_WARNING : COLOR_CRITICAL
+                                                        }1a`,
+                                                        color: row.habilitadores >= 1 ? COLOR_SUCCESS : row.habilitadores >= 0.8 ? COLOR_WARNING : COLOR_CRITICAL,
+                                                    }}
                                                 >
                                                     {row.habilitadores}
                                                 </Badge>
@@ -1530,11 +1510,11 @@ export default function CompensacionVariableIndex({
                                             <TableCell className="text-center py-1.5">{row.variable ?? '—'}</TableCell>
                                             <TableCell className="text-center py-1.5">{row.dias_trabajados}</TableCell>
                                             <TableCell className="text-right py-1.5">{formatCurrency(row.salario_variable)}</TableCell>
-                                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400 py-1.5">
+                                            <TableCell className="text-right font-bold py-1.5" style={{ color: COLOR_SUCCESS }}>
                                                 {formatCurrency(row.pago_variable_dt || row.total_pago)}
                                             </TableCell>
                                             <TableCell className="text-center py-1.5">
-                                                <Button variant="ghost" size="icon" className="size-6 text-slate-600 hover:text-emerald-600" title="Ver detalle por meses" onClick={() => handleOpenDetail(row)}>
+                                                <Button variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-foreground" title="Ver detalle por meses" onClick={() => handleOpenDetail(row)}>
                                                     <Eye className="size-3.5" />
                                                 </Button>
                                             </TableCell>
@@ -1571,9 +1551,9 @@ export default function CompensacionVariableIndex({
                 {/* Slide-Over Sheet: Detalle de Compensación Variable por Meses (Más pequeño y compacto) */}
                 <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
                     <SheetContent className="w-full sm:max-w-4xl overflow-y-auto p-4 space-y-4">
-                        <SheetHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
-                            <SheetTitle className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                                <Eye className="size-4 text-emerald-600" />
+                        <SheetHeader className="pb-2 border-b">
+                            <SheetTitle className="flex items-center gap-2 text-sm font-bold">
+                                <Eye className="size-4 text-muted-foreground" />
                                 Detalle de Compensación Variable por Meses
                             </SheetTitle>
                             <SheetDescription className="text-xs">
@@ -1584,84 +1564,77 @@ export default function CompensacionVariableIndex({
                         {selectedRow && (
                             <div className="space-y-4">
                                 {/* Profile Card Compacto */}
-                                <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3 space-y-2 border border-slate-200/60 dark:border-slate-700 text-xs">
-                                    <div className="flex items-center justify-between border-b pb-1.5 border-slate-200 dark:border-slate-700">
+                                <div className="rounded-lg bg-muted/40 p-3 space-y-2 border text-xs">
+                                    <div className="flex items-center justify-between border-b pb-1.5">
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedRow.nombre}</h3>
-                                            <p className="text-[11px] text-slate-500">{selectedRow.cargo}</p>
+                                            <h3 className="text-sm font-bold">{selectedRow.nombre}</h3>
+                                            <p className="text-[11px] text-muted-foreground">{selectedRow.cargo}</p>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5">#{selectedRow.identificador}</Badge>
                                             {/* Prom. Días Trab. Integrado en Ver Detalles */}
-                                            <div className="flex items-center gap-1 rounded-md bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 border border-indigo-200 dark:border-indigo-800 text-[11px]">
-                                                <Clock className="size-3 text-indigo-600" />
-                                                <span className="font-semibold text-indigo-700 dark:text-indigo-300">Prom. Días Trab:</span>
-                                                <strong className="font-extrabold text-indigo-800 dark:text-indigo-200">{detailPromDias}d</strong>
-                                            </div>
+                                            <Badge
+                                                variant="outline"
+                                                className="flex items-center gap-1 border-transparent px-2 py-0.5 text-[11px] font-semibold"
+                                                style={{ backgroundColor: `${COLOR_MODULO}1a`, color: COLOR_MODULO }}
+                                            >
+                                                <Clock className="size-3" />
+                                                Prom. Días Trab: <strong className="font-extrabold">{detailPromDias}d</strong>
+                                            </Badge>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                                        <div><span className="font-semibold text-slate-700 dark:text-slate-300">Identificador:</span> {selectedRow.identificador}</div>
-                                        <div><span className="font-semibold text-slate-700 dark:text-slate-300">Total Meses Registrados:</span> {detailHistory.length} mensualidades</div>
+                                    <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                                        <div><span className="font-semibold text-foreground">Identificador:</span> {selectedRow.identificador}</div>
+                                        <div><span className="font-semibold text-foreground">Total Meses Registrados:</span> {detailHistory.length} mensualidades</div>
                                     </div>
                                 </div>
 
                                 {/* Interactive Charts Grid for Individual Collaborator (Compacto) */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                                     {detailRadarData && (
-                                        <div className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                                            <RadarPagosMensuales
-                                                pagosActual={detailRadarData.pagos_actual}
-                                                pagosAnterior={detailRadarData.pagos_anterior}
-                                                anioActual={detailRadarData.anio_actual}
-                                                anioAnterior={detailRadarData.anio_anterior}
-                                                aniosDisponibles={detailRadarData.anios_disponibles}
-                                            />
-                                        </div>
+                                        <RadarPagosMensuales
+                                            pagosActual={detailRadarData.pagos_actual}
+                                            pagosAnterior={detailRadarData.pagos_anterior}
+                                            anioActual={detailRadarData.anio_actual}
+                                            anioAnterior={detailRadarData.anio_anterior}
+                                            aniosDisponibles={detailRadarData.anios_disponibles}
+                                        />
                                     )}
 
-                                    <div className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                                        <GraficoHabilitadoresYAusenciasPorDia
-                                            data={detailHabilitadoresYAusenciasPorDia}
-                                            diasDisponibles={dias_disponibles}
-                                        />
-                                    </div>
+                                    <GraficoHabilitadoresYAusenciasPorDia
+                                        data={detailHabilitadoresYAusenciasPorDia}
+                                        diasDisponibles={dias_disponibles}
+                                    />
 
-                                    <div className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                                        <GraficoRechazosPorDia
-                                            rechazosPorDia={detailRechazosPorDia}
-                                            diasDisponibles={dias_disponibles}
-                                            promedio={indicadores.prom_market_refusals}
-                                        />
-                                    </div>
+                                    <GraficoRechazosPorDia
+                                        rechazosPorDia={detailRechazosPorDia}
+                                        diasDisponibles={dias_disponibles}
+                                        promedio={indicadores.prom_market_refusals}
+                                    />
 
-                                    <div className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                                        <GraficoAdherenciaPorDia
-                                            adherenciaPorDia={detailAdherenciaPorDia}
-                                            diasDisponibles={dias_disponibles}
-                                            promedio={indicadores.prom_adherencia_gp}
-                                        />
-                                    </div>
+                                    <GraficoAdherenciaPorDia
+                                        adherenciaPorDia={detailAdherenciaPorDia}
+                                        diasDisponibles={dias_disponibles}
+                                        promedio={indicadores.prom_adherencia_gp}
+                                    />
 
-                                    <div className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-2xs">
-                                        <GraficoPorcentajeRechazosPorDia
-                                            porcentajeRechazosPorDia={detailPorcentajeRechazosPorDia}
-                                            diasDisponibles={dias_disponibles}
-                                            promedio={indicadores.prom_rechazos}
-                                        />
-                                    </div>
+                                    <GraficoPorcentajeRechazosPorDia
+                                        porcentajeRechazosPorDia={detailPorcentajeRechazosPorDia}
+                                        diasDisponibles={dias_disponibles}
+                                        promedio={indicadores.prom_rechazos}
+                                    />
                                 </div>
 
                                 {/* Table of Monthly History Compacta */}
                                 <div className="space-y-1.5">
-                                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                                         <span>Histórico Mensual del Colaborador</span>
-                                        {loadingDetailHistory && <LoaderCircle className="size-3 animate-spin text-emerald-600" />}
+                                        {loadingDetailHistory && <LoaderCircle className="size-3 animate-spin text-muted-foreground" />}
                                     </h4>
-                                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto">
+                                    <div className="rounded-lg border overflow-x-auto">
                                         <Table className="text-[11px] min-w-[700px]">
-                                            <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                                            <TableHeader className="bg-muted/50">
                                                 <TableRow>
                                                     <TableHead className="font-bold py-1.5">Año</TableHead>
                                                     <TableHead className="font-bold py-1.5">Mes</TableHead>
@@ -1674,14 +1647,17 @@ export default function CompensacionVariableIndex({
                                                     <TableHead className="text-center font-bold py-1.5">Días Trab.</TableHead>
                                                     <TableHead className="text-center font-bold py-1.5">Hab.</TableHead>
                                                     <TableHead className="text-center font-bold py-1.5">Var. %</TableHead>
-                                                    <TableHead className="text-right font-bold text-emerald-700 dark:text-emerald-400 py-1.5">Pago Var. DT</TableHead>
+                                                    <TableHead className="text-right font-bold py-1.5" style={{ color: COLOR_SUCCESS }}>Pago Var. DT</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {detailHistory.map((hRow) => (
-                                                    <TableRow key={hRow.id} className={hRow.id === selectedRow.id ? 'bg-emerald-50/60 dark:bg-emerald-950/30 font-semibold' : ''}>
+                                                    <TableRow
+                                                        key={hRow.id}
+                                                        className={hRow.id === selectedRow.id ? 'bg-accent/50 font-semibold' : ''}
+                                                    >
                                                         <TableCell className="py-1">{hRow.anio ?? '—'}</TableCell>
-                                                        <TableCell className="font-bold text-emerald-700 dark:text-emerald-300 py-1">{hRow.mes ?? '—'}</TableCell>
+                                                        <TableCell className="font-bold py-1" style={{ color: COLOR_SUCCESS }}>{hRow.mes ?? '—'}</TableCell>
                                                         <TableCell className="text-center py-1">{hRow.ausencia_justificada}</TableCell>
                                                         <TableCell className="text-center py-1">
                                                             {hRow.ausencia_injustificada > 0 ? (
@@ -1697,7 +1673,7 @@ export default function CompensacionVariableIndex({
                                                         <TableCell className="text-center py-1">{hRow.dias_trabajados}d</TableCell>
                                                         <TableCell className="text-center py-1">{hRow.habilitadores}</TableCell>
                                                         <TableCell className="text-center py-1">{hRow.variable ?? '—'}</TableCell>
-                                                        <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400 py-1">
+                                                        <TableCell className="text-right font-bold py-1" style={{ color: COLOR_SUCCESS }}>
                                                             {formatCurrency(hRow.pago_variable_dt || hRow.total_pago)}
                                                         </TableCell>
                                                     </TableRow>
@@ -1708,8 +1684,11 @@ export default function CompensacionVariableIndex({
                                 </div>
 
                                 {/* Summary Box Compacto */}
-                                <div className="rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 space-y-1">
-                                    <div className="flex justify-between items-center text-xs text-emerald-800 dark:text-emerald-300">
+                                <div
+                                    className="rounded-lg border p-2.5 space-y-1"
+                                    style={{ borderColor: `${COLOR_SUCCESS}4d`, backgroundColor: `${COLOR_SUCCESS}1a` }}
+                                >
+                                    <div className="flex justify-between items-center text-xs" style={{ color: COLOR_SUCCESS }}>
                                         <span>Total Acumulado Pago Variable</span>
                                         <span className="font-bold">{formatCurrency(detailHistory.reduce((acc, curr) => acc + (curr.pago_variable_dt || 0), 0))}</span>
                                     </div>
@@ -1724,7 +1703,7 @@ export default function CompensacionVariableIndex({
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <FileSpreadsheet className="size-5 text-emerald-600" />
+                                <FileSpreadsheet className="size-5 text-muted-foreground" />
                                 Subir Excel de Compensación Variable
                             </DialogTitle>
                             <DialogDescription>
@@ -1734,11 +1713,11 @@ export default function CompensacionVariableIndex({
 
                         <form onSubmit={handleImportSubmit} className="space-y-4">
                             <div className="grid gap-2">
-                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Archivo Excel (.xlsx / .xls)</label>
-                                <input
+                                <Label className="text-xs font-semibold">Archivo Excel (.xlsx / .xls)</Label>
+                                <Input
                                     type="file"
                                     accept=".xlsx,.xls"
-                                    className="text-xs file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border rounded-lg p-1"
+                                    className="rounded-lg border p-1 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
                                     onChange={handleFileChange}
                                 />
                             </div>
@@ -1762,7 +1741,7 @@ export default function CompensacionVariableIndex({
                                 <DialogClose asChild>
                                     <Button type="button" variant="outline">Cancelar</Button>
                                 </DialogClose>
-                                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold" disabled={importing || uploadData.archivos.length === 0}>
+                                <Button type="submit" disabled={importing || uploadData.archivos.length === 0}>
                                     {importing && <LoaderCircle className="size-4 animate-spin mr-1" />}
                                     Importar Excel
                                 </Button>

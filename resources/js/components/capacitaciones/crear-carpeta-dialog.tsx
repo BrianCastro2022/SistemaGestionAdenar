@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -155,15 +156,18 @@ export function CrearCarpetaDialog({
                                         className="w-full h-full object-cover"
                                     />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <label className="cursor-pointer bg-white text-black text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm hover:bg-white/90">
-                                            Cambiar imagen
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
-                                            />
-                                        </label>
+                                        <Button type="button" size="sm" variant="outline" asChild>
+                                            <label htmlFor="portada-cambiar-input" className="cursor-pointer">
+                                                Cambiar imagen
+                                            </label>
+                                        </Button>
+                                        <input
+                                            id="portada-cambiar-input"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleImageChange(e.target.files?.[0] || null)}
+                                        />
                                         <Button
                                             type="button"
                                             size="icon"
@@ -230,7 +234,9 @@ export function CrearCarpetaDialog({
                                     <button
                                         key={c}
                                         type="button"
-                                        className={`size-7 rounded-full transition-transform ${
+                                        aria-label={`Color ${c}`}
+                                        aria-pressed={data.color === c}
+                                        className={`size-7 rounded-full transition-transform focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                             data.color === c ? 'scale-110 ring-2 ring-foreground ring-offset-2' : 'hover:scale-105'
                                         }`}
                                         style={{ backgroundColor: c }}
@@ -242,26 +248,27 @@ export function CrearCarpetaDialog({
 
                         {/* Configuración de Visibilidad para Colaboradores */}
                         <div className="grid gap-2 pt-2 border-t">
-                            <Label className="flex items-center justify-between cursor-pointer font-medium text-xs text-foreground">
-                                <span className="flex items-center gap-1.5">
-                                    <Eye className={`size-4 text-teal-600 dark:text-teal-400 ${data.visible_colaborador ? '' : 'hidden'}`} />
-                                    <EyeOff className={`size-4 text-rose-500 ${data.visible_colaborador ? 'hidden' : ''}`} />
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="visible_colaborador" className="flex items-center gap-1.5 cursor-pointer font-medium text-xs text-foreground">
+                                    {data.visible_colaborador ? (
+                                        <Eye className="size-4 text-teal-600 dark:text-teal-400" />
+                                    ) : (
+                                        <EyeOff className="size-4" style={{ color: '#d03b3b' }} />
+                                    )}
                                     <span>Visibilidad para Colaboradores</span>
-                                </span>
-                                <input
-                                    type="checkbox"
+                                </Label>
+                                <Checkbox
+                                    id="visible_colaborador"
                                     checked={data.visible_colaborador}
-                                    onChange={(e) => setData('visible_colaborador', e.target.checked)}
-                                    className="size-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                    onCheckedChange={(checked) => setData('visible_colaborador', checked === true)}
                                 />
-                            </Label>
+                            </div>
                             <p className="text-[11px] text-muted-foreground">
-                                <span className={data.visible_colaborador ? '' : 'hidden'}>
-                                    {'🟢 Esta carpeta estará visible para el personal en su portal de capacitaciones.'}
-                                </span>
-                                <span className={data.visible_colaborador ? 'hidden' : ''}>
-                                    {'🔴 Esta carpeta estará oculta para los colaboradores (solo visible para administradores).'}
-                                </span>
+                                {data.visible_colaborador ? (
+                                    <span>🟢 Esta carpeta estará visible para el personal en su portal de capacitaciones.</span>
+                                ) : (
+                                    <span>🔴 Esta carpeta estará oculta para los colaboradores (solo visible para administradores).</span>
+                                )}
                             </p>
                         </div>
                     </div>

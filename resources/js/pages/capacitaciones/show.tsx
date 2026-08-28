@@ -1,6 +1,7 @@
 import { CrearCarpetaDialog } from '@/components/capacitaciones/crear-carpeta-dialog';
 import { FileIcon, getFileCategoryInfo } from '@/components/capacitaciones/file-icon';
 import { SubirMaterialDialog } from '@/components/capacitaciones/subir-material-dialog';
+import HeadingSmall from '@/components/heading-small';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +38,7 @@ import {
     Eye,
     EyeOff,
     ExternalLink,
+    FileText,
     Folder,
     FolderPlus,
     MoreVertical,
@@ -105,6 +107,7 @@ export default function CapacitacionCarpetaShow({
     const [materialEditar, setMaterialEditar] = useState<Material | null>(null);
     const [materialEliminar, setMaterialEliminar] = useState<Material | null>(null);
     const [materialVistaPrevia, setMaterialVistaPrevia] = useState<Material | null>(null);
+    const [officeViewerFailed, setOfficeViewerFailed] = useState(false);
 
     // Diálogos para subcarpetas
     const [dialogoCrearCarpeta, setDialogoCrearCarpeta] = useState(false);
@@ -114,6 +117,11 @@ export default function CapacitacionCarpetaShow({
     useEffect(() => {
         document.body.style.pointerEvents = '';
     });
+
+    // Reinicia el estado de fallo del visor de Office cada vez que se abre una vista previa distinta
+    useEffect(() => {
+        setOfficeViewerFailed(false);
+    }, [materialVistaPrevia?.id]);
 
     // Construir breadcrumbs dinámicos incluyendo ancestros
     const breadcrumbs: BreadcrumbItem[] = [
@@ -186,23 +194,20 @@ export default function CapacitacionCarpetaShow({
                             >
                                 <Folder className="size-5 fill-current" />
                             </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                    {carpeta.nombre}
-                                    <Badge variant="secondary" className="font-normal text-xs">
-                                        {materiales.length} {materiales.length === 1 ? 'material' : 'materiales'}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <HeadingSmall title={carpeta.nombre} description={carpeta.descripcion || undefined} />
+                                <Badge variant="secondary" className="font-normal text-xs">
+                                    {materiales.length} {materiales.length === 1 ? 'material' : 'materiales'}
+                                </Badge>
+                                {carpeta.visible_colaborador === false && (
+                                    <Badge
+                                        variant="outline"
+                                        className="text-[10px] font-medium"
+                                        style={{ color: '#d03b3b', borderColor: '#d03b3b4d', backgroundColor: '#d03b3b1a' }}
+                                    >
+                                        <EyeOff className="size-3 mr-1" style={{ color: '#d03b3b' }} />
+                                        <span>Oculta a colaboradores</span>
                                     </Badge>
-                                    <span className="inline-flex">
-                                        {carpeta.visible_colaborador === false && (
-                                            <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 font-medium">
-                                                <EyeOff className="size-3 mr-1 text-rose-500" />
-                                                <span>Oculta a colaboradores</span>
-                                            </Badge>
-                                        )}
-                                    </span>
-                                </h1>
-                                {carpeta.descripcion && (
-                                    <p className="text-xs text-muted-foreground max-w-xl">{carpeta.descripcion}</p>
                                 )}
                             </div>
                         </div>
@@ -215,7 +220,7 @@ export default function CapacitacionCarpetaShow({
                                 setDialogoCrearCarpeta(true);
                             }}
                             variant="outline"
-                            className="text-teal-700 border-teal-500/40 hover:bg-teal-50 shadow-sm"
+                            className="shadow-sm"
                         >
                             <FolderPlus className="mr-2 size-4" />
                             Nueva subcarpeta
@@ -226,7 +231,7 @@ export default function CapacitacionCarpetaShow({
                                 setMaterialEditar(null);
                                 setDialogoSubir(true);
                             }}
-                            className="bg-teal-600 hover:bg-teal-700 text-white shadow-sm"
+                            className="shadow-sm"
                         >
                             <Plus className="mr-2 size-4" />
                             Subir archivo
@@ -361,8 +366,12 @@ export default function CapacitacionCarpetaShow({
                                                         <span>{sub.nombre}</span>
                                                         <span className="shrink-0">
                                                             {sub.visible_colaborador === false && (
-                                                                <Badge variant="outline" className="text-[9px] text-rose-600 border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 font-medium px-1.5 py-0">
-                                                                    <EyeOff className="size-2.5 mr-0.5 text-rose-500" />
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-[9px] font-medium px-1.5 py-0"
+                                                                    style={{ color: '#d03b3b', borderColor: '#d03b3b4d', backgroundColor: '#d03b3b1a' }}
+                                                                >
+                                                                    <EyeOff className="size-2.5 mr-0.5" style={{ color: '#d03b3b' }} />
                                                                     <span>Oculta</span>
                                                                 </Badge>
                                                             )}
@@ -642,32 +651,30 @@ export default function CapacitacionCarpetaShow({
                                     />
                                 ) : materialVistaPrevia.archivo_path ? (
                                     /* 5. Otros documentos usando ViewerJS */
-                                    <iframe
-                                        src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent('https://' + window.location.hostname + materialVistaPrevia.archivo_path)}`}
-                                        className="w-full h-[550px] rounded-lg shadow-sm border"
-                                        title={materialVistaPrevia.titulo}
-                                        onError={(e) => {
-                                            // Si falla el viewer, mostrar opción de descarga
-                                            const target = e.target as HTMLIFrameElement;
-                                            if (target.parentElement) {
-                                                target.parentElement.innerHTML = `
-                                                    <div class="flex flex-col items-center justify-center p-8 text-center space-y-4 max-w-md mx-auto">
-                                                        <div class="size-20 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center border-2 border-teal-200">
-                                                            <svg class="size-10" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z"></path><path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"></path></svg>
-                                                        </div>
-                                                        <div>
-                                                            <h4 class="font-bold text-lg text-foreground">${materialVistaPrevia.titulo}</h4>
-                                                            <p class="text-sm text-muted-foreground mt-2">La vista previa no se pudo cargar</p>
-                                                        </div>
-                                                        <a href="${route('capacitaciones.materiales.descargar', materialVistaPrevia.id)}" class="inline-flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md">
-                                                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                                            Descargar para Ver
-                                                        </a>
-                                                    </div>
-                                                `;
-                                            }
-                                        }}
-                                    />
+                                    officeViewerFailed ? (
+                                        <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 max-w-md mx-auto">
+                                            <div className="size-20 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center">
+                                                <FileText className="size-10" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-lg text-foreground">{materialVistaPrevia.titulo}</h4>
+                                                <p className="text-sm text-muted-foreground mt-2">La vista previa no se pudo cargar</p>
+                                            </div>
+                                            <Button asChild className="gap-2">
+                                                <a href={route('capacitaciones.materiales.descargar', materialVistaPrevia.id)}>
+                                                    <Download className="size-4" />
+                                                    Descargar para Ver
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <iframe
+                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent('https://' + window.location.hostname + materialVistaPrevia.archivo_path)}`}
+                                            className="w-full h-[550px] rounded-lg shadow-sm border"
+                                            title={materialVistaPrevia.titulo}
+                                            onError={() => setOfficeViewerFailed(true)}
+                                        />
+                                    )
                                 ) : materialVistaPrevia.enlace_externo ? (
                                     /* 6. Enlace Externo */
                                     <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 max-w-md mx-auto">
@@ -678,7 +685,7 @@ export default function CapacitacionCarpetaShow({
                                             <h4 className="font-bold text-base text-foreground">{materialVistaPrevia.titulo}</h4>
                                             <p className="text-xs text-muted-foreground mt-1">Recurso externo</p>
                                         </div>
-                                        <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
+                                        <Button asChild className="gap-2">
                                             <a
                                                 href={materialVistaPrevia.enlace_externo}
                                                 target="_blank"

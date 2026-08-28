@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -139,30 +140,26 @@ export function SubirMaterialDialog({
                     <div className="grid gap-4 py-4">
                         {!esEdicion && (
                             <div className="flex rounded-lg border bg-muted/40 p-1">
-                                <button
+                                <Button
                                     type="button"
+                                    variant={origen === 'archivo' ? 'default' : 'ghost'}
+                                    size="sm"
                                     onClick={() => setOrigen('archivo')}
-                                    className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-xs font-medium transition-colors ${
-                                        origen === 'archivo'
-                                            ? 'bg-background text-foreground shadow-sm'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                                    className="flex-1 gap-2 text-xs"
                                 >
                                     <HardDriveUpload className="size-3.5" />
                                     Subir Archivo Local
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant={origen === 'enlace' ? 'default' : 'ghost'}
+                                    size="sm"
                                     onClick={() => setOrigen('enlace')}
-                                    className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-xs font-medium transition-colors ${
-                                        origen === 'enlace'
-                                            ? 'bg-background text-foreground shadow-sm'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                                    className="flex-1 gap-2 text-xs"
                                 >
                                     <Globe className="size-3.5" />
                                     Enlace / Video Externo
-                                </button>
+                                </Button>
                             </div>
                         )}
 
@@ -255,17 +252,16 @@ export function SubirMaterialDialog({
                             </div>
 
                             <div className="flex items-end">
-                                <label className="flex items-center gap-2 cursor-pointer border rounded-lg p-2.5 w-full hover:bg-muted/30">
-                                    <input
-                                        type="checkbox"
+                                <div className="flex items-center gap-2 border rounded-lg p-2.5 w-full hover:bg-muted/30">
+                                    <Checkbox
+                                        id="destacada"
                                         checked={data.destacada}
-                                        onChange={(e) => setData('destacada', e.target.checked)}
-                                        className="rounded text-teal-600"
+                                        onCheckedChange={(checked) => setData('destacada', checked === true)}
                                     />
-                                    <span className="text-xs font-semibold flex items-center gap-1">
+                                    <Label htmlFor="destacada" className="text-xs font-semibold flex items-center gap-1 cursor-pointer">
                                         <Star className="size-3.5 text-amber-500 fill-amber-500" /> Destacar este recurso
-                                    </span>
-                                </label>
+                                    </Label>
+                                </div>
                             </div>
                         </div>
 

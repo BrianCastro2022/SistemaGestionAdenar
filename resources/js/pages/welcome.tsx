@@ -1,3 +1,4 @@
+import Aurora from '@/components/Aurora';
 import { CountUp } from '@/components/count-up';
 import { GlowBorder } from '@/components/glow-border';
 import { Reveal } from '@/components/reveal';
@@ -148,20 +149,15 @@ export default function Welcome() {
                 <main>
                     <section className="relative overflow-hidden">
                         <div className="pointer-events-none absolute inset-0 -z-10">
-                            <div className="bg-dot-grid absolute inset-0 opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
+                            {/* Fondo real de React Bits (WebGL vía `ogl`), en vez del blob CSS
+                                anterior — la paleta de marca (verde Adenar, dorado, rojo Bavaria)
+                                como stops de color. Ver components.json -> registro @react-bits. */}
+                            <div className="absolute inset-0 opacity-40 dark:opacity-30">
+                                <Aurora colorStops={[adenar, gold, bavaria]} amplitude={0.9} blend={0.6} speed={0.6} />
+                            </div>
+                            <div className="bg-dot-grid absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
                             <div className="bg-grain absolute inset-0 opacity-[0.035] mix-blend-overlay" />
-                            <div
-                                className="animate-aurora absolute -top-24 right-0 size-96 rounded-full opacity-20 blur-3xl"
-                                style={{ backgroundColor: adenar }}
-                            />
-                            <div
-                                className="animate-blob absolute top-40 -left-24 size-96 rounded-full opacity-15 blur-3xl"
-                                style={{ backgroundColor: bavaria, animationDelay: '4s' }}
-                            />
-                            <div
-                                className="animate-aurora absolute bottom-0 left-1/3 size-72 rounded-full opacity-10 blur-3xl"
-                                style={{ backgroundColor: gold, animationDelay: '3s' }}
-                            />
+                            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background" />
                         </div>
 
                         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-2 lg:py-24">

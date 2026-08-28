@@ -28,6 +28,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -341,7 +342,7 @@ export default function CapacitacionesAdminIndex({
                             setCarpetaEditar(null);
                             setDialogoCrear(true);
                         }}
-                        className="bg-teal-600 hover:bg-teal-700 text-white shadow-sm self-start sm:self-auto"
+                        className="shadow-sm self-start sm:self-auto"
                     >
                         <FolderPlus className="mr-2 size-4" />
                         Nueva carpeta
@@ -353,9 +354,9 @@ export default function CapacitacionesAdminIndex({
                     <CardContent className="p-4">
                         <form onSubmit={aplicarFiltros} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                                <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                                     <Search className="size-3.5" /> Buscar Trabajador / Palabra
-                                </label>
+                                </Label>
                                 <Input
                                     placeholder="Nombre, cédula, cargo..."
                                     value={busqueda}
@@ -365,9 +366,9 @@ export default function CapacitacionesAdminIndex({
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                                <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                                     <Folder className="size-3.5" /> Filtrar por Categoría
-                                </label>
+                                </Label>
                                 <Select value={carpetaFiltro} onValueChange={setCarpetaFiltro}>
                                     <SelectTrigger className="h-9 text-xs">
                                         <SelectValue placeholder="Todas las categorías" />
@@ -384,9 +385,9 @@ export default function CapacitacionesAdminIndex({
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                                <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                                     <Calendar className="size-3.5" /> Fecha Inicio
-                                </label>
+                                </Label>
                                 <Input
                                     type="date"
                                     value={fechaInicio}
@@ -396,9 +397,9 @@ export default function CapacitacionesAdminIndex({
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                                <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                                     <Calendar className="size-3.5" /> Fecha Fin
-                                </label>
+                                </Label>
                                 <Input
                                     type="date"
                                     value={fechaFin}
@@ -408,7 +409,7 @@ export default function CapacitacionesAdminIndex({
                             </div>
 
                             <div className="flex gap-2">
-                                <Button type="submit" size="sm" className="bg-teal-600 hover:bg-teal-700 text-white h-9 flex-1">
+                                <Button type="submit" size="sm" className="h-9 flex-1">
                                     <Filter className="mr-1.5 size-3.5" /> Aplicar
                                 </Button>
                                 {(busqueda || carpetaFiltro !== 'todas' || estadoFiltro !== 'todos' || fechaInicio || fechaFin) && (
@@ -488,24 +489,21 @@ export default function CapacitacionesAdminIndex({
                                             const isSelected = estadoFiltro === item.key;
 
                                             return (
-                                                <button
+                                                <Button
                                                     key={item.key}
                                                     type="button"
+                                                    variant={isSelected ? 'default' : 'outline'}
                                                     onClick={() => cambiarFiltroEstado(item.key)}
-                                                    className={`w-full flex items-center justify-between text-xs p-2 rounded-lg border transition-all text-left ${
-                                                        isSelected
-                                                            ? 'ring-2 ring-teal-500 bg-teal-500/10 font-bold'
-                                                            : 'hover:bg-muted/50 border-sidebar-border/60'
-                                                    }`}
+                                                    className="w-full h-auto justify-between py-2 px-2 text-left font-normal"
                                                 >
                                                     <span className="flex items-center gap-2">
                                                         <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                                        <span className="text-foreground">{item.name}</span>
+                                                        <span>{item.name}</span>
                                                     </span>
-                                                    <span className="font-extrabold text-foreground">
+                                                    <span className="font-extrabold">
                                                         {item.cantidad} ({pct}%)
                                                     </span>
-                                                </button>
+                                                </Button>
                                             );
                                         })}
                                     </div>
@@ -520,7 +518,7 @@ export default function CapacitacionesAdminIndex({
                                     </div>
                                     <div className="p-3 rounded-lg border bg-card">
                                         <span className="text-muted-foreground block text-[11px]">Participación Activa</span>
-                                        <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+                                        <span className="text-lg font-extrabold" style={{ color: '#3F7A22' }}>
                                             {(() => {
                                                 const total = colaboradoresResumen?.total ?? 0;
                                                 const completados = colaboradoresResumen?.completados ?? 0;
@@ -599,7 +597,7 @@ export default function CapacitacionesAdminIndex({
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-base font-bold flex items-center justify-between">
                                     <span className="flex items-center gap-2">
-                                        <Flame className="size-4 text-rose-500 fill-rose-500" />
+                                        <Flame className="size-4 fill-current" style={{ color: '#d03b3b' }} />
                                         🔥 Ranking de Capacitaciones Más Consultadas
                                     </span>
                                     <span className="text-xs font-normal text-muted-foreground">Top por interacciones</span>
@@ -634,7 +632,10 @@ export default function CapacitacionesAdminIndex({
                                                 </div>
 
                                                 <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                                                    <Badge className="bg-rose-500/10 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 font-semibold border-rose-200">
+                                                    <Badge
+                                                        className="font-semibold"
+                                                        style={{ backgroundColor: '#d03b3b1a', color: '#d03b3b', borderColor: '#d03b3b4d' }}
+                                                    >
                                                         {item.revisiones_count} {item.revisiones_count === 1 ? 'revisión' : 'revisiones'}
                                                     </Badge>
                                                     <Button
@@ -705,7 +706,7 @@ export default function CapacitacionesAdminIndex({
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setTablaDesplegada((prev) => !prev)}
-                                    className="text-xs h-7 gap-1 font-semibold text-teal-700 dark:text-teal-300 border-teal-500/30"
+                                    className="text-xs h-7 gap-1 font-semibold"
                                 >
                                     <ChevronDown className={`size-3.5 transition-transform duration-200 ${tablaDesplegada ? 'rotate-180' : ''}`} />
                                     {tablaDesplegada ? 'Plegar' : 'Desplegar'}
@@ -788,13 +789,13 @@ export default function CapacitacionesAdminIndex({
                                                                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                                                         />
                                                                         <path
-                                                                            className={
-                                                                                c.completado
-                                                                                    ? 'text-emerald-500'
+                                                                            style={{
+                                                                                color: c.completado
+                                                                                    ? '#3F7A22'
                                                                                     : c.en_proceso
-                                                                                    ? 'text-teal-500'
-                                                                                    : 'text-amber-500'
-                                                                            }
+                                                                                    ? '#0D9488'
+                                                                                    : '#fab219',
+                                                                            }}
                                                                             strokeDasharray={`${c.porcentaje}, 100`}
                                                                             strokeWidth="3.5"
                                                                             strokeLinecap="round"
@@ -808,14 +809,15 @@ export default function CapacitacionesAdminIndex({
 
                                                                 <div className="w-20 h-2 bg-muted rounded-full overflow-hidden hidden sm:block">
                                                                     <div
-                                                                        className={`h-full rounded-full ${
-                                                                            c.completado
-                                                                                ? 'bg-emerald-500'
+                                                                        className="h-full rounded-full"
+                                                                        style={{
+                                                                            width: `${c.porcentaje}%`,
+                                                                            backgroundColor: c.completado
+                                                                                ? '#3F7A22'
                                                                                 : c.en_proceso
-                                                                                ? 'bg-teal-500'
-                                                                                : 'bg-amber-500'
-                                                                        }`}
-                                                                        style={{ width: `${c.porcentaje}%` }}
+                                                                                ? '#0D9488'
+                                                                                : '#fab219',
+                                                                        }}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -823,7 +825,10 @@ export default function CapacitacionesAdminIndex({
 
                                                         <TableCell className="text-center">
                                                             {c.completado ? (
-                                                                <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400 text-xs">
+                                                                <Badge
+                                                                    className="text-xs"
+                                                                    style={{ backgroundColor: '#3F7A221a', color: '#3F7A22', borderColor: '#3F7A224d' }}
+                                                                >
                                                                     <CheckCircle2 className="size-3 mr-1" /> Completado 100%
                                                                 </Badge>
                                                             ) : c.en_proceso ? (
@@ -831,8 +836,12 @@ export default function CapacitacionesAdminIndex({
                                                                     En proceso
                                                                 </Badge>
                                                             ) : (
-                                                                <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 text-xs">
-                                                                    <ShieldAlert className="size-3 mr-1 text-amber-600" /> Sin actividad
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs"
+                                                                    style={{ backgroundColor: '#fab2191a', borderColor: '#fab2194d' }}
+                                                                >
+                                                                    <ShieldAlert className="size-3 mr-1" style={{ color: '#fab219' }} /> Sin actividad
                                                                 </Badge>
                                                             )}
                                                         </TableCell>
@@ -849,18 +858,19 @@ export default function CapacitacionesAdminIndex({
                             </div>
 
                             {!tablaDesplegada && (
-                                <div
+                                <button
+                                    type="button"
                                     onClick={() => setTablaDesplegada(true)}
-                                    className="flex items-center justify-between p-4 rounded-xl border border-dashed border-teal-500/40 bg-teal-500/5 cursor-pointer hover:bg-teal-500/10 transition-colors"
+                                    className="flex w-full items-center justify-between p-4 rounded-xl border border-dashed border-teal-500/40 bg-teal-500/5 hover:bg-teal-500/10 transition-colors text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 >
-                                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                    <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
                                         <Users className="size-4 text-teal-600" />
                                         <span>Haz clic para desplegar la lista detallada de ({colaboradoresOrdenados.length}) trabajadores</span>
-                                    </div>
-                                    <Button type="button" size="sm" variant="ghost" className="text-xs h-7 text-teal-600 dark:text-teal-400 font-bold">
+                                    </span>
+                                    <span className="text-xs h-7 inline-flex items-center px-3 text-teal-600 dark:text-teal-400 font-bold">
                                         Desplegar tabla ↓
-                                    </Button>
-                                </div>
+                                    </span>
+                                </button>
                             )}
                         </CardContent>
                     </Card>
@@ -977,8 +987,12 @@ export default function CapacitacionesAdminIndex({
                                                         <span>{carpeta.nombre}</span>
                                                         <span className="shrink-0">
                                                             {carpeta.visible_colaborador === false && (
-                                                                <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-300 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 font-medium">
-                                                                    <EyeOff className="size-3 mr-1 text-rose-500" />
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-[10px] font-medium"
+                                                                    style={{ color: '#d03b3b', borderColor: '#d03b3b4d', backgroundColor: '#d03b3b1a' }}
+                                                                >
+                                                                    <EyeOff className="size-3 mr-1" style={{ color: '#d03b3b' }} />
                                                                     <span>Oculta</span>
                                                                 </Badge>
                                                             )}
@@ -1030,7 +1044,7 @@ export default function CapacitacionesAdminIndex({
                         <>
                             <DialogHeader>
                                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Flame className="size-5 text-rose-500" />
+                                    <Flame className="size-5" style={{ color: '#d03b3b' }} />
                                     {capacitacionDetalle.titulo}
                                 </DialogTitle>
                                 <DialogDescription>
