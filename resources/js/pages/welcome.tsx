@@ -1,8 +1,10 @@
 import Aurora from '@/components/Aurora';
 import { CountUp } from '@/components/count-up';
 import { GlowBorder } from '@/components/glow-border';
+import GradientText from '@/components/GradientText';
 import { Reveal } from '@/components/reveal';
 import { ShinyText } from '@/components/shiny-text';
+import SplitText from '@/components/SplitText';
 import { SpotlightCard } from '@/components/spotlight-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -174,7 +176,15 @@ export default function Welcome() {
                                 </div>
 
                                 <h1 className="text-4xl leading-tight font-bold tracking-tight text-balance sm:text-5xl">
-                                    Sistema Integral de Gestión{' '}
+                                    <SplitText
+                                        text="Sistema Integral de Gestión"
+                                        tag="span"
+                                        className="inline"
+                                        splitType="words"
+                                        textAlign="left"
+                                        delay={30}
+                                        duration={0.8}
+                                    />{' '}
                                     <ShinyText color={adenar}>ADENAR S.A.S.</ShinyText>
                                 </h1>
 
@@ -273,7 +283,11 @@ export default function Welcome() {
                     <section className="border-t border-border bg-muted/30">
                         <div className="mx-auto max-w-6xl px-6 py-16">
                             <Reveal className="mb-10 text-center">
-                                <h2 className="text-3xl font-semibold tracking-tight">Quiénes somos</h2>
+                                <h2 className="text-3xl font-semibold tracking-tight">
+                                    <GradientText colors={[adenar, gold, adenar]} animationSpeed={6} className="inline">
+                                        Quiénes somos
+                                    </GradientText>
+                                </h2>
                                 <p className="mt-2 text-muted-foreground">Una alianza estratégica entre distribución regional y liderazgo nacional.</p>
                             </Reveal>
 
@@ -320,7 +334,11 @@ export default function Welcome() {
                                     <LayoutGrid className="size-3.5" />
                                     Un sistema, cuatro pilares
                                 </Badge>
-                                <h2 className="mt-4 text-3xl font-semibold tracking-tight">Todo lo que gestionamos, en un solo lugar</h2>
+                                <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+                                    <GradientText colors={[adenar, gold, bavaria, gold, adenar]} animationSpeed={8} className="inline">
+                                        Todo lo que gestionamos, en un solo lugar
+                                    </GradientText>
+                                </h2>
                                 <p className="mt-2 text-muted-foreground">
                                     Los procesos que ADENAR S.A.S. opera día a día, organizados y digitalizados para dar visibilidad y control total
                                     de la operación.
@@ -385,7 +403,11 @@ export default function Welcome() {
                                         <Sparkles className="size-6" />
                                     </div>
 
-                                    <h2 className="relative text-3xl font-semibold tracking-tight">¿Listo para optimizar tu operación?</h2>
+                                    <h2 className="relative text-3xl font-semibold tracking-tight">
+                                        <GradientText colors={[adenar, gold, bavaria]} animationSpeed={5} className="inline">
+                                            ¿Listo para optimizar tu operación?
+                                        </GradientText>
+                                    </h2>
                                     <p className="relative mx-auto mt-2 max-w-xl text-muted-foreground">
                                         Ingresa a la plataforma para consultar indicadores, gestionar la operación y mantener el control de
                                         seguridad, reparto, gente y flota en tiempo real.

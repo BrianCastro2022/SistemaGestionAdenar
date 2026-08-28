@@ -333,7 +333,7 @@ export default function CapacitacionesAdminIndex({
                 {/* 1. CABECERA PRINCIPAL */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <HeadingSmall
-                        title="📚 Panel Analítico de Capacitaciones"
+                        title="Panel Analítico de Capacitaciones"
                         description="Analiza la interacción del personal, monitorea estados críticos y programa fechas en el calendario."
                     />
 
@@ -598,7 +598,7 @@ export default function CapacitacionesAdminIndex({
                                 <CardTitle className="text-base font-bold flex items-center justify-between">
                                     <span className="flex items-center gap-2">
                                         <Flame className="size-4 fill-current" style={{ color: '#d03b3b' }} />
-                                        🔥 Ranking de Capacitaciones Más Consultadas
+                                        Ranking de Capacitaciones Más Consultadas
                                     </span>
                                     <span className="text-xs font-normal text-muted-foreground">Top por interacciones</span>
                                 </CardTitle>
@@ -659,7 +659,7 @@ export default function CapacitacionesAdminIndex({
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-base font-bold flex items-center gap-2">
                                     <Clock className="size-4 text-teal-600 dark:text-teal-400" />
-                                    🕐 Actividad Reciente
+                                    Actividad Reciente
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-2">
@@ -880,7 +880,7 @@ export default function CapacitacionesAdminIndex({
                 <div className="space-y-4 pt-4 border-t">
                     <div className="flex items-center justify-between">
                         <h2 className="text-base font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                            📂 Carpetas Creadas ({carpetasFiltradas.length})
+                            Carpetas Creadas ({carpetasFiltradas.length})
                         </h2>
                     </div>
 
