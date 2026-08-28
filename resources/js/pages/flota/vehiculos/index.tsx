@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search, Truck } from 'lucide-react';
+import { Plus, Power, Search, Truck } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -59,6 +59,10 @@ export default function VehiculosIndex({ vehiculos, filters }: { vehiculos: Vehi
 
     const destroyVehiculo = (vehiculo: VehiculoRow) => {
         router.delete(route('flota.vehiculos.destroy', vehiculo.id), { preserveScroll: true });
+    };
+
+    const toggleActivo = (vehiculo: VehiculoRow) => {
+        router.patch(route('flota.vehiculos.toggle-activo', vehiculo.id), {}, { preserveScroll: true });
     };
 
     return (
@@ -128,7 +132,7 @@ export default function VehiculosIndex({ vehiculos, filters }: { vehiculos: Vehi
                                     <TableCell>{vehiculo.capacidad_pallets ?? '—'}</TableCell>
                                     <TableCell>
                                         <Badge variant={vehiculo.is_active ? 'default' : 'destructive'}>
-                                            {vehiculo.is_active ? 'Activo' : 'Inactivo'}
+                                            {vehiculo.is_active ? 'Disponible' : 'No disponible'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -138,6 +142,17 @@ export default function VehiculosIndex({ vehiculos, filters }: { vehiculos: Vehi
                                             </Button>
                                             <Button variant="outline" size="sm" asChild>
                                                 <Link href={route('flota.vehiculos.edit', vehiculo.id)}>Editar</Link>
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => toggleActivo(vehiculo)}
+                                                aria-label={vehiculo.is_active ? 'Marcar como no disponible' : 'Marcar como disponible'}
+                                                title={vehiculo.is_active ? 'Marcar como no disponible' : 'Marcar como disponible'}
+                                                className={vehiculo.is_active ? 'text-emerald-600' : 'text-muted-foreground'}
+                                            >
+                                                <Power className="size-4" />
                                             </Button>
                                             <Dialog>
                                                 <DialogTrigger asChild>

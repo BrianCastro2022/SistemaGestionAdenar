@@ -119,6 +119,17 @@ class VehiculoController extends Controller
         return to_route('flota.vehiculos.index')->with('status', 'Vehículo actualizado correctamente.');
     }
 
+    /**
+     * Botón dedicado en el listado para marcar el vehículo como
+     * disponible/no disponible, sin pasar por el formulario de edición.
+     */
+    public function toggleActivo(Vehiculo $vehiculo): RedirectResponse
+    {
+        $vehiculo->update(['is_active' => ! $vehiculo->is_active]);
+
+        return back()->with('status', $vehiculo->is_active ? 'Vehículo marcado como disponible.' : 'Vehículo marcado como no disponible.');
+    }
+
     public function destroy(Vehiculo $vehiculo): RedirectResponse
     {
         foreach ($this->documentPaths($vehiculo) as $paths) {

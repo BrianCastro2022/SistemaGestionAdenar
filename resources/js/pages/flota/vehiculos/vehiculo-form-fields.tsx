@@ -225,7 +225,7 @@ export function VehiculoFormFields({ data, setData, errors, processing, readonly
                                 onCheckedChange={(checked) => setData('is_active', checked === true)}
                                 disabled={processing}
                             />
-                            Vehículo activo
+                            Vehículo disponible
                         </label>
                     </div>
 

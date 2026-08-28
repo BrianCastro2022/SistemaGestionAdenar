@@ -77,4 +77,20 @@ class VehiculoTest extends TestCase
 
         $this->assertSoftDeleted($vehiculo);
     }
+
+    public function test_it_can_toggle_vehiculo_availability(): void
+    {
+        $user = $this->actingAsFlota();
+        $vehiculo = Vehiculo::create(['placa' => 'TOG123', 'is_active' => true]);
+
+        $this->actingAs($user)->patch(route('flota.vehiculos.toggle-activo', $vehiculo))
+            ->assertRedirect();
+
+        $this->assertFalse($vehiculo->fresh()->is_active);
+
+        $this->actingAs($user)->patch(route('flota.vehiculos.toggle-activo', $vehiculo))
+            ->assertRedirect();
+
+        $this->assertTrue($vehiculo->fresh()->is_active);
+    }
 }

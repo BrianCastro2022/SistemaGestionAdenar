@@ -10,6 +10,8 @@ Route::middleware(['auth', 'active', 'role:Administrador|Flota'])
     ->name('flota.')
     ->group(function () {
         Route::resource('vehiculos', VehiculoController::class)->parameters(['vehiculos' => 'vehiculo']);
+        Route::patch('vehiculos/{vehiculo}/toggle-activo', [VehiculoController::class, 'toggleActivo'])
+            ->name('vehiculos.toggle-activo');
 
         // Solo lectura: los datos los genera la automatizacion SIMIT (ver
         // POST /api/simit/consultas), no se crean/editan desde la web.

@@ -78,7 +78,7 @@ export default function VehiculoShow({ vehiculo }: { vehiculo: VehiculoDetalle }
                                     <Badge variant="secondary">{vehiculo.capacidad_pallets} pallets</Badge>
                                 )}
                                 <Badge variant={vehiculo.is_active ? 'default' : 'destructive'}>
-                                    {vehiculo.is_active ? 'Activo' : 'Inactivo'}
+                                    {vehiculo.is_active ? 'Disponible' : 'No disponible'}
                                 </Badge>
                             </div>
                         </div>
