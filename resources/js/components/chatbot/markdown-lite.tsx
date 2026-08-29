@@ -115,7 +115,12 @@ function parsearBloques(texto: string): Bloque[] {
  * saltos de línea simples dentro de un bloque.
  */
 function renderizarEnLinea(texto: string, keyBase: string): ReactNode[] {
-    const lineas = texto.split('\n');
+    // El modelo a veces usa <br> (HTML) en vez de saltos de línea reales,
+    // sobre todo dentro de celdas de tabla (donde una celda GFM no puede
+    // contener un "\n" literal). Se normaliza a "\n" antes de tokenizar, así
+    // que el resultado es el mismo <br /> de React que ya generan los saltos
+    // de línea de verdad — nunca se interpreta como HTML crudo.
+    const lineas = texto.replace(/<br\s*\/?>/gi, '\n').split('\n');
 
     return lineas.flatMap((linea, indiceLinea) => {
         const tokens: ReactNode[] = [];
