@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Bot, MessageCircle, RotateCcw, Send, User, X } from 'lucide-react';
+import { MessageCircle, RotateCcw, Send, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { MarkdownLite } from './markdown-lite';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -10,6 +11,15 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = 'adenar-chatbot-mensajes';
+const AVATAR_ASISTENTE = '/images/Dario caricatura.png';
+
+function AvatarAsistente({ className }: { className?: string }) {
+    return (
+        <div className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted', className)}>
+            <img src={AVATAR_ASISTENTE} alt="Mijito" className="size-full object-cover" />
+        </div>
+    );
+}
 
 const PREGUNTAS_SUGERIDAS = ['¿Qué es DPO y cuáles son sus 7 pilares?', '¿Cuál es el sueño del CD y sus KPIs?', 'Límites de velocidad', '¿Qué son las 5-S?'];
 
@@ -137,11 +147,9 @@ export function ChatWidget() {
                         className="flex shrink-0 items-center gap-3 px-4 py-3 text-white"
                         style={{ backgroundImage: 'linear-gradient(135deg, #3F7A22, #264F13)' }}
                     >
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15">
-                            <Bot className="size-5" />
-                        </div>
+                        <AvatarAsistente className="size-9 ring-2 ring-white/30" />
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold">Asistente ADENAR</p>
+                            <p className="truncate text-sm font-semibold">Mijito Chat Bot</p>
                             <p className="truncate text-xs text-white/80">Pregúntame sobre DPO, indicadores o el sistema</p>
                         </div>
                         <button
@@ -155,16 +163,14 @@ export function ChatWidget() {
                         </button>
                     </div>
 
-                    <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+                    <div ref={scrollRef} className="flex-1 space-y-3 overflow-x-hidden overflow-y-auto px-3 py-4">
                         {mensajes.length === 0 && (
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-start gap-2">
-                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                                        <Bot className="size-4" />
-                                    </div>
-                                    <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm text-foreground">
-                                        ¡Hola! Soy el asistente de ADENAR S.A.S. Puedo ayudarte con preguntas del modelo DPO, indicadores,
-                                        seguridad, flota, o cualquier otra duda que tengas.
+                                    <AvatarAsistente className="size-7" />
+                                    <div className="min-w-0 rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm text-foreground">
+                                        ¡Hola! Soy Mijito, el asistente de ADENAR S.A.S. Puedo ayudarte con preguntas del modelo DPO,
+                                        indicadores, seguridad, flota, o cualquier otra duda que tengas.
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2 pl-9">
@@ -184,32 +190,29 @@ export function ChatWidget() {
 
                         {mensajes.map((mensaje, indice) => (
                             <div key={indice} className={cn('flex items-start gap-2', mensaje.role === 'user' && 'flex-row-reverse')}>
+                                {mensaje.role === 'user' ? (
+                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#3F7A22]/15 text-[#3F7A22]">
+                                        <User className="size-4" />
+                                    </div>
+                                ) : (
+                                    <AvatarAsistente className="size-7" />
+                                )}
                                 <div
                                     className={cn(
-                                        'flex size-7 shrink-0 items-center justify-center rounded-full',
-                                        mensaje.role === 'user' ? 'bg-[#3F7A22]/15 text-[#3F7A22]' : 'bg-muted text-muted-foreground',
-                                    )}
-                                >
-                                    {mensaje.role === 'user' ? <User className="size-4" /> : <Bot className="size-4" />}
-                                </div>
-                                <div
-                                    className={cn(
-                                        'max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap',
+                                        'min-w-0 max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words',
                                         mensaje.role === 'user'
-                                            ? 'rounded-tr-sm bg-[#3F7A22] text-white'
+                                            ? 'rounded-tr-sm bg-[#3F7A22] whitespace-pre-wrap text-white'
                                             : 'rounded-tl-sm bg-muted text-foreground',
                                     )}
                                 >
-                                    {mensaje.content}
+                                    {mensaje.role === 'user' ? mensaje.content : <MarkdownLite texto={mensaje.content} />}
                                 </div>
                             </div>
                         ))}
 
                         {enviando && (
                             <div className="flex items-start gap-2">
-                                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                                    <Bot className="size-4" />
-                                </div>
+                                <AvatarAsistente className="size-7" />
                                 <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-muted px-3 py-2.5">
                                     <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
                                     <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
