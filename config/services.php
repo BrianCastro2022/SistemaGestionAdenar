@@ -48,4 +48,11 @@ return [
         'token' => env('GEOVICTORIA_API_TOKEN'),
     ],
 
+    // Groq (API compatible con OpenAI) para el chatbot interno disponible a
+    // todos los roles. Ver App\Http\Controllers\ChatbotController.
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+    ],
+
 ];
