@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seguridad;
 
 use App\Http\Controllers\Controller;
 use App\Models\Seguridad\EncuestaMorbilidad;
+use App\Services\Colaborador\MorbilidadCatalogoService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,7 +58,30 @@ class EncuestaMorbilidadController extends Controller
                 'enviado_en' => $encuestaMorbilidad->enviado_en,
             ],
             'colaborador' => $encuestaMorbilidad->colaborador,
-            'secciones' => config('morbilidad.secciones'),
+            'paso1' => [
+                'empresa'                => $encuestaMorbilidad->empresa,
+                'correo_electronico'     => $encuestaMorbilidad->correo_electronico,
+                'edad'                   => $encuestaMorbilidad->edad,
+                'estado_civil'           => $encuestaMorbilidad->estado_civil,
+                'tiene_hijos'            => $encuestaMorbilidad->tiene_hijos,
+                'hijos'                  => $encuestaMorbilidad->hijos ?? [],
+                'personas_a_cargo'       => $encuestaMorbilidad->personas_a_cargo,
+                'personas_cargo_detalle' => $encuestaMorbilidad->personas_cargo_detalle ?? [],
+                'nivel_escolaridad'      => $encuestaMorbilidad->nivel_escolaridad,
+                'estrato_socioeconomico' => $encuestaMorbilidad->estrato_socioeconomico,
+                'tenencia_vivienda'      => $encuestaMorbilidad->tenencia_vivienda,
+                'ciudad_residencia'      => $encuestaMorbilidad->ciudad_residencia,
+                'direccion_residencia'   => $encuestaMorbilidad->direccion_residencia,
+                'tipo_contratacion'      => $encuestaMorbilidad->tipo_contratacion,
+                'cargo_paso1'            => $encuestaMorbilidad->cargo_paso1,
+                'area_paso1'             => $encuestaMorbilidad->area_paso1,
+                'antiguedad_empresa'     => $encuestaMorbilidad->antiguedad_empresa,
+                'antiguedad_cargo'       => $encuestaMorbilidad->antiguedad_cargo,
+                'duracion_contrato'      => $encuestaMorbilidad->duracion_contrato,
+                'turno'                  => $encuestaMorbilidad->turno,
+                'promedio_ingresos'      => $encuestaMorbilidad->promedio_ingresos,
+            ],
+            'secciones' => (new MorbilidadCatalogoService())->secciones(),
             'respuestas' => $respuestas,
         ]);
     }

@@ -118,7 +118,14 @@ export const modules: ModuleDef[] = [
                     { title: 'Catálogo de recomendaciones', slug: 'examenes-medicos-recomendaciones', icon: ListTodo },
                 ],
             },
-            { title: 'Encuestas de Morbilidad', slug: 'encuestas-morbilidad', icon: Stethoscope },
+            {
+                title: 'Encuestas de Morbilidad',
+                icon: Stethoscope,
+                submodules: [
+                    { title: 'Respuestas', slug: 'encuestas-morbilidad', icon: ClipboardList },
+                    { title: 'Catálogo de Preguntas', slug: 'encuestas-morbilidad-preguntas', icon: ListChecks },
+                ],
+            },
             { title: 'Jornada Laboral', slug: 'jornada-laboral', icon: Timer },
             { title: 'Excesos en Curvas', slug: 'excesos-en-curvas', icon: AlertTriangle },
 

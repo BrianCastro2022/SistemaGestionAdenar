@@ -19,6 +19,7 @@ use App\Http\Controllers\Seguridad\EvaluacionOwdImportacionController;
 use App\Http\Controllers\Seguridad\EvaluacionOwdImportController;
 use App\Http\Controllers\Seguridad\EvaluacionOwdIndicadorController;
 use App\Http\Controllers\Seguridad\EncuestaMorbilidadController;
+use App\Http\Controllers\Seguridad\EncuestaMorbilidadPreguntaController;
 use App\Http\Controllers\Seguridad\ExamenCatalogoController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
 use App\Http\Controllers\Seguridad\EvaluacionRecomendacionController;
@@ -107,6 +108,12 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
         // porque esta pantalla ya vive dentro del grupo role:Administrador|Seguridad.
         Route::get('encuestas-morbilidad', [EncuestaMorbilidadController::class, 'index'])->name('encuestas-morbilidad.index');
         Route::get('encuestas-morbilidad/{encuestaMorbilidad}', [EncuestaMorbilidadController::class, 'show'])->name('encuestas-morbilidad.show');
+
+        // Gestión dinámica del catálogo de preguntas de morbilidad (solo Administrador | Seguridad)
+        Route::get('encuestas-morbilidad-preguntas', [EncuestaMorbilidadPreguntaController::class, 'index'])->name('encuestas-morbilidad.preguntas.index');
+        Route::post('encuestas-morbilidad-preguntas', [EncuestaMorbilidadPreguntaController::class, 'store'])->name('encuestas-morbilidad.preguntas.store');
+        Route::patch('encuestas-morbilidad-preguntas/{pregunta}', [EncuestaMorbilidadPreguntaController::class, 'update'])->name('encuestas-morbilidad.preguntas.update');
+        Route::delete('encuestas-morbilidad-preguntas/{pregunta}', [EncuestaMorbilidadPreguntaController::class, 'destroy'])->name('encuestas-morbilidad.preguntas.destroy');
 
         // Exámenes médicos ocupacionales (HU-045 y siguientes, Fase 1).
         Route::get('examenes-medicos-indicadores', [ExamenMedicoIndicadorController::class, 'index'])->name('examenes-medicos.indicadores');

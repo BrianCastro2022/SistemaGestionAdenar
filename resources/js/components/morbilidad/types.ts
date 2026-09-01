@@ -12,6 +12,9 @@ export type TipoPregunta =
 export interface PreguntaCatalogo {
     texto: string;
     tipo: TipoPregunta;
+    opciones?: string[];        // para checkbox_multiple y actividades_salud
+    conOtro?: boolean;          // permite campo "Otro:" libre
+    segmento?: string;          // etiqueta del segmento corporal (segmento_corporal)
 }
 
 export interface SeccionCatalogo {

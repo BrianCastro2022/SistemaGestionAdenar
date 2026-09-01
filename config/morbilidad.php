@@ -1,22 +1,91 @@
 <?php
 
-// Catálogo de la Encuesta de Morbilidad Sentida (HU-01 a HU-10). Es la
-// única fuente de verdad para el formulario del colaborador, la vista de
-// consulta de SST y las reglas de validación del envío final — así una
-// corrección de texto o de tipo de pregunta se hace en un solo lugar.
-//
-// Tipos de pregunta:
-// - 'si_no_detalle': Select Sí/No; si "Sí", el campo "detalle" es obligatorio (RN-02).
-// - 'aplica_detalle': Select "No aplica"/"Aplica" (default "No aplica"); si "Aplica",
-//   "detalle" es obligatorio (RN-03/RN-04/RN-05).
-// - 'si_no': Select Sí/No simple, obligatorio, sin campo de detalle.
-// - 'texto_libre': textarea siempre visible, nunca obligatorio.
-//
-// La sección 1 ("Datos del colaborador", HU-01) no tiene preguntas aquí:
-// es precarga de solo lectura del perfil del colaborador autenticado.
 
 return [
     'secciones' => [
+          1 => [
+            'titulo' => 'Condiciones de Salud y Características Físicas',
+            'descripcion' => 'En esta sección se recopila información relacionada con las condiciones generales de salud, antecedentes de molestias o lesiones y algunas características físicas. La información permitirá identificar posibles factores de interés para la prevención y seguimiento de riesgos relacionados con la Seguridad y Salud en el Trabajo.',
+            'preguntas' => [
+                1 => [
+                    'texto'  => 'Peso (kg)',
+                    'tipo'   => 'numero',
+                    'obligatorio' => true,
+                ],
+                2 => [
+                    'texto'  => 'Talla (Altura en cm)',
+                    'tipo'   => 'numero',
+                    'obligatorio' => true,
+                ],
+                3 => [
+                    'texto'   => '¿Le han diagnosticado o sufre usted de alguna de las siguientes enfermedades?',
+                    'tipo'    => 'checkbox_multiple',
+                    'obligatorio' => true,
+                    'opciones' => [
+                        'Hipertensión',
+                        'Diabetes',
+                        'Enfermedad cardíaca',
+                        'Enfermedades visuales (Miopía o Astigmatismo)',
+                        'Gastritis o úlceras gástricas',
+                        'Enfermedades músculo esqueléticas (artritis, osteoporosis, tendinitis, bursitis, etc.)',
+                        'Obesidad',
+                        'Estrés',
+                        'Hipotiroidismo',
+                        'ASMA',
+                        'NINGUNA',
+                    ],
+                    'conOtro' => true,
+                ],
+                4 => [
+                    'texto'  => '¿Cuál es su mano dominante?',
+                    'tipo'   => 'mano_dominante',
+                    'obligatorio' => true,
+                ],
+                5 => [
+                    'texto'    => '¿Ha participado en actividades de salud realizadas por la empresa?',
+                    'tipo'     => 'actividades_salud',
+                    'obligatorio' => true,
+                    'opciones'  => [
+                        'Vacunación',
+                        'Salud Oral',
+                        'Exámenes de Laboratorio / otros',
+                        'Exámenes Médicos (Ingreso y/o Periódicos)',
+                        'Spa (Relajación)',
+                        'Capacitaciones en Temas de Salud',
+                        'Ninguna',
+                    ],
+                    'conOtro' => true,
+                ],
+                // Segmentos corporales (0–24)
+                // Nota: se guardan como JSON { frecuencia, severidad }
+                300 => ['texto' => '0. OJO',                      'tipo' => 'segmento_corporal', 'segmento' => 'OJO',                      'obligatorio' => true],
+                301 => ['texto' => '1. CUELLO',                   'tipo' => 'segmento_corporal', 'segmento' => 'CUELLO',                   'obligatorio' => true],
+                302 => ['texto' => '2. HOMBRO IZQUIERDO',         'tipo' => 'segmento_corporal', 'segmento' => 'HOMBRO IZQUIERDO',         'obligatorio' => true],
+                303 => ['texto' => '3. HOMBRO DERECHO',           'tipo' => 'segmento_corporal', 'segmento' => 'HOMBRO DERECHO',           'obligatorio' => true],
+                304 => ['texto' => '4. BRAZO IZQUIERDO',          'tipo' => 'segmento_corporal', 'segmento' => 'BRAZO IZQUIERDO',          'obligatorio' => true],
+                305 => ['texto' => '5. BRAZO DERECHO',            'tipo' => 'segmento_corporal', 'segmento' => 'BRAZO DERECHO',            'obligatorio' => true],
+                306 => ['texto' => '6. CODO IZQUIERDO',           'tipo' => 'segmento_corporal', 'segmento' => 'CODO IZQUIERDO',           'obligatorio' => true],
+                307 => ['texto' => '7. CODO DERECHO',             'tipo' => 'segmento_corporal', 'segmento' => 'CODO DERECHO',             'obligatorio' => true],
+                308 => ['texto' => '8. ANTEBRAZO DERECHO',        'tipo' => 'segmento_corporal', 'segmento' => 'ANTEBRAZO DERECHO',        'obligatorio' => true],
+                309 => ['texto' => '9. ANTEBRAZO IZQUIERDO',      'tipo' => 'segmento_corporal', 'segmento' => 'ANTEBRAZO IZQUIERDO',      'obligatorio' => true],
+                310 => ['texto' => '10. MUÑECA DERECHA',          'tipo' => 'segmento_corporal', 'segmento' => 'MUÑECA DERECHA',           'obligatorio' => true],
+                311 => ['texto' => '11. MUÑECA IZQUIERDA',        'tipo' => 'segmento_corporal', 'segmento' => 'MUÑECA IZQUIERDA',         'obligatorio' => true],
+                312 => ['texto' => '12. MANO IZQUIERDA',          'tipo' => 'segmento_corporal', 'segmento' => 'MANO IZQUIERDA',           'obligatorio' => true],
+                313 => ['texto' => '13. MANO DERECHA',            'tipo' => 'segmento_corporal', 'segmento' => 'MANO DERECHA',             'obligatorio' => true],
+                314 => ['texto' => '14. ZONA DORSAL',             'tipo' => 'segmento_corporal', 'segmento' => 'ZONA DORSAL',              'obligatorio' => true],
+                315 => ['texto' => '15. ZONA LUMBAR',             'tipo' => 'segmento_corporal', 'segmento' => 'ZONA LUMBAR',              'obligatorio' => true],
+                316 => ['texto' => '16. NALGAS / CADERAS',        'tipo' => 'segmento_corporal', 'segmento' => 'NALGAS / CADERAS',         'obligatorio' => true],
+                317 => ['texto' => '17. MUSLO IZQUIERDO',         'tipo' => 'segmento_corporal', 'segmento' => 'MUSLO IZQUIERDO',          'obligatorio' => true],
+                318 => ['texto' => '18. MUSLO DERECHO',           'tipo' => 'segmento_corporal', 'segmento' => 'MUSLO DERECHO',            'obligatorio' => true],
+                319 => ['texto' => '19. RODILLA DERECHA',         'tipo' => 'segmento_corporal', 'segmento' => 'RODILLA DERECHA',          'obligatorio' => true],
+                320 => ['texto' => '20. RODILLA IZQUIERDA',       'tipo' => 'segmento_corporal', 'segmento' => 'RODILLA IZQUIERDA',        'obligatorio' => true],
+                321 => ['texto' => '21. PIERNA IZQUIERDA',        'tipo' => 'segmento_corporal', 'segmento' => 'PIERNA IZQUIERDA',         'obligatorio' => true],
+                322 => ['texto' => '22. PIERNA DERECHA',          'tipo' => 'segmento_corporal', 'segmento' => 'PIERNA DERECHA',           'obligatorio' => true],
+                323 => ['texto' => '23. PIE Y/O TOBILLO IZQUIERDO', 'tipo' => 'segmento_corporal', 'segmento' => 'PIE Y/O TOBILLO IZQUIERDO', 'obligatorio' => true],
+                324 => ['texto' => '24. PIE Y/O TOBILLO DERECHO',  'tipo' => 'segmento_corporal', 'segmento' => 'PIE Y/O TOBILLO DERECHO',  'obligatorio' => true],
+            ],
+        ],
+
         2 => [
             'titulo' => 'Molestias experimentadas en los últimos 6 meses',
             'preguntas' => [
@@ -114,14 +183,8 @@ return [
                 62 => ['texto' => 'Considera que la iluminación de su puesto de trabajo es adecuada', 'tipo' => 'si_no'],
                 63 => ['texto' => 'La temperatura de su sitio de trabajo le ocasiona molestias', 'tipo' => 'si_no'],
                 64 => ['texto' => 'El ruido ambiental le permite mantener una conversación sin elevar el tono de voz', 'tipo' => 'si_no'],
-                // Los ítems 65 y 67 traen el mismo enunciado en el documento fuente
-                // ("En su sitio de trabajo hay presencia de polvo en el ambiente").
-                // Se transcriben ambos tal cual, sin fusionarlos, siguiendo la
-                // "Nota técnica" del HU-08: pendiente de confirmar con negocio/SST
-                // si es un error de captura o dos preguntas distintas.
                 65 => ['texto' => 'En su sitio de trabajo hay presencia de polvo en el ambiente', 'tipo' => 'si_no'],
                 66 => ['texto' => 'En el sitio de trabajo manipula o está en contacto con productos químicos', 'tipo' => 'si_no'],
-                67 => ['texto' => 'En su sitio de trabajo hay presencia de polvo en el ambiente', 'tipo' => 'si_no'],
                 68 => ['texto' => 'Existe en su sitio de trabajo riesgo de incendio o explosión', 'tipo' => 'si_no'],
                 69 => ['texto' => 'Considera que pisos, techos, paredes o escaleras presentan riesgo para su salud', 'tipo' => 'si_no'],
                 70 => ['texto' => 'Existen cables sin entubar, empalmes defectuosos, tomas eléctricas sobrecargadas o transformadores defectuosos', 'tipo' => 'si_no'],
@@ -156,11 +219,7 @@ return [
 
         9 => [
             'titulo' => 'Manifestaciones o comportamientos actuales',
-            // RN-09: información sensible de tipo psicosocial. Solo se
-            // consulta desde la vista de SST, que ya vive dentro del grupo
-            // de rutas `role:Administrador|Seguridad` — ver EncuestaMorbilidadController
-            // (namespace Seguridad).
-            'sensible' => true,
+               'sensible' => true,
             'preguntas' => [
                 97 => ['texto' => 'Dificultades para dormirse (insomnio)', 'tipo' => 'si_no'],
                 98 => ['texto' => 'Necesidad de estar solo y desinterés por las cosas', 'tipo' => 'si_no'],
@@ -179,6 +238,30 @@ return [
             'titulo' => 'Capacitación',
             'preguntas' => [
                 107 => ['texto' => 'Temas prioritarios de capacitación', 'tipo' => 'texto_libre'],
+            ],
+        ],
+
+        11 => [
+            'titulo' => 'Contacto de Emergencia',
+            'preguntas' => [
+                200 => [
+                    'texto'       => 'EN CASO DE EMERGENCIA LLAMAR A:',
+                    'tipo'        => 'checkbox_multiple',
+                    'obligatorio' => true,
+                    'opciones'    => [
+                        'MADRE',
+                        'PADRE',
+                        'ESPOSA(O) / NOVIA(O)',
+                        'HIJOS',
+                        'HERMANO(A)',
+                    ],
+                    'conOtro' => true,
+                ],
+                201 => [
+                    'texto'       => 'Número de Celular del Contacto de Emergencia (Ingrese un número de teléfono actualizado y disponible para contacto)',
+                    'tipo'        => 'telefono',
+                    'obligatorio' => true,
+                ],
             ],
         ],
     ],

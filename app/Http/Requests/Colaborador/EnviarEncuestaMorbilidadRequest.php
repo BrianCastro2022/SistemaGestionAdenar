@@ -111,6 +111,16 @@ class EnviarEncuestaMorbilidadRequest extends FormRequest
                 if ($pregunta['obligatorio']) {
                     $permitidos = $catalogo->valoresPermitidosPorTipo($pregunta['tipo']);
 
+                    // Para tipos sin lista cerrada (numero, checkbox_multiple,
+                    // actividades_salud, segmento_corporal) solo exigimos
+                    // que el valor no esté vacío.
+                    if (empty($permitidos)) {
+                        if ($valor === null || $valor === '') {
+                            $validator->errors()->add("respuestas.{$numero}.valor", 'Debes responder esta pregunta.');
+                        }
+                        continue;
+                    }
+
                     if (! in_array($valor, $permitidos, true)) {
                         $validator->errors()->add("respuestas.{$numero}.valor", 'Debes responder esta pregunta.');
 

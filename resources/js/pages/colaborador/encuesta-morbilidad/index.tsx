@@ -390,10 +390,20 @@ export default function EncuestaMorbilidadForm({
         })),
     });
 
-    const guardarProgreso = (onSuccess?: () => void) => {
-        form.transform(transformarParaEnvio);
+    const guardarProgreso = (onSuccess?: () => void, validarPaso1: boolean = false) => {
+        form.transform(data => ({
+            ...transformarParaEnvio(data),
+            validar_paso1: validarPaso1,
+        }));
         form.post(route('portal.encuesta-morbilidad.guardar', encuestaId), {
-            preserveScroll: true, preserveState: true, onSuccess,
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess,
+            onError: (err) => {
+                if (Object.keys(err).some(k => k.startsWith('paso1'))) {
+                    setCurrentStep(1);
+                }
+            },
         });
     };
 
@@ -438,6 +448,7 @@ export default function EncuestaMorbilidadForm({
 
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardContent className="pt-6">
+                        <div key={`step-${currentStep}`}>
 
                         {/* ════════════════════════ PASO 1 ════════════════════════ */}
                         {currentStep === 1 && (
@@ -704,12 +715,34 @@ export default function EncuestaMorbilidadForm({
                             </div>
                         )}
 
-                        {/* ════════════════ PASOS 2-N (secciones de preguntas) ════ */}
                         {currentStep >= 2 && seccionActual && (
                             <div className="space-y-4">
                                 <p className="text-sm font-medium text-foreground">
                                     {seccionActual.numero}. {seccionActual.titulo}
                                 </p>
+                                {/* Descripción opcional de la sección */}
+                                {(seccionActual as any).descripcion && (
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        {(seccionActual as any).descripcion}
+                                    </p>
+                                )}
+                                {/* Nota de instrucciones para segmentos corporales */}
+                                {seccionActual.numero === 1 && (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-900/10 space-y-1">
+                                        <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                                            INSTRUCCIONES — Molestia o dolor en los últimos 12 meses
+                                        </p>
+                                        <ul className="text-[11px] text-amber-700 dark:text-amber-400 space-y-0.5 list-disc list-inside">
+                                            <li><strong>RARA VEZ:</strong> una vez por mes</li>
+                                            <li><strong>FRECUENTE:</strong> por lo menos una vez cada dos semanas</li>
+                                            <li><strong>CONTINUO:</strong> diario o más de tres veces por semana</li>
+                                            <li><strong>NUNCA:</strong> cuando no se presenta</li>
+                                        </ul>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                                            Si marcó RARA VEZ, FRECUENTE o CONTINUO, califique la severidad: <strong>LEVE · MODERADO · SEVERO</strong>
+                                        </p>
+                                    </div>
+                                )}
                                 <div>
                                     {Object.entries(seccionActual.preguntas).map(([numeroStr, pregunta]) => {
                                         const numero = Number(numeroStr);
@@ -728,6 +761,7 @@ export default function EncuestaMorbilidadForm({
                                 </div>
                             </div>
                         )}
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -735,7 +769,7 @@ export default function EncuestaMorbilidadForm({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <Button type="button" variant="ghost" onClick={() => guardarProgreso()} disabled={form.processing}>
                         {form.processing && <LoaderCircle className="size-4 animate-spin" />}
-                        Guardar borrador
+                        <span>Guardar borrador</span>
                     </Button>
 
                     <div className="flex gap-2">
@@ -747,14 +781,14 @@ export default function EncuestaMorbilidadForm({
                         {esUltimoPaso ? (
                             <Button type="button" onClick={enviarEncuesta} disabled={form.processing}>
                                 {form.processing && <LoaderCircle className="size-4 animate-spin" />}
-                                Finalizar y enviar
+                                <span>Finalizar y enviar</span>
                             </Button>
                         ) : (
                             <Button type="button"
-                                onClick={() => guardarProgreso(() => setCurrentStep(currentStep + 1))}
+                                onClick={() => guardarProgreso(() => setCurrentStep(currentStep + 1), currentStep === 1)}
                                 disabled={form.processing}>
                                 {form.processing && <LoaderCircle className="size-4 animate-spin" />}
-                                {currentStep === 1 ? 'Comenzar' : 'Guardar y continuar'}
+                                <span>{currentStep === 1 ? 'Comenzar' : 'Guardar y continuar'}</span>
                             </Button>
                         )}
                     </div>

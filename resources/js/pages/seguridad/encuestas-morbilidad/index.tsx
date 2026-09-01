@@ -70,10 +70,20 @@ export default function EncuestasMorbilidadIndex({ encuestas, filters }: { encue
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Encuestas de Morbilidad Sentida" />
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <HeadingSmall
-                    title="Encuestas de Morbilidad Sentida"
-                    description="Encuestas de auto-reporte de salud completadas por los colaboradores."
-                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <HeadingSmall
+                        title="Encuestas de Morbilidad Sentida"
+                        description="Encuestas de auto-reporte de salud completadas por los colaboradores."
+                    />
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={route('seguridad.encuestas-morbilidad.preguntas.index')}>Catálogo de preguntas</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={route('portal.encuesta-morbilidad')}>Diligenciar formulario</Link>
+                        </Button>
+                    </div>
+                </div>
 
                 <form onSubmit={aplicarFiltros} className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <Input

@@ -6,7 +6,7 @@ use App\Http\Controllers\Colaborador\EncuestaMorbilidadController;
 use App\Http\Controllers\Colaborador\PortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'active', 'role:Colaborador'])
+Route::middleware(['auth', 'active', 'role:Colaborador|Administrador|Seguridad'])
     ->prefix('portal')
     ->name('portal.')
     ->group(function () {
