@@ -27,9 +27,9 @@ class ExamenEvaluacion extends Model
     {
         return [
             'obligatorio' => 'boolean',
-            'fecha_programacion' => 'date',
-            'fecha_ejecucion' => 'date',
-            'fecha_ingreso_pdf' => 'date',
+            'fecha_programacion' => 'date:Y-m-d',
+            'fecha_ejecucion' => 'date:Y-m-d',
+            'fecha_ingreso_pdf' => 'date:Y-m-d',
         ];
     }
 

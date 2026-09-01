@@ -105,14 +105,6 @@ class CompensacionVariableController extends Controller
             }
         }
 
-        if (array_sum($rechazos) === 0) {
-            return [
-                12, 8, 15, 20, 5, 9, 7, 14, 10, 11,
-                6, 18, 22, 3, 4, 9, 13, 17, 19, 8,
-                5, 7, 11, 16, 12, 14, 9, 6, 10, 8
-            ];
-        }
-
         return $rechazos;
     }
 
@@ -136,7 +128,7 @@ class CompensacionVariableController extends Controller
             if ($counts[$i] > 0) {
                 $result[$i] = round($adherencia[$i] / $counts[$i], 1);
             } else {
-                $result[$i] = round(85 + sin($i * 0.5) * 10, 1);
+                $result[$i] = 0;
             }
         }
 
@@ -163,7 +155,7 @@ class CompensacionVariableController extends Controller
             if ($counts[$i] > 0) {
                 $result[$i] = round($porcentajes[$i] / $counts[$i], 2);
             } else {
-                $result[$i] = round(3.5 + cos($i * 0.4) * 1.5, 2);
+                $result[$i] = 0;
             }
         }
 
@@ -200,10 +192,10 @@ class CompensacionVariableController extends Controller
                 $ausInj[$i] = $ausInjSum[$i];
                 $tri[$i] = $triSum[$i];
             } else {
-                $habilitadores[$i] = round(0.85 + sin($i * 0.3) * 0.15, 2);
-                $ausJust[$i] = (int) round(2 + sin($i * 0.5) * 2);
-                $ausInj[$i] = (int) round(1 + cos($i * 0.4) * 1);
-                $tri[$i] = (int) round(cos($i * 0.2) > 0.7 ? 1 : 0);
+                $habilitadores[$i] = 0;
+                $ausJust[$i] = 0;
+                $ausInj[$i] = 0;
+                $tri[$i] = 0;
             }
         }
 

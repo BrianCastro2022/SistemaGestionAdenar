@@ -39,14 +39,45 @@ class EncuestaMorbilidadController extends Controller
         return Inertia::render('colaborador/encuesta-morbilidad/index', [
             'encuestaId' => $encuesta->id,
             'colaborador' => [
-                'nombre_completo' => $colaborador->nombre_completo,
-                'cedula' => $colaborador->cedula,
-                'area' => $colaborador->area,
-                'cargo' => $colaborador->cargo,
+                'nombre_completo'   => $colaborador->nombre_completo,
+                'cedula'            => $colaborador->cedula,
+                'area'              => $colaborador->area,
+                'cargo'             => $colaborador->cargo,
+                'correo'            => $colaborador->correo,
+                'edad'              => $colaborador->edad,
+                'estado_civil'      => $colaborador->estado_civil,
+                'ciudad_residencia' => $colaborador->ciudad_residencia,
+                'estrato'           => $colaborador->estrato,
+                'turno'             => $colaborador->turno,
+                'tipo_contrato'     => $colaborador->tipo_contrato,
             ],
-            'fechaHora' => $encuesta->fecha_hora,
-            'secciones' => config('morbilidad.secciones'),
+            'fechaHora'  => $encuesta->fecha_hora,
+            'secciones'  => config('morbilidad.secciones'),
             'respuestas' => $this->respuestasIndexadas($encuesta),
+            // Datos del paso 1 ya guardados (para reanudar borrador)
+            'paso1' => [
+                'empresa'                => $encuesta->empresa,
+                'correo_electronico'     => $encuesta->correo_electronico,
+                'edad'                   => $encuesta->edad,
+                'estado_civil'           => $encuesta->estado_civil,
+                'tiene_hijos'            => $encuesta->tiene_hijos,
+                'hijos'                  => $encuesta->hijos ?? [],
+                'personas_a_cargo'       => $encuesta->personas_a_cargo,
+                'personas_cargo_detalle' => $encuesta->personas_cargo_detalle ?? [],
+                'nivel_escolaridad'      => $encuesta->nivel_escolaridad,
+                'estrato_socioeconomico' => $encuesta->estrato_socioeconomico,
+                'tenencia_vivienda'      => $encuesta->tenencia_vivienda,
+                'ciudad_residencia'      => $encuesta->ciudad_residencia,
+                'direccion_residencia'   => $encuesta->direccion_residencia,
+                'tipo_contratacion'      => $encuesta->tipo_contratacion,
+                'cargo_paso1'            => $encuesta->cargo_paso1,
+                'area_paso1'             => $encuesta->area_paso1,
+                'antiguedad_empresa'     => $encuesta->antiguedad_empresa,
+                'antiguedad_cargo'       => $encuesta->antiguedad_cargo,
+                'duracion_contrato'      => $encuesta->duracion_contrato,
+                'turno'                  => $encuesta->turno,
+                'promedio_ingresos'      => $encuesta->promedio_ingresos,
+            ],
         ]);
     }
 
@@ -58,11 +89,44 @@ class EncuestaMorbilidadController extends Controller
         $catalogo = (new MorbilidadCatalogoService())->preguntasPlanas();
 
         $data = $request->validate([
-            'respuestas' => ['present', 'array'],
-            'respuestas.*.numero' => ['required', 'integer', Rule::in(array_keys($catalogo))],
-            'respuestas.*.valor' => ['nullable', 'string'],
-            'respuestas.*.detalle' => ['nullable', 'string'],
+            // ── Respuestas de secciones 2-10 ─────────────────────────────
+            'respuestas'                          => ['present', 'array'],
+            'respuestas.*.numero'                 => ['required', 'integer', Rule::in(array_keys($catalogo))],
+            'respuestas.*.valor'                  => ['nullable', 'string'],
+            'respuestas.*.detalle'                => ['nullable', 'string'],
+            // ── Campos del Paso 1 (guardado parcial, sin obligatoriedad) ──
+            'paso1'                               => ['nullable', 'array'],
+            'paso1.empresa'                       => ['nullable', 'string', 'max:50'],
+            'paso1.correo_electronico'            => ['nullable', 'email', 'max:120'],
+            'paso1.edad'                          => ['nullable', 'integer', 'min:14', 'max:100'],
+            'paso1.estado_civil'                  => ['nullable', 'string', 'max:50'],
+            'paso1.tiene_hijos'                   => ['nullable', 'string', 'in:Si,No'],
+            'paso1.hijos'                         => ['nullable', 'array'],
+            'paso1.hijos.*.nombre'                => ['nullable', 'string', 'max:80'],
+            'paso1.hijos.*.edad'                  => ['nullable', 'integer', 'min:0'],
+            'paso1.personas_a_cargo'              => ['nullable', 'string', 'in:Si,No'],
+            'paso1.personas_cargo_detalle'        => ['nullable', 'array'],
+            'paso1.personas_cargo_detalle.*.tipo' => ['nullable', 'string', 'max:30'],
+            'paso1.personas_cargo_detalle.*.edad' => ['nullable', 'integer', 'min:0'],
+            'paso1.nivel_escolaridad'             => ['nullable', 'string', 'max:60'],
+            'paso1.estrato_socioeconomico'        => ['nullable', 'string', 'max:40'],
+            'paso1.tenencia_vivienda'             => ['nullable', 'string', 'max:60'],
+            'paso1.ciudad_residencia'             => ['nullable', 'string', 'max:100'],
+            'paso1.direccion_residencia'          => ['nullable', 'string', 'max:200'],
+            'paso1.tipo_contratacion'             => ['nullable', 'string', 'max:80'],
+            'paso1.cargo_paso1'                   => ['nullable', 'string', 'max:100'],
+            'paso1.area_paso1'                    => ['nullable', 'string', 'max:100'],
+            'paso1.antiguedad_empresa'            => ['nullable', 'string', 'max:40'],
+            'paso1.antiguedad_cargo'              => ['nullable', 'string', 'max:40'],
+            'paso1.duracion_contrato'             => ['nullable', 'string', 'max:40'],
+            'paso1.turno'                         => ['nullable', 'string', 'max:20'],
+            'paso1.promedio_ingresos'             => ['nullable', 'string', 'max:60'],
         ]);
+
+        // Guardar campos del paso 1 si vienen en el payload
+        if (!empty($data['paso1'])) {
+            $encuestaMorbilidad->update($data['paso1']);
+        }
 
         $this->guardarRespuestas($encuestaMorbilidad, $data['respuestas']);
 
@@ -71,10 +135,15 @@ class EncuestaMorbilidadController extends Controller
 
     public function store(EnviarEncuestaMorbilidadRequest $request, EncuestaMorbilidad $encuestaMorbilidad): RedirectResponse
     {
+        // Guardar campos del paso 1
+        if ($request->has('paso1')) {
+            $encuestaMorbilidad->update($request->input('paso1'));
+        }
+
         $this->guardarRespuestas($encuestaMorbilidad, $request->input('respuestas', []));
 
         $encuestaMorbilidad->update([
-            'estado' => EncuestaMorbilidad::ESTADO_COMPLETADA,
+            'estado'     => EncuestaMorbilidad::ESTADO_COMPLETADA,
             'enviado_en' => now(),
         ]);
 

@@ -21,7 +21,7 @@ class ColaboradorEntrenamiento extends Model
     protected function casts(): array
     {
         return [
-            'fecha_registro' => 'date',
+            'fecha_registro' => 'date:Y-m-d',
         ];
     }
 

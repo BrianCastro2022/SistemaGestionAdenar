@@ -17,6 +17,8 @@ class ModulacionNovedad extends Model
         'nombres',
         'cargo',
         'fijo',
+        'fijo_rescate',
+        'fijo_taller',
         'fecha_reintegro',
         'permiso',
         'no_asitio',
@@ -27,11 +29,13 @@ class ModulacionNovedad extends Model
     protected function casts(): array
     {
         return [
-            'fijo' => 'boolean',
-            'permiso' => 'boolean',
-            'no_asitio' => 'boolean',
-            'incapacidad' => 'boolean',
-            'vacaciones' => 'boolean',
+            'fijo'         => 'boolean',
+            'fijo_rescate' => 'boolean',
+            'fijo_taller'  => 'boolean',
+            'permiso'      => 'boolean',
+            'no_asitio'    => 'boolean',
+            'incapacidad'  => 'boolean',
+            'vacaciones'   => 'boolean',
         ];
     }
 

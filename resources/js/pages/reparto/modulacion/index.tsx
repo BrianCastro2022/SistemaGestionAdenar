@@ -1,3 +1,4 @@
+import axios from 'axios';
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ interface MiembroTripulacion {
 interface Viaje {
     id?: string;
     lugares: string;
+    barrio: string;
     cliente: string;
     peso: string;
 }
@@ -55,6 +57,7 @@ interface Viaje {
 interface RutaFormState {
     id?: number;
     placa: string;
+    doc_tras: string;
     cargo: string;
     tripulacion: MiembroTripulacion[];
     viajes: Viaje[];
@@ -80,6 +83,8 @@ interface ModulacionNovedadData {
     nombres?: string;
     cargo?: string;
     fijo: boolean;
+    fijo_rescate: boolean;
+    fijo_taller: boolean;
     permiso: boolean;
     incapacidad: boolean;
     vacaciones: boolean;
@@ -95,6 +100,15 @@ interface ModulacionData {
     novedades: ModulacionNovedadData[];
 }
 
+interface FijoInicial {
+    colaborador_id?: number;
+    cedula?: string;
+    nombres?: string;
+    cargo?: string;
+    fijo_rescate?: boolean;
+    fijo_taller?: boolean;
+}
+
 interface Props {
     fecha: string;
     modulacion: ModulacionData | null;
@@ -103,6 +117,7 @@ interface Props {
     vehiculos: string[];
     currentUser: string;
     readOnly?: boolean;
+    fijosIniciales?: FijoInicial[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -286,6 +301,11 @@ function NarinoMunicipioInput({
     );
 }
 
+const cleanString = (val: any, fallback: string = '') => {
+    if (val === null || val === undefined || val === 'undefined' || val === 'null') return fallback;
+    return String(val);
+};
+
 export default function ModulacionIndex({
     fecha: initialFecha,
     modulacion,
@@ -294,6 +314,7 @@ export default function ModulacionIndex({
     vehiculos = [],
     currentUser,
     readOnly = false,
+    fijosIniciales = [],
 }: Props) {
     // Modo edición: false por defecto si se llega en modo lectura
     const [isEditing, setIsEditing] = useState(() => !readOnly);
@@ -311,50 +332,120 @@ export default function ModulacionIndex({
     );
 
     // UD Programado por
-    const [udProgramadoPor, setUdProgramadoPor] = useState<string>(
-        String(modulacion?.ud_programado_por ?? currentUser ?? '')
+    const [udProgramadoPor, setUdProgramadoPor] = useState<string>(() =>
+        cleanString(modulacion?.ud_programado_por, cleanString(currentUser, ''))
     );
 
     // Despachado Por (Colaborador) -> Precargado con 'Jhon alexander rojas muñoz 10041925516'
     const [despachadoPorId, setDespachadoPorId] = useState<string>(
         modulacion?.despachado_por_colaborador_id ? String(modulacion.despachado_por_colaborador_id) : ''
     );
-    const [despachadoPorNombre, setDespachadoPorNombre] = useState<string>(
-        String(modulacion?.despachado_por_nombre || DESPACHADO_POR_DEFECTO)
+    const [despachadoPorNombre, setDespachadoPorNombre] = useState<string>(() =>
+        cleanString(modulacion?.despachado_por_nombre, DESPACHADO_POR_DEFECTO)
     );
+    const [showDespachadorDropdown, setShowDespachadorDropdown] = useState(false);
+
+    // Flag para saber si la consulta de fecha fue iniciada manualmente por el usuario al crear/cambiar fecha
+    const userInitiatedDateChange = React.useRef(false);
 
     useEffect(() => {
         if (modulacion) {
             if (modulacion.fecha) setFechaTexto(String(modulacion.fecha));
-            if (modulacion.ud_programado_por) setUdProgramadoPor(String(modulacion.ud_programado_por));
+            setUdProgramadoPor(cleanString(modulacion.ud_programado_por, cleanString(currentUser, '')));
             if (modulacion.despachado_por_colaborador_id)
                 setDespachadoPorId(String(modulacion.despachado_por_colaborador_id));
-            if (modulacion.despachado_por_nombre) {
-                setDespachadoPorNombre(String(modulacion.despachado_por_nombre));
-            } else {
-                setDespachadoPorNombre(DESPACHADO_POR_DEFECTO);
+            setDespachadoPorNombre(cleanString(modulacion.despachado_por_nombre, DESPACHADO_POR_DEFECTO));
+
+            // Notificar ALERTA SOLO cuando el usuario estaba creando o cambiando de fecha explícitamente
+            if (modulacion.fecha && userInitiatedDateChange.current) {
+                userInitiatedDateChange.current = false;
+                alert(`ℹ️ La fecha ${modulacion.fecha} ya tiene una planeación registrada. Se han precargado los datos.`);
             }
         }
     }, [modulacion]);
 
-    // Función para cambiar la fecha y consultar los datos pertenecientes a esa fecha
-    const handleFechaChange = (newFecha: string) => {
+    // Función para cambiar la fecha consultando la base de datos vía API en tiempo real sin redirigir la página
+    const handleFechaChange = async (newFecha: string) => {
         setFechaTexto(newFecha);
-        router.get(
-            route('reparto.modulacion.index'),
-            { fecha: newFecha },
-            { preserveState: true, preserveScroll: true }
-        );
+        if (!newFecha) return;
+
+        try {
+            const res = await fetch(`/modules/reparto/modulacion/check-fecha?fecha=${encodeURIComponent(newFecha)}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                console.error('Error checkFecha HTTP:', res.status);
+                return;
+            }
+            const data = await res.json();
+            if (data.exists && data.modulacion) {
+                setUdProgramadoPor(cleanString(data.modulacion.ud_programado_por, cleanString(currentUser, '')));
+                if (data.modulacion.despachado_por_colaborador_id) {
+                    setDespachadoPorId(String(data.modulacion.despachado_por_colaborador_id));
+                }
+                setDespachadoPorNombre(cleanString(data.modulacion.despachado_por_nombre, DESPACHADO_POR_DEFECTO));
+
+                if (Array.isArray(data.modulacion.items) && data.modulacion.items.length > 0) {
+                    setRutas(
+                        data.modulacion.items.map((item: any) => ({
+                            id: item.id,
+                            placa: item.placa,
+                            doc_tras: item.doc_tras ?? '',
+                            cargo: item.cargo ?? '',
+                            tripulacion: item.tripulacion ?? [],
+                            viajes: (item.viajes ?? []).map((v: any, i: number) => ({ ...v, id: v.id ?? `srv-${item.id}-v${i}` })),
+                        }))
+                    );
+                } else {
+                    setRutas([]);
+                }
+
+                if (Array.isArray(data.modulacion.novedades)) {
+                    setNovedadesLocal([...data.modulacion.novedades]);
+                }
+
+                if (!readOnly) setIsEditing(true);
+
+                alert(`ℹ️ La fecha ${newFecha} ya tiene una planeación registrada. Se han precargado los datos.`);
+            } else {
+                setRutas([]);
+                if (Array.isArray(data.fijosIniciales) && data.fijosIniciales.length > 0) {
+                    setNovedadesLocal(
+                        data.fijosIniciales.map((f: any, i: number) => ({
+                            id: -(i + 1),
+                            modulacion_id: 0,
+                            colaborador_id: f.colaborador_id,
+                            cedula: f.cedula,
+                            nombres: f.nombres,
+                            cargo: f.cargo,
+                            fijo: true,
+                            fijo_rescate: Boolean(f.fijo_rescate),
+                            fijo_taller: Boolean(f.fijo_taller),
+                            permiso: false,
+                            incapacidad: false,
+                            vacaciones: false,
+                        }))
+                    );
+                } else {
+                    setNovedadesLocal([]);
+                }
+                if (!readOnly) setIsEditing(true);
+            }
+        } catch (err) {
+            console.error('Error al verificar planeación por fecha:', err);
+        }
     };
 
     // Crear ruta en blanco
     const createEmptyRoute = (): RutaFormState => ({
         placa: '',
+        doc_tras: '',
         cargo: '',
         tripulacion: [],
         viajes: [
-            { id: generateId(), lugares: '', cliente: '', peso: '' },
-            { id: generateId(), lugares: '', cliente: '', peso: '' },
+            { id: generateId(), lugares: '', barrio: '', cliente: '', peso: '' },
+            { id: generateId(), lugares: '', barrio: '', cliente: '', peso: '' },
         ],
     });
 
@@ -362,11 +453,13 @@ export default function ModulacionIndex({
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
     // Rutas guardadas en la lista
+    const [rutasLoaded, setRutasLoaded] = useState(false);
     const [rutas, setRutas] = useState<RutaFormState[]>(() => {
         if (modulacion?.items && modulacion.items.length > 0) {
             return modulacion.items.map((item) => ({
                 id: item.id,
                 placa: item.placa,
+                doc_tras: (item as any).doc_tras ?? '',
                 cargo: item.cargo ?? '',
                 tripulacion: item.tripulacion ?? [],
                 viajes: (item.viajes ?? []).map((v, i) => ({ ...v, id: v.id ?? `srv-${item.id}-v${i}` })),
@@ -376,20 +469,33 @@ export default function ModulacionIndex({
     });
 
     useEffect(() => {
-        if (modulacion?.items) {
+        if (modulacion?.items && modulacion.items.length > 0) {
             setRutas(
                 modulacion.items.map((item) => ({
                     id: item.id,
                     placa: item.placa,
+                    doc_tras: (item as any).doc_tras ?? '',
                     cargo: item.cargo ?? '',
                     tripulacion: item.tripulacion ?? [],
                     viajes: (item.viajes ?? []).map((v, i) => ({ ...v, id: v.id ?? `srv-${item.id}-v${i}` })),
                 }))
             );
+            if (!readOnly) {
+                setIsEditing(true);
+            }
+        } else if (modulacion) {
+            setRutas([]);
+            if (!readOnly) {
+                setIsEditing(true);
+            }
         } else {
             setRutas([]);
+            if (!readOnly) {
+                setIsEditing(true);
+            }
         }
-    }, [modulacion]);
+        setRutasLoaded(true);
+    }, [modulacion, readOnly]);
 
     // Filtros de la Tabla Planeación de Ruta (Solo Filtro por Placa)
     const [filterTablePlaca, setFilterTablePlaca] = useState<string>('todas');
@@ -421,6 +527,7 @@ export default function ModulacionIndex({
         setCurrentRoute({
             id: routeToEdit.id,
             placa: routeToEdit.placa,
+            doc_tras: routeToEdit.doc_tras ?? '',
             cargo: routeToEdit.cargo ?? '',
             tripulacion: Array.isArray(routeToEdit.tripulacion) ? [...routeToEdit.tripulacion] : [],
             viajes: Array.isArray(routeToEdit.viajes) ? [...routeToEdit.viajes] : [],
@@ -432,14 +539,18 @@ export default function ModulacionIndex({
 
     const handleRemoveRutaFromList = (index: number) => {
         const itemToRemove = rutas[index];
-        if (itemToRemove?.id) {
-            handleDeleteItem(itemToRemove.id);
-        } else {
-            setRutas(rutas.filter((_, i) => i !== index));
-        }
+        // Quitar del estado local inmediatamente
+        setRutas((prev) => prev.filter((_, i) => i !== index));
         if (editingIndex === index) {
             setCurrentRoute(createEmptyRoute());
             setEditingIndex(null);
+        }
+        // Si tenía id en BD, eliminar en el servidor también
+        if (itemToRemove?.id) {
+            router.delete(route('reparto.modulacion.destroyItem', itemToRemove.id), {
+                preserveScroll: true,
+                preserveState: true,
+            });
         }
     };
 
@@ -455,12 +566,15 @@ export default function ModulacionIndex({
             return;
         }
 
+        // Tripulación contiene ÚNICAMENTE los colaboradores asignados en el checklist
+        const rutaFinal = { ...currentRoute, tripulacion: [...(currentRoute.tripulacion || [])] };
+
         setRutas((prev) => {
             const updated = [...prev];
             if (editingIndex !== null && editingIndex >= 0 && editingIndex < updated.length) {
-                updated[editingIndex] = { ...currentRoute };
+                updated[editingIndex] = rutaFinal;
             } else {
-                updated.push({ ...currentRoute });
+                updated.push(rutaFinal);
             }
             return updated;
         });
@@ -499,10 +613,6 @@ export default function ModulacionIndex({
         );
         if (isSelectedInCurrent) return false;
 
-        if (fijosColaboradorIds.has(colIdStr) || (colCedStr !== '' && fijosColaboradorIds.has(`cedula:${colCedStr}`))) {
-            return false;
-        }
-
         return (
             assignedCollaboratorsSet.has(`id:${colIdStr}`) ||
             (colCedStr !== '' && assignedCollaboratorsSet.has(`cedula:${colCedStr}`))
@@ -513,7 +623,6 @@ export default function ModulacionIndex({
     const handleToggleChecklistMember = (col: ColaboradorOption) => {
         const colIdStr = String(col.id).trim();
         const colCedStr = col.cedula ? String(col.cedula).trim() : '';
-        const isFijo = fijosColaboradorIds.has(colIdStr) || (colCedStr !== '' && fijosColaboradorIds.has(`cedula:${colCedStr}`));
 
         const trip = [...currentRoute.tripulacion];
         const existingIdx = trip.findIndex(
@@ -523,10 +632,6 @@ export default function ModulacionIndex({
         );
 
         if (existingIdx >= 0) {
-            if (isFijo) {
-                alert(`El colaborador "${col.nombre_completo}" está marcado como FIJO y debe permanecer en todas las rutas.`);
-                return;
-            }
             trip.splice(existingIdx, 1);
         } else {
             if (isCollaboratorAlreadyAssigned(col)) {
@@ -544,50 +649,11 @@ export default function ModulacionIndex({
         setCurrentRoute((prev) => ({ ...prev, tripulacion: trip }));
     };
 
-    // AUTO-AGREGAR COLABORADORES FIJOS
-    useEffect(() => {
-        if (fijosColaboradorIds.size === 0) return;
-
-        const fijoNovedades = (modulacion?.novedades || []).filter((n) => n.fijo);
-        if (fijoNovedades.length === 0) return;
-
-        setCurrentRoute((prev) => {
-            let tripUpdated = [...prev.tripulacion];
-            let changed = false;
-
-            fijoNovedades.forEach((nov) => {
-                const novIdStr = nov.colaborador_id ? String(nov.colaborador_id).trim() : '';
-                const novCedStr = nov.cedula ? String(nov.cedula).trim() : '';
-
-                const alreadyIn = tripUpdated.some(
-                    (m) =>
-                        (novIdStr !== '' && m.colaborador_id && String(m.colaborador_id).trim() === novIdStr) ||
-                        (novCedStr !== '' && m.cedula && String(m.cedula).trim() === novCedStr)
-                );
-                if (!alreadyIn) {
-                    const col = colaboradores.find((c) => String(c.id) === String(nov.colaborador_id));
-                    tripUpdated.push({
-                        colaborador_id: nov.colaborador_id || undefined,
-                        cedula: nov.cedula || (col?.cedula || ''),
-                        nombres: nov.nombres || (col?.nombre_completo || ''),
-                        cargo: nov.cargo || (col?.cargo || ''),
-                    });
-                    changed = true;
-                }
-            });
-
-            if (changed) {
-                return { ...prev, tripulacion: tripUpdated };
-            }
-            return prev;
-        });
-    }, [fijosColaboradorIds, modulacion?.novedades, colaboradores]);
-
     // MANEJO DE VIAJES DINÁMICOS
     const handleAddViaje = () => {
         setCurrentRoute((prev) => ({
             ...prev,
-            viajes: [...prev.viajes, { id: generateId(), lugares: '', cliente: '', peso: '' }],
+            viajes: [...prev.viajes, { id: generateId(), lugares: '', barrio: '', cliente: '', peso: '' }],
         }));
     };
 
@@ -600,10 +666,25 @@ export default function ModulacionIndex({
     };
 
     const handleViajeChange = (viajeIndex: number, field: keyof Viaje, value: string) => {
+        let finalVal = value;
+        if (field === 'peso' && value !== '') {
+            const parsed = parseFloat(value);
+            if (!isNaN(parsed) && parsed > 10) {
+                alert('⚠️ El peso máximo permitido por viaje es de 10 toneladas.');
+                finalVal = '10';
+            }
+        }
         const newViajes = [...currentRoute.viajes];
-        newViajes[viajeIndex][field] = value;
+        newViajes[viajeIndex][field] = finalVal;
         setCurrentRoute((prev) => ({ ...prev, viajes: newViajes }));
     };
+
+    // Calcular el total de toneladas acumuladas en los viajes de la ruta actual
+    const totalPesoActual = useMemo(() => {
+        return currentRoute.viajes
+            .reduce((sum, v) => sum + (parseFloat(v.peso) || 0), 0)
+            .toFixed(2);
+    }, [currentRoute.viajes]);
 
     // GUARDAR PLANEACIÓN DE RUTA COMPLETA (TODAS LAS RUTAS + NOVEDADES)
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -619,33 +700,8 @@ export default function ModulacionIndex({
             }
         }
 
-        // Auto-inyectar colaboradores fijos en TODAS las rutas antes de guardar
-        const fijoNovedades = (modulacion?.novedades || []).filter((n) => n.fijo);
-        if (fijoNovedades.length > 0) {
-            finalRutas = finalRutas.map((ruta) => {
-                let tripUpdated = [...(ruta.tripulacion || [])];
-                fijoNovedades.forEach((nov) => {
-                    const novIdStr = nov.colaborador_id ? String(nov.colaborador_id).trim() : '';
-                    const novCedStr = nov.cedula ? String(nov.cedula).trim() : '';
-
-                    const alreadyIn = tripUpdated.some(
-                        (m) =>
-                            (novIdStr !== '' && m.colaborador_id && String(m.colaborador_id).trim() === novIdStr) ||
-                            (novCedStr !== '' && m.cedula && String(m.cedula).trim() === novCedStr)
-                    );
-                    if (!alreadyIn) {
-                        const col = colaboradores.find((c) => String(c.id) === String(nov.colaborador_id));
-                        tripUpdated.push({
-                            colaborador_id: nov.colaborador_id || undefined,
-                            cedula: nov.cedula || (col?.cedula || ''),
-                            nombres: nov.nombres || (col?.nombre_completo || ''),
-                            cargo: nov.cargo || (col?.cargo || ''),
-                        });
-                    }
-                });
-                return { ...ruta, tripulacion: tripUpdated };
-            });
-        }
+        // NO se inyectan colaboradores fijos ni novedades en la tripulación de finalRutas.
+        // Tripulación contiene SOLO los miembros asignados explícitamente a cada ruta.
 
         if (finalRutas.length === 0) {
             alert('Por favor ingrese al menos una ruta con Placa antes de guardar la planeación.');
@@ -654,18 +710,30 @@ export default function ModulacionIndex({
 
         setIsSubmitting(true);
 
-        // Preparar novedades actualizadas para enviar en lote
-        const novedadesPayload = Object.values(novedadesState).map((nov) => ({
-            id: nov.id,
-            fijo: Boolean(nov.fijo),
-            permiso: Boolean(nov.permiso),
-            incapacidad: Boolean(nov.incapacidad),
-            vacaciones: Boolean(nov.vacaciones),
-        }));
+        // Preparar novedades para enviar en lote
+        // - Las que tienen id real: actualizar checkboxes
+        // - Las que tienen id negativo (pendientes): crear nuevas en el backend
+        const novedadesPayload = novedadesLocal.map((nov) => {
+            const isNew = nov.id < 0;
+            return {
+                ...(isNew ? {} : { id: nov.id }),
+                colaborador_id: nov.colaborador_id ?? null,
+                cedula: nov.cedula ?? null,
+                nombres: nov.nombres ?? null,
+                cargo: nov.cargo ?? null,
+                fijo_rescate: Boolean(nov.fijo_rescate),
+                fijo_taller: Boolean(nov.fijo_taller),
+                fijo: Boolean(nov.fijo_rescate) || Boolean(nov.fijo_taller),
+                permiso: Boolean(nov.permiso),
+                incapacidad: Boolean(nov.incapacidad),
+                vacaciones: Boolean(nov.vacaciones),
+            };
+        });
 
         router.post(
             route('reparto.modulacion.storeBatch'),
             {
+                modulacion_id: modulacion?.id ?? null,
                 fecha: fechaTexto,
                 ud_programado_por: udProgramadoPor,
                 despachado_por_colaborador_id: despachadoPorId ? Number(despachadoPorId) : null,
@@ -678,8 +746,11 @@ export default function ModulacionIndex({
                 preserveState: false,
                 onSuccess: () => {
                     setIsSubmitting(false);
+                    setRutasLoaded(false);
+                    setNovedadesLocal([]);
                     setCurrentRoute(createEmptyRoute());
                     setEditingIndex(null);
+                    alert('✅ Planeación de ruta guardada correctamente.');
                 },
                 onError: (errs) => {
                     setIsSubmitting(false);
@@ -694,17 +765,57 @@ export default function ModulacionIndex({
         );
     };
 
-    // Eliminar ruta
-    const handleDeleteItem = (id: number) => {
-        if (confirm('¿Está seguro de eliminar esta ruta de la planeación?')) {
-            router.delete(route('reparto.modulacion.destroyItem', id), {
-                preserveScroll: true,
-                preserveState: false,
-            });
+    // TABLA 2: NOVEDADES — estado local unificado (servidor + fijos iniciales + pendientes nuevas)
+    const [novedadesLocal, setNovedadesLocal] = useState<ModulacionNovedadData[]>(() => {
+        if (modulacion?.novedades && modulacion.novedades.length > 0) {
+            return [...modulacion.novedades];
         }
-    };
+        if (fijosIniciales && fijosIniciales.length > 0) {
+            return fijosIniciales.map((f, i) => ({
+                id: -(i + 1),
+                modulacion_id: 0,
+                colaborador_id: f.colaborador_id,
+                cedula: f.cedula,
+                nombres: f.nombres,
+                cargo: f.cargo,
+                fijo: true,
+                fijo_rescate: Boolean(f.fijo_rescate),
+                fijo_taller: Boolean(f.fijo_taller),
+                permiso: false,
+                incapacidad: false,
+                vacaciones: false,
+            }));
+        }
+        return [];
+    });
 
-    // TABLA 2: NOVEDADES Y ASISTENCIA DE COLABORADORES
+    // Sincronizar novedades cuando cambia modulacion o fijosIniciales
+    useEffect(() => {
+        if (modulacion?.novedades && modulacion.novedades.length > 0) {
+            setNovedadesLocal([...modulacion.novedades]);
+        } else if (!modulacion && fijosIniciales && fijosIniciales.length > 0) {
+            setNovedadesLocal(
+                fijosIniciales.map((f, i) => ({
+                    id: -(i + 1),
+                    modulacion_id: 0,
+                    colaborador_id: f.colaborador_id,
+                    cedula: f.cedula,
+                    nombres: f.nombres,
+                    cargo: f.cargo,
+                    fijo: true,
+                    fijo_rescate: Boolean(f.fijo_rescate),
+                    fijo_taller: Boolean(f.fijo_taller),
+                    permiso: false,
+                    incapacidad: false,
+                    vacaciones: false,
+                }))
+            );
+        } else if (!modulacion) {
+            setNovedadesLocal([]);
+        }
+    }, [modulacion, fijosIniciales]);
+
+    // Para compatibilidad con el payload de storeBatch — mantiene los cambios de checkboxes
     const [novedadesState, setNovedadesState] = useState<Record<number, ModulacionNovedadData>>({});
 
     useEffect(() => {
@@ -723,7 +834,8 @@ export default function ModulacionIndex({
         cedula: '',
         nombres: '',
         cargo: '',
-        fijo: false,
+        fijo_rescate: false,
+        fijo_taller: false,
         permiso: false,
         incapacidad: false,
         vacaciones: false,
@@ -758,56 +870,69 @@ export default function ModulacionIndex({
             return;
         }
 
-        router.post(
-            route('reparto.modulacion.storeNovedad'),
-            {
-                fecha: fechaTexto,
-                colaborador_id: nuevaNovedad.colaborador_id ? Number(nuevaNovedad.colaborador_id) : null,
-                cedula: nuevaNovedad.cedula,
-                nombres: nuevaNovedad.nombres,
-                cargo: nuevaNovedad.cargo,
-                fijo: nuevaNovedad.fijo,
-                permiso: nuevaNovedad.permiso,
-                incapacidad: nuevaNovedad.incapacidad,
-                vacaciones: nuevaNovedad.vacaciones,
-            },
-            {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    setNuevaNovedad({
-                        colaborador_id: '',
-                        cedula: '',
-                        nombres: '',
-                        cargo: '',
-                        fijo: false,
-                        permiso: false,
-                        incapacidad: false,
-                        vacaciones: false,
-                    });
-                },
-            }
+        // Verificar duplicado por cédula o colaborador_id
+        const yaExiste = novedadesLocal.some((n) =>
+            (nuevaNovedad.cedula && n.cedula === nuevaNovedad.cedula) ||
+            (nuevaNovedad.colaborador_id && String(n.colaborador_id) === nuevaNovedad.colaborador_id)
         );
+        if (yaExiste) {
+            alert('Este colaborador ya está en la tabla de novedades.');
+            return;
+        }
+
+        // Agregar localmente con id temporal negativo (no existe en BD todavía)
+        const tempId = -(Date.now());
+        const nuevaFila: ModulacionNovedadData = {
+            id: tempId,
+            modulacion_id: modulacion?.id ?? 0,
+            colaborador_id: nuevaNovedad.colaborador_id ? Number(nuevaNovedad.colaborador_id) : undefined,
+            cedula: nuevaNovedad.cedula,
+            nombres: nuevaNovedad.nombres,
+            cargo: nuevaNovedad.cargo,
+            fijo: nuevaNovedad.fijo_rescate || nuevaNovedad.fijo_taller,
+            fijo_rescate: nuevaNovedad.fijo_rescate,
+            fijo_taller: nuevaNovedad.fijo_taller,
+            permiso: nuevaNovedad.permiso,
+            incapacidad: nuevaNovedad.incapacidad,
+            vacaciones: nuevaNovedad.vacaciones,
+        } as any;
+
+        setNovedadesLocal((prev) => [...prev, nuevaFila]);
+
+        // Limpiar formulario
+        setNuevaNovedad({
+            colaborador_id: '',
+            cedula: '',
+            nombres: '',
+            cargo: '',
+            fijo_rescate: false,
+            fijo_taller: false,
+            permiso: false,
+            incapacidad: false,
+            vacaciones: false,
+        });
     };
 
     const handleNovedadChange = (id: number, field: keyof ModulacionNovedadData, value: any) => {
-        setNovedadesState((prev) => ({
-            ...prev,
-            [id]: {
-                ...prev[id],
-                [field]: value,
-            },
-        }));
+        setNovedadesLocal((prev) =>
+            prev.map((n) => n.id === id ? { ...n, [field]: value } : n)
+        );
     };
 
     // handleSaveNovedad eliminado: las novedades se guardan junto con las rutas en "Guardar Planeación de Ruta"
 
 
     const handleDeleteNovedad = (id: number) => {
+        if (id < 0) {
+            // Fila pendiente (nunca guardada) — solo quitar del estado local
+            setNovedadesLocal((prev) => prev.filter((n) => n.id !== id));
+            return;
+        }
         if (confirm('¿Desea eliminar este colaborador de la tabla de novedades?')) {
+            setNovedadesLocal((prev) => prev.filter((n) => n.id !== id));
             router.delete(route('reparto.modulacion.destroyNovedad', id), {
                 preserveScroll: true,
-                preserveState: false,
+                preserveState: true,
             });
         }
     };
@@ -907,10 +1032,23 @@ export default function ModulacionIndex({
                 .map((m) => `${m.nombres} (Cédula: ${m.cedula}${m.cargo ? ' - Cargo: ' + m.cargo : ''})`)
                 .join(' | ');
 
+            const colaboradoresStr = novedadesLocal
+                .map((nov) => {
+                    const types = [];
+                    if (nov.fijo_rescate) types.push('FIJO RESCATE');
+                    if (nov.fijo_taller) types.push('FIJO TALLER');
+                    if (nov.permiso) types.push('PERMISO');
+                    if (nov.incapacidad) types.push('INCAPACIDAD');
+                    if (nov.vacaciones) types.push('VACACIONES');
+                    const typeStr = types.length > 0 ? ` [${types.join(', ')}]` : '';
+                    return `${nov.nombres || ''} (Cédula: ${nov.cedula || '-'}${nov.cargo ? ' - ' + nov.cargo : ''})${typeStr}`;
+                })
+                .join(' | ');
+
             const viajesStr = (r.viajes || [])
                 .map(
                     (v, vIdx) =>
-                        `Viaje ${vIdx + 1}: Lugares: Nariño - ${v.lugares || '-'}, Cliente: ${v.cliente || '-'}, Peso: ${v.peso || '-'} ton`
+                        `Viaje ${vIdx + 1}: Lugares: Nariño - ${v.lugares || '-'}${v.barrio ? ' - Barrio: ' + v.barrio : ''}, Cliente: ${v.cliente || '-'}, Peso: ${v.peso || '-'} ton`
                 )
                 .join(' | ');
 
@@ -921,6 +1059,7 @@ export default function ModulacionIndex({
                 'Despachado Por': despachadoPorNombre || '-',
                 Placa: r.placa,
                 Tripulación: tripulacionStr || '-',
+                Colaboradores: colaboradoresStr || '-',
                 Viajes: viajesStr || '-',
             };
         });
@@ -952,14 +1091,15 @@ export default function ModulacionIndex({
                     </div>
                 </div>
 
-                {/* CARD DE FILTROS — solo en modo edición */}
-                {isEditing && (
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border">
+                {/* CARD DE FILTROS */}
+                {/* Creando: sin filtros. Editando con planeación existente: solo filtro por placa */}
+                {isEditing && modulacion?.id && (
+                <Card className="shadow-sm border bg-white dark:bg-gray-900">
                     <CardHeader className="pb-2 border-b">
                         <CardTitle className="text-sm font-semibold flex items-center justify-between">
                             <span className="flex items-center gap-2 uppercase tracking-wider text-xs font-bold text-muted-foreground">
                                 <Filter className="h-4 w-4 text-muted-foreground" />
-                                {'Filtros de Fecha y Placa'}
+                                {'Filtros'}
                             </span>
                             <Button
                                 type="button"
@@ -1014,9 +1154,8 @@ export default function ModulacionIndex({
                 )}
                 {/* fin card filtros */}
 
-                {/* FORMULARIO NUEVA SALIDA — solo en modo edición */}
-                {isEditing && (
-                <form onSubmit={handleGuardarRutaLocal} className="space-y-6">
+                {/* FORMULARIO NUEVA SALIDA — visible en creación o edición */}
+                <form onSubmit={handleGuardarRutaLocal} className="space-y-6" style={{ display: (!readOnly || isEditing) ? 'block' : 'none' }}>
                     {/* FORMULARIO DE RUTA UNIFICADO (CARD NUEVA SALIDA) */}
                     <Card className="border-sidebar-border/70 dark:border-sidebar-border border-t-4 relative" style={{ borderTopColor: ACCENT }}>
                         <CardHeader className="pb-3 border-b">
@@ -1039,7 +1178,7 @@ export default function ModulacionIndex({
                                 {/* Fila 1: Programado Por, Despachado Por */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="ud_programado_por" className="text-xs font-semibold uppercase tracking-wider">
+                                        <Label htmlFor="ud_programado_por" className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                             UD Programado Por
                                         </Label>
                                         <Input
@@ -1056,6 +1195,65 @@ export default function ModulacionIndex({
                                         <Label htmlFor="despachado_por" className="text-xs font-semibold uppercase tracking-wider">
                                             Despachado Por (Colaborador)
                                         </Label>
+                                        <div className="relative mt-1">
+                                            <Input
+                                                id="despachado_por"
+                                                type="text"
+                                                value={despachadoPorNombre}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setDespachadoPorNombre(val);
+                                                    setShowDespachadorDropdown(true);
+                                                    // Si coincide con un colaborador de la lista, guardar su ID
+                                                    const found = colaboradores.find(
+                                                        (c) => c.nombre_completo.toLowerCase() === val.toLowerCase() ||
+                                                               `${c.nombre_completo} ${c.cedula}`.toLowerCase() === val.toLowerCase()
+                                                    );
+                                                    setDespachadoPorId(found ? String(found.id) : '');
+                                                }}
+                                                onFocus={() => setShowDespachadorDropdown(true)}
+                                                onBlur={() => setTimeout(() => setShowDespachadorDropdown(false), 150)}
+                                                placeholder="Busque o escriba el nombre..."
+                                                className="mt-1 bg-white dark:bg-gray-800 font-medium"
+                                                autoComplete="off"
+                                            />
+                                            {/* Dropdown de colaboradores */}
+                                            {showDespachadorDropdown && (
+                                                <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-800 border border-input rounded-md shadow-lg max-h-48 overflow-y-auto z-10">
+                                                    {colaboradores
+                                                        .filter((c) => {
+                                                            const q = despachadoPorNombre.toLowerCase().trim();
+                                                            return !q || 
+                                                                c.nombre_completo.toLowerCase().includes(q) || 
+                                                                (c.cedula && c.cedula.includes(q));
+                                                        })
+                                                        .map((c) => (
+                                                            <div
+                                                                key={c.id}
+                                                                onMouseDown={() => {
+                                                                    setDespachadoPorNombre(`${c.nombre_completo} ${c.cedula}`);
+                                                                    setDespachadoPorId(String(c.id));
+                                                                    setShowDespachadorDropdown(false);
+                                                                }}
+                                                                className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium">{c.nombre_completo}</div>
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400">{c.cedula} • {c.cargo}</div>
+                                                            </div>
+                                                        ))}
+                                                    {colaboradores.filter((c) => {
+                                                        const q = despachadoPorNombre.toLowerCase().trim();
+                                                        return !q || 
+                                                            c.nombre_completo.toLowerCase().includes(q) || 
+                                                            (c.cedula && c.cedula.includes(q));
+                                                    }).length === 0 && (
+                                                        <div className="px-3 py-4 text-center text-sm text-gray-400">
+                                                            No se encontraron colaboradores
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <Input
                                             id="despachado_por"
                                             type="text"
@@ -1067,36 +1265,55 @@ export default function ModulacionIndex({
                                     </div>
                                 </div>
 
-                                {/* Fila 2: Placa */}
-                                <div className="pt-2 border-t border-sidebar-border/70 dark:border-sidebar-border">
-                                    <div>
-                                        <Label className="text-xs font-semibold uppercase tracking-wider">
-                                            Placa <span style={{ color: ACCENT }}>*</span>
-                                        </Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                placeholder="Ej: ABC123"
-                                                value={currentRoute.placa}
-                                                onChange={(e) => handleCurrentRouteFieldChange('placa', e.target.value.toUpperCase())}
-                                                className="uppercase font-mono flex-1"
-                                            />
+                                {/* Fila 2: Placa + Documento Transporte */}
+                                <div className="pt-2 border-t border-red-100 dark:border-red-900/30">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <Label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                Placa <span className="text-red-500">*</span>
+                                            </Label>
                                             {vehiculos.length > 0 && (
-                                                <Select
-                                                    value={vehiculos.includes(currentRoute.placa) ? currentRoute.placa : undefined}
-                                                    onValueChange={(v) => handleCurrentRouteFieldChange('placa', v)}
+                                                <select
+                                                    value={currentRoute.placa}
+                                                    onChange={(e) => {
+                                                        if (e.target.value) {
+                                                            handleCurrentRouteFieldChange('placa', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="h-10 mt-1 w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono uppercase"
                                                 >
-                                                    <SelectTrigger className="w-[110px] h-10 text-xs">
-                                                        <SelectValue placeholder="Flota" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {vehiculos.map((v) => (
-                                                            <SelectItem key={v} value={String(v)}>
-                                                                {String(v)}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                    <option value="">-- Seleccionar Placa --</option>
+                                                    {vehiculos
+                                                        .filter((v) => {
+                                                            const placaUpper = String(v).toUpperCase();
+                                                            // Permitir la placa que ya tiene la ruta en edición
+                                                            if (currentRoute.placa && String(currentRoute.placa).toUpperCase() === placaUpper) return true;
+                                                            // Excluir placas ya usadas en otras rutas
+                                                            return !rutas.some((r, idx) => {
+                                                                if (editingIndex !== null && idx === editingIndex) return false;
+                                                                return String(r.placa).toUpperCase() === placaUpper;
+                                                            });
+                                                        })
+                                                        .map((v) => (
+                                                        <option key={v} value={String(v)}>
+                                                            {String(v)}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             )}
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                Documento Transporte
+                                            </Label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Ej: 8008417408"
+                                                value={currentRoute.doc_tras ?? ''}
+                                                onChange={(e) => handleCurrentRouteFieldChange('doc_tras', e.target.value)}
+                                                className="h-10 mt-1 font-mono"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -1225,12 +1442,17 @@ export default function ModulacionIndex({
                             </div>
 
                             {/* SECCIÓN VIAJES DINÁMICOS CON LUGARES DE NARIÑO Y API */}
-                            <div className="border border-sidebar-border/70 dark:border-sidebar-border rounded-lg p-4 space-y-3">
-                                <div className="flex items-center justify-between border-b pb-2">
-                                    <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                                        <MapPin className="h-4 w-4" style={{ color: ACCENT }} />
-                                        Viajes de la Ruta (Destinos Nariño, Cliente y Peso por Fila)
-                                    </h3>
+                            <div className="border rounded-lg p-4 bg-gray-50/70 dark:bg-gray-900/40 space-y-3">
+                                <div className="flex items-center justify-between border-b pb-2 flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                                            <MapPin className="h-4 w-4 text-red-500" />
+                                            Viajes de la Ruta (Destinos Nariño, Cliente y Peso por Fila)
+                                        </h3>
+                                        <Badge variant="outline" className="font-mono text-xs border-red-300 text-red-700 bg-red-50 dark:bg-red-950/40 dark:text-red-300">
+                                            Fórmula Total Peso: {totalPesoActual} ton
+                                        </Badge>
+                                    </div>
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -1273,8 +1495,23 @@ export default function ModulacionIndex({
                                                 onChange={(val) => handleViajeChange(vIdx, 'lugares', val)}
                                             />
 
+                                            {/* Barrio */}
                                             <div>
-                                                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">
+                                                <Label className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                    Barrio
+                                                </Label>
+                                                <Input
+                                                    type="text"
+                                                    placeholder="Ej: Centro, El Tejar..."
+                                                    value={String(viaje.barrio ?? '')}
+                                                    onChange={(e) => handleViajeChange(vIdx, 'barrio', e.target.value)}
+                                                    className="h-8 text-xs mt-0.5 bg-white"
+                                                />
+                                            </div>
+
+                                            {/* Barrio */}
+                                            <div>
+                                                <Label className="text-[10px] text-gray-500 uppercase font-semibold">
                                                     Cliente (0 - 60)
                                                 </Label>
                                                 <Select
@@ -1298,13 +1535,17 @@ export default function ModulacionIndex({
                                             </div>
 
                                             <div>
-                                                <Label className="text-[10px] text-muted-foreground uppercase font-semibold">
-                                                    Peso (Toneladas)
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label className="text-[10px] text-muted-foreground uppercase font-semibold">
+                                                        Peso (Toneladas)
+                                                    </Label>
+                                                    <span className="text-[10px] text-red-600 font-bold">Máx 10 Ton</span>
+                                                </div>
                                                 <Input
                                                     type="number"
                                                     step="0.01"
                                                     min="0"
+                                                    max="10"
                                                     placeholder="Ej: 1.5"
                                                     value={String(viaje.peso ?? '')}
                                                     onChange={(e) => handleViajeChange(vIdx, 'peso', e.target.value)}
@@ -1318,11 +1559,24 @@ export default function ModulacionIndex({
                         </CardContent>
                     </Card>
 
-                    {/* BOTÓN GUARDAR RUTA INDIVIDUAL */}
-                    <div className="flex justify-end pt-2">
+                    {/* BOTONES RUTA INDIVIDUAL */}
+                    <div className="flex justify-end gap-2 pt-2">
+                        {editingIndex !== null && (
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setCurrentRoute(createEmptyRoute());
+                                    setEditingIndex(null);
+                                }}
+                                className="bg-green-600 hover:bg-green-700 text-white text-sm px-6 py-2 font-semibold shadow-sm"
+                            >
+                                <Plus className="h-4 w-4 mr-1.5" />
+                                Agregar Ruta
+                            </Button>
+                        )}
                         <Button type="submit" className="text-sm px-6 py-2 font-semibold">
                             <Plus className="h-4 w-4 mr-1.5" />
-                            {editingIndex !== null ? 'Actualizar Ruta en Lista' : 'Guardar Ruta'}
+                            {editingIndex !== null ? 'Actualizar Ruta' : 'Guardar Ruta'}
                         </Button>
                     </div>
                 </form>
@@ -1371,15 +1625,17 @@ export default function ModulacionIndex({
                                     <TableRow>
                                         <TableHead className="w-10 text-center">{'#'}</TableHead>
                                         <TableHead className="font-semibold">{'Placa'}</TableHead>
-                                        <TableHead className="font-semibold min-w-[260px]">{'Tripulación'}</TableHead>
-                                        <TableHead className="font-semibold min-w-[320px]">{'Viajes (Lugar, Cliente, Peso)'}</TableHead>
+                                        <TableHead className="font-semibold min-w-[140px]">{'Doc. Transporte'}</TableHead>
+                                        <TableHead className="font-semibold min-w-[220px]">{'Tripulación'}</TableHead>
+                                        <TableHead className="font-semibold min-w-[240px]">{'Colaboradores'}</TableHead>
+                                        <TableHead className="font-semibold min-w-[300px]">{'Viajes (Lugar, Cliente, Peso)'}</TableHead>
                                         <TableHead className="text-right font-semibold w-28">{'Acciones'}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredRutasTable.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                                                 {rutas.length === 0
                                                     ? 'No hay rutas registradas para esta fecha. Complete los campos arriba y presione Guardar Ruta.'
                                                     : 'No hay rutas que coincidan con los filtros aplicados.'}
@@ -1399,31 +1655,80 @@ export default function ModulacionIndex({
                                                         {String(item.placa ?? '')}
                                                     </TableCell>
 
+                                                    {/* DOC. TRANSPORTE */}
+                                                    <TableCell className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                                                        {item.doc_tras ? (
+                                                            <Badge variant="outline" className="font-mono text-xs">
+                                                                {String(item.doc_tras)}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic text-xs">—</span>
+                                                        )}
+                                                    </TableCell>
+
                                                     {/* TRIPULACIÓN */}
                                                     <TableCell className="text-xs">
                                                         {tripMembers.length > 0 ? (
                                                             <div className="space-y-1.5">
-                                                                {tripMembers.map((m, mIdx) => {
-                                                                    const memberIsFijo = fijosColaboradorIds.has(String(m.colaborador_id)) || (m.cedula && fijosColaboradorIds.has(`cedula:${m.cedula.trim()}`));
+                                                                {tripMembers.map((m, mIdx) => (
+                                                                    <div key={`trip-${m.colaborador_id ?? m.cedula}-${mIdx}`} className="p-1.5 rounded border flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800">
+                                                                        <div className="flex items-center gap-1.5 truncate">
+                                                                            <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                                                                                {String(m.cedula ?? 'S/I')}
+                                                                            </Badge>
+                                                                            <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                                                {String(m.nombres ?? 'Sin nombre')}
+                                                                            </span>
+                                                                        </div>
+                                                                        {m.cargo ? (
+                                                                            <span className="text-[10px] text-blue-600 font-medium shrink-0">
+                                                                                {String(m.cargo)}
+                                                                            </span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400">{'-'}</span>
+                                                        )}
+                                                    </TableCell>
+
+                                                    {/* COLABORADORES AGREGADOS */}
+                                                    <TableCell className="text-xs">
+                                                        {novedadesLocal.length > 0 ? (
+                                                            <div className="space-y-1.5">
+                                                                {novedadesLocal.map((nov) => {
+                                                                    const badges: { text: string; color: string }[] = [];
+                                                                    if (nov.fijo_rescate) badges.push({ text: 'FIJO RESCATE', color: 'bg-green-600' });
+                                                                    if (nov.fijo_taller) badges.push({ text: 'FIJO TALLER', color: 'bg-emerald-600' });
+                                                                    if (!nov.fijo_rescate && !nov.fijo_taller && nov.fijo) badges.push({ text: 'FIJO', color: 'bg-green-600' });
+                                                                    if (nov.permiso) badges.push({ text: 'PERMISO', color: 'bg-amber-600' });
+                                                                    if (nov.incapacidad) badges.push({ text: 'INCAPACIDAD', color: 'bg-red-600' });
+                                                                    if (nov.vacaciones) badges.push({ text: 'VACACIONES', color: 'bg-purple-600' });
+
                                                                     return (
-                                                                        <div key={`trip-${m.colaborador_id ?? m.cedula}`} className={`p-1.5 rounded border flex items-center justify-between gap-2 ${memberIsFijo ? 'border-[#0ca30c]/40 bg-[#0ca30c]/10' : 'bg-muted/50'}`}>
+                                                                        <div key={`colab-${nov.id ?? nov.cedula}`} className="p-1.5 rounded border bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 flex items-center justify-between gap-2">
                                                                             <div className="flex items-center gap-1.5 truncate">
-                                                                                <Badge variant="outline" className="font-mono text-[10px] shrink-0">
-                                                                                    {String(m.cedula ?? 'S/I')}
-                                                                                </Badge>
-                                                                                <span className="font-semibold text-foreground truncate">
-                                                                                    {String(m.nombres ?? 'Sin nombre')}
+                                                                                {nov.cedula && (
+                                                                                    <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                                                                                        {String(nov.cedula)}
+                                                                                    </Badge>
+                                                                                )}
+                                                                                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                                                    {String(nov.nombres ?? 'Sin nombre')}
                                                                                 </span>
                                                                             </div>
-                                                                            <div className="flex items-center gap-1 shrink-0">
-                                                                                {m.cargo ? (
-                                                                                    <span className="text-[10px] text-muted-foreground font-medium">
-                                                                                        {String(m.cargo)}
+                                                                            <div className="flex items-center gap-1 shrink-0 flex-wrap">
+                                                                                {nov.cargo ? (
+                                                                                    <span className="text-[10px] text-blue-600 font-medium">
+                                                                                        {String(nov.cargo)}
                                                                                     </span>
                                                                                 ) : null}
-                                                                                {memberIsFijo ? (
-                                                                                    <Badge className="text-[9px] px-1 py-0" style={{ backgroundColor: SUCCESS, color: '#fff' }}>FIJO</Badge>
-                                                                                ) : null}
+                                                                                {badges.map((b, bIdx) => (
+                                                                                    <Badge key={bIdx} className={`text-[9px] px-1 py-0 ${b.color} text-white`}>
+                                                                                        {b.text}
+                                                                                    </Badge>
+                                                                                ))}
                                                                             </div>
                                                                         </div>
                                                                     );
@@ -1446,6 +1751,7 @@ export default function ModulacionIndex({
                                                                         <div className="text-[11px] text-muted-foreground">
                                                                             <span className="font-semibold">{'Lugar: '}</span>
                                                                             {v.lugares ? `Nariño - ${v.lugares}` : '-'}
+                                                                            {v.barrio ? ` · Barrio: ${v.barrio}` : ''}
                                                                         </div>
                                                                         <div className="text-[11px] text-muted-foreground">
                                                                             <span className="font-semibold">{'Cliente: '}</span>
@@ -1501,8 +1807,8 @@ export default function ModulacionIndex({
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-muted-foreground" />
-                            {'Tabla 2: Novedades de Colaboradores Agregados'}
+                            <Users className="h-5 w-5 text-blue-600" />
+                            {'Agregar Colaboradores'}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1564,18 +1870,32 @@ export default function ModulacionIndex({
                                     </div>
                                 </div>
 
-                                {/* CHECKBOX FIJO */}
-                                <div className="flex items-center gap-2 p-2 rounded-md border border-[#0ca30c]/30 bg-[#0ca30c]/10">
-                                    <Checkbox
-                                        id="nuevo-fijo"
-                                        checked={nuevaNovedad.fijo}
-                                        onCheckedChange={(checked) =>
-                                            setNuevaNovedad((prev) => ({ ...prev, fijo: Boolean(checked) }))
-                                        }
-                                    />
-                                    <label htmlFor="nuevo-fijo" className="text-xs font-semibold cursor-pointer" style={{ color: SUCCESS }}>
-                                        FIJO (aparece en todas las rutas)
-                                    </label>
+                                {/* CHECKBOXES FIJO RESCATE / FIJO TALLER */}
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200">
+                                        <Checkbox
+                                            id="nuevo-fijo-rescate"
+                                            checked={nuevaNovedad.fijo_rescate}
+                                            onCheckedChange={(checked) =>
+                                                setNuevaNovedad((prev) => ({ ...prev, fijo_rescate: Boolean(checked) }))
+                                            }
+                                        />
+                                        <label htmlFor="nuevo-fijo-rescate" className="text-xs font-semibold text-green-800 dark:text-green-300 cursor-pointer">
+                                            Fijo Rescate (aparece en todas las rutas)
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-md border border-emerald-200">
+                                        <Checkbox
+                                            id="nuevo-fijo-taller"
+                                            checked={nuevaNovedad.fijo_taller}
+                                            onCheckedChange={(checked) =>
+                                                setNuevaNovedad((prev) => ({ ...prev, fijo_taller: Boolean(checked) }))
+                                            }
+                                        />
+                                        <label htmlFor="nuevo-fijo-taller" className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 cursor-pointer">
+                                            Fijo Taller (aparece en todas las rutas)
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -1599,7 +1919,8 @@ export default function ModulacionIndex({
                                         <TableHead className="font-semibold">{'Identificación'}</TableHead>
                                         <TableHead className="font-semibold">{'Nombres'}</TableHead>
                                         <TableHead className="font-semibold">{'Cargo'}</TableHead>
-                                        <TableHead className="text-center font-semibold">{'Fijos'}</TableHead>
+                                        <TableHead className="text-center font-semibold">{'Fijo Rescate'}</TableHead>
+                                        <TableHead className="text-center font-semibold">{'Fijo Taller'}</TableHead>
                                         <TableHead className="text-center font-semibold">{'Permiso'}</TableHead>
                                         <TableHead className="text-center font-semibold">{'Incapacidad'}</TableHead>
                                         <TableHead className="text-center font-semibold">{'Vacaciones'}</TableHead>
@@ -1607,78 +1928,84 @@ export default function ModulacionIndex({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {!modulacion?.novedades || modulacion.novedades.length === 0 ? (
+                                    {novedadesLocal.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                            <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                                                 {'No hay colaboradores agregados en novedades para esta fecha. Utilice el formulario arriba para agregar uno.'}
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        modulacion.novedades.map((nov) => {
-                                            const rowState = novedadesState[nov.id] || nov;
-                                            return (
-                                                <TableRow key={nov.id} className={`hover:bg-muted/50 ${rowState.fijo ? 'bg-[#0ca30c]/5' : ''}`}>
-                                                    <TableCell className="font-mono text-sm">{String(nov.cedula ?? '-')}</TableCell>
-                                                    <TableCell className="font-medium text-sm">{String(nov.nombres ?? '-')}</TableCell>
-                                                    <TableCell className="text-sm text-muted-foreground">
-                                                        {String(nov.cargo ?? '-')}
-                                                    </TableCell>
+                                        novedadesLocal.map((nov) => (
+                                            <TableRow key={nov.id} className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/40 ${(nov.fijo || nov.fijo_rescate || nov.fijo_taller) ? 'bg-green-50/50 dark:bg-green-950/20' : ''}`}>
+                                                <TableCell className="font-mono text-sm">{String(nov.cedula ?? '-')}</TableCell>
+                                                <TableCell className="font-medium text-sm">{String(nov.nombres ?? '-')}</TableCell>
+                                                <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {String(nov.cargo ?? '-')}
+                                                </TableCell>
 
-                                                    {/* Fijos */}
-                                                    <TableCell className="text-center">
-                                                        <Checkbox
-                                                            checked={Boolean(rowState.fijo)}
-                                                            onCheckedChange={(checked) =>
-                                                                handleNovedadChange(nov.id, 'fijo', Boolean(checked))
-                                                            }
-                                                        />
-                                                    </TableCell>
+                                                 {/* Fijo Rescate */}
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={Boolean(nov.fijo_rescate)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleNovedadChange(nov.id, 'fijo_rescate', Boolean(checked))
+                                                        }
+                                                    />
+                                                </TableCell>
 
-                                                    {/* Permiso */}
-                                                    <TableCell className="text-center">
-                                                        <Checkbox
-                                                            checked={Boolean(rowState.permiso)}
-                                                            onCheckedChange={(checked) =>
-                                                                handleNovedadChange(nov.id, 'permiso', Boolean(checked))
-                                                            }
-                                                        />
-                                                    </TableCell>
+                                                {/* Fijo Taller */}
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={Boolean(nov.fijo_taller)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleNovedadChange(nov.id, 'fijo_taller', Boolean(checked))
+                                                        }
+                                                    />
+                                                </TableCell>
 
-                                                    {/* Incapacidad */}
-                                                    <TableCell className="text-center">
-                                                        <Checkbox
-                                                            checked={Boolean(rowState.incapacidad)}
-                                                            onCheckedChange={(checked) =>
-                                                                handleNovedadChange(nov.id, 'incapacidad', Boolean(checked))
-                                                            }
-                                                        />
-                                                    </TableCell>
+                                                {/* Permiso */}
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={Boolean(nov.permiso)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleNovedadChange(nov.id, 'permiso', Boolean(checked))
+                                                        }
+                                                    />
+                                                </TableCell>
 
-                                                    {/* Vacaciones */}
-                                                    <TableCell className="text-center">
-                                                        <Checkbox
-                                                            checked={Boolean(rowState.vacaciones)}
-                                                            onCheckedChange={(checked) =>
-                                                                handleNovedadChange(nov.id, 'vacaciones', Boolean(checked))
-                                                            }
-                                                        />
-                                                    </TableCell>
+                                                {/* Incapacidad */}
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={Boolean(nov.incapacidad)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleNovedadChange(nov.id, 'incapacidad', Boolean(checked))
+                                                        }
+                                                    />
+                                                </TableCell>
 
-                                                    {/* Acciones */}
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            onClick={() => handleDeleteNovedad(nov.id)}
-                                                            className="h-7 w-7"
-                                                            aria-label="Eliminar novedad"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
+                                                {/* Vacaciones */}
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={Boolean(nov.vacaciones)}
+                                                        onCheckedChange={(checked) =>
+                                                            handleNovedadChange(nov.id, 'vacaciones', Boolean(checked))
+                                                        }
+                                                    />
+                                                </TableCell>
+
+                                                {/* Acciones */}
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleDeleteNovedad(nov.id)}
+                                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
                                     )}
                                 </TableBody>
                             </Table>
