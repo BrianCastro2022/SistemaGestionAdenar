@@ -1,4 +1,13 @@
-export type TipoPregunta = 'si_no' | 'si_no_detalle' | 'aplica_detalle' | 'texto_libre';
+export type TipoPregunta =
+    | 'si_no'
+    | 'si_no_detalle'
+    | 'aplica_detalle'
+    | 'texto_libre'
+    | 'numero'                 // campo numérico (peso, talla)
+    | 'checkbox_multiple'      // selección múltiple con opción "Otro"
+    | 'mano_dominante'         // radio: Derecha / Izquierda
+    | 'actividades_salud'      // checkbox múltiple de actividades (igual que checkbox_multiple)
+    | 'segmento_corporal';     // tabla frecuencia + severidad por segmento corporal
 
 export interface PreguntaCatalogo {
     texto: string;
