@@ -128,19 +128,19 @@ class Colaborador extends Model
     {
         return [
             'is_active' => 'boolean',
-            'fecha_nacimiento' => 'date',
-            'fecha_ultima_laboral' => 'date',
+            'fecha_nacimiento' => 'date:Y-m-d',
+            'fecha_ultima_laboral' => 'date:Y-m-d',
             'anios_experiencia' => 'integer',
             'wizard_step' => 'integer',
             'sena_numero_grupo' => 'integer',
-            'fecha_ingreso_empresa' => 'date',
-            'fecha_retiro_empresa' => 'date',
-            'contrato_fecha_desde' => 'date',
-            'contrato_fecha_hasta' => 'date',
-            'vacaciones_fecha_desde' => 'date',
-            'vacaciones_fecha_hasta' => 'date',
-            'vacaciones_pagadas_fecha_desde' => 'date',
-            'vacaciones_pagadas_fecha_hasta' => 'date',
+            'fecha_ingreso_empresa' => 'date:Y-m-d',
+            'fecha_retiro_empresa' => 'date:Y-m-d',
+            'contrato_fecha_desde' => 'date:Y-m-d',
+            'contrato_fecha_hasta' => 'date:Y-m-d',
+            'vacaciones_fecha_desde' => 'date:Y-m-d',
+            'vacaciones_fecha_hasta' => 'date:Y-m-d',
+            'vacaciones_pagadas_fecha_desde' => 'date:Y-m-d',
+            'vacaciones_pagadas_fecha_hasta' => 'date:Y-m-d',
         ];
     }
 

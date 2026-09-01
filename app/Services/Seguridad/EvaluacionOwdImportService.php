@@ -16,19 +16,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Throwable;
 
-/**
- * Carga masiva de Evaluaciones de Seguridad OWD (HU-030/031), hoja "Data
- * OWD". Cada fila del Excel es una pregunta/tarea evaluada; varias filas
- * comparten evaluador+evaluado+fecha y forman una sola "evaluación"
- * (encabezado) — por eso el import resuelve/crea primero el encabezado
- * (`evaluaciones_owd`) y luego cuelga cada fila como `evaluacion_owd_preguntas`
- * de ese encabezado (HU-030, requisito 11: "mantener la relación entre una
- * evaluación y sus múltiples preguntas").
- *
- * Igual que ACI, las columnas se resuelven por el texto del encabezado (no
- * por letra fija) y cualquier columna nueva no reconocida cae en
- * `datos_adicionales` en vez de perderse (HU-030, requisitos 4 y 5).
- */
+
 class EvaluacionOwdImportService
 {
     use NormalizaCatalogos;
@@ -61,11 +49,7 @@ class EvaluacionOwdImportService
         'VERSION' => 'version',
     ];
 
-    /**
-     * Campos que pertenecen al encabezado de la evaluación (se repiten en
-     * todas las filas de una misma evaluación); el resto son propios de la
-     * pregunta/tarea.
-     */
+    
     private const CAMPOS_CABECERA = [
         'bu', 'pais', 'region', 'uen', 'id_agencia', 'agencia',
         'evaluador', 'posicion_evaluador', 'qr_safety_evaluador', 'sharp_evaluador',
@@ -73,18 +57,7 @@ class EvaluacionOwdImportService
         'fecha_evaluacion', 'type', 'pillar',
     ];
 
-    /**
-     * @param  array<string, string>  $rutasArchivos  Ruta temporal => nombre original del archivo.
-     * @return array{
-     *     archivos_procesados: int,
-     *     registros_leidos: int,
-     *     evaluaciones_identificadas: int,
-     *     nuevos: int,
-     *     duplicados: int,
-     *     sin_coincidencia_qr: int,
-     *     errores: int,
-     * }
-     */
+ 
     public function importar(array $rutasArchivos, ?User $usuario = null): array
     {
         $resultado = [
@@ -375,16 +348,22 @@ class EvaluacionOwdImportService
             return null;
         }
 
-        foreach (['Y-m-d H:i:s', 'd/m/Y H:i:s', 'd/m/Y H:i'] as $formato) {
+        $valorNorm = preg_replace('/\s*a\.\s*m\.\s*/i', ' AM ', $valor);
+        $valorNorm = preg_replace('/\s*p\.\s*m\.\s*/i', ' PM ', $valorNorm);
+        $valorNorm = preg_replace('/\s*a\.\s*m\s*/i', ' AM ', $valorNorm);
+        $valorNorm = preg_replace('/\s*p\.\s*m\s*/i', ' PM ', $valorNorm);
+        $valorNorm = preg_replace('/\s+/', ' ', trim($valorNorm));
+
+        foreach (['Y-m-d H:i:s', 'd/m/Y H:i:s', 'd/m/Y H:i', 'd/m/Y h:i:s A', 'd/m/Y g:i:s A'] as $formato) {
             try {
-                return Carbon::createFromFormat($formato, $valor)->toDateTimeString();
+                return Carbon::createFromFormat($formato, $valorNorm)->toDateTimeString();
             } catch (Throwable) {
                 continue;
             }
         }
 
         try {
-            return Carbon::parse($valor)->toDateTimeString();
+            return Carbon::parse($valorNorm)->toDateTimeString();
         } catch (Throwable) {
             return null;
         }

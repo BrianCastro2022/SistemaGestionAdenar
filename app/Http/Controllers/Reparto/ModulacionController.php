@@ -36,6 +36,83 @@ class ModulacionController extends Controller
             ->where('fecha', $fecha)
             ->first();
 
+        // Pre-cargar colaboradores fijos (fijo_rescate o fijo_taller) si no existen aún en esta planeación
+        if ($modulacion) {
+            $ultimaFecha = Modulacion::whereHas('novedades', function ($q) {
+                    $q->where('fijo_rescate', true)->orWhere('fijo_taller', true);
+                })
+                ->where('fecha', '<', $fecha)
+                ->orderByDesc('fecha')
+                ->value('fecha');
+
+            if ($ultimaFecha) {
+                $ultimaModulacion = Modulacion::with('novedades')
+                    ->where('fecha', $ultimaFecha)
+                    ->first();
+
+                if ($ultimaModulacion) {
+                    $fijosAnteriores = $ultimaModulacion->novedades
+                        ->filter(fn($n) => $n->fijo_rescate || $n->fijo_taller);
+
+                    foreach ($fijosAnteriores as $fijo) {
+                        // Verificar si este colaborador ya existe en la planeación actual
+                        $existe = $modulacion->novedades()
+                            ->where(function ($q) use ($fijo) {
+                                if ($fijo->colaborador_id) {
+                                    $q->where('colaborador_id', $fijo->colaborador_id);
+                                } else {
+                                    $q->where('cedula', $fijo->cedula);
+                                }
+                            })
+                            ->exists();
+
+                        // Si no existe, crear la novedad con los fijos
+                        if (!$existe) {
+                            $modulacion->novedades()->create([
+                                'colaborador_id' => $fijo->colaborador_id,
+                                'cedula'         => $fijo->cedula,
+                                'nombres'        => $fijo->nombres,
+                                'cargo'          => $fijo->cargo,
+                                'fijo'           => true,
+                                'fijo_rescate'   => $fijo->fijo_rescate,
+                                'fijo_taller'    => $fijo->fijo_taller,
+                                'permiso'        => false,
+                                'incapacidad'    => false,
+                                'vacaciones'     => false,
+                            ]);
+                        }
+                    }
+                    // Recargar novedades
+                    $modulacion->load('novedades');
+                }
+            }
+        } elseif (!$modulacion) {
+            // No hay planeación para esta fecha — buscar fijos de la última planeación anterior
+            // para mostrarlos pre-cargados en "Agregar Colaboradores"
+        }
+
+        // Fijos para precarga cuando no hay modulacion aún
+        $fijosIniciales = [];
+        if (!$modulacion) {
+            $ultimaFechaFijos = Modulacion::whereHas('novedades', function ($q) {
+                    $q->where('fijo_rescate', true)->orWhere('fijo_taller', true);
+                })
+                ->where('fecha', '<', $fecha)
+                ->orderByDesc('fecha')
+                ->value('fecha');
+
+            if ($ultimaFechaFijos) {
+                $fijosIniciales = ModulacionNovedad::whereHas('modulacion', function ($q) use ($ultimaFechaFijos) {
+                        $q->where('fecha', $ultimaFechaFijos);
+                    })
+                    ->where(function ($q) {
+                        $q->where('fijo_rescate', true)->orWhere('fijo_taller', true);
+                    })
+                    ->get(['colaborador_id', 'cedula', 'nombres', 'cargo', 'fijo_rescate', 'fijo_taller'])
+                    ->toArray();
+            }
+        }
+
         $colaboradores = Colaborador::select(['id', 'cedula', 'nombres', 'apellidos', 'cargo'])
             ->where('is_active', true)
             ->orderBy('nombres')
@@ -65,30 +142,79 @@ class ModulacionController extends Controller
         $readOnly = $request->boolean('readOnly', false);
 
         return Inertia::render('reparto/modulacion/index', [
-            'fecha' => (string) $fecha,
-            'modulacion' => $modulacion,
-            'colaboradores' => $colaboradores,
-            'cargos' => $cargos,
-            'vehiculos' => $vehiculos,
-            'currentUser' => $currentUser,
-            'readOnly' => $readOnly,
+            'fecha'          => $fecha,
+            'modulacion'     => $modulacion,
+            'fijosIniciales' => $fijosIniciales,
+            'colaboradores'  => $colaboradores,
+            'cargos'         => $cargos,
+            'vehiculos'      => $vehiculos,
+            'currentUser'    => $request->user()?->name ?? 'Usuario',
+            'readOnly'       => $request->boolean('readOnly', false),
+        ]);
+    }
+
+    public function checkFecha(Request $request)
+    {
+        $this->ensureFijoColumnExists();
+        $fecha = trim((string)$request->input('fecha', date('Y-m-d')));
+
+        $modulacion = Modulacion::with(['items', 'novedades'])
+            ->whereDate('fecha', $fecha)
+            ->first();
+
+        $fijosIniciales = [];
+        if (!$modulacion) {
+            $ultimaFechaFijos = Modulacion::whereHas('novedades', function ($q) {
+                    $q->where('fijo_rescate', true)->orWhere('fijo_taller', true);
+                })
+                ->whereDate('fecha', '<', $fecha)
+                ->orderByDesc('fecha')
+                ->value('fecha');
+
+            if ($ultimaFechaFijos) {
+                $fijosIniciales = ModulacionNovedad::whereHas('modulacion', function ($q) use ($ultimaFechaFijos) {
+                        $q->whereDate('fecha', $ultimaFechaFijos);
+                    })
+                    ->where(function ($q) {
+                        $q->where('fijo_rescate', true)->orWhere('fijo_taller', true);
+                    })
+                    ->get(['colaborador_id', 'cedula', 'nombres', 'cargo', 'fijo_rescate', 'fijo_taller'])
+                    ->toArray();
+            }
+        }
+
+        return response()->json([
+            'exists'         => (bool)$modulacion,
+            'modulacion'     => $modulacion,
+            'fijosIniciales' => $fijosIniciales,
         ]);
     }
 
     public function historial(Request $request): Response
     {
-        $search = $request->input('search', '');
+        $fechaDesde = $request->input('fecha_desde', '');
+        $fechaHasta = $request->input('fecha_hasta', '');
+        $placa = $request->input('placa', '');
         $perPage = 20;
 
         $query = Modulacion::withCount('items')
-            ->with(['novedades'])
+            ->with(['items', 'novedades'])
             ->orderBy('fecha', 'desc');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('fecha', 'like', "%{$search}%")
-                  ->orWhere('ud_programado_por', 'like', "%{$search}%")
-                  ->orWhere('despachado_por_nombre', 'like', "%{$search}%");
+        // Filtro por fecha desde
+        if ($fechaDesde) {
+            $query->whereDate('fecha', '>=', $fechaDesde);
+        }
+
+        // Filtro por fecha hasta
+        if ($fechaHasta) {
+            $query->whereDate('fecha', '<=', $fechaHasta);
+        }
+
+        // Filtro por placa (busca en items)
+        if ($placa) {
+            $query->whereHas('items', function ($q) use ($placa) {
+                $q->where('placa', strtoupper($placa));
             });
         }
 
@@ -96,7 +222,7 @@ class ModulacionController extends Controller
 
         // Enriquecer cada modulación con resumen de placas y colaboradores
         $planeaciones->getCollection()->transform(function (Modulacion $mod) {
-            $items = $mod->load('items')->items;
+            $items = $mod->items;
             $placas = $items->pluck('placa')->filter()->unique()->values();
             $totalTripulantes = $items->sum(function ($item) {
                 return count($item->tripulacion ?? []);
@@ -116,7 +242,11 @@ class ModulacionController extends Controller
 
         return Inertia::render('reparto/modulacion/historial', [
             'planeaciones' => $planeaciones,
-            'filters'      => ['search' => $search],
+            'filters'      => [
+                'fecha_desde' => $fechaDesde,
+                'fecha_hasta' => $fechaHasta,
+                'placa' => $placa,
+            ],
         ]);
     }
 
@@ -126,6 +256,7 @@ class ModulacionController extends Controller
 
         $validated = $request->validate([
             'fecha' => 'required|string|max:255',
+            'modulacion_id' => 'nullable|integer|exists:modulaciones,id',
             'ud_programado_por' => 'nullable|string|max:255',
             'despachado_por_colaborador_id' => 'nullable|exists:colaboradores,id',
             'despachado_por_nombre' => 'nullable|string|max:255',
@@ -146,13 +277,41 @@ class ModulacionController extends Controller
             'rutas.*.viajes.*.peso' => 'nullable|string|max:100',
             'novedades' => 'nullable|array',
             'novedades.*.id' => 'nullable|integer',
+            'novedades.*.colaborador_id' => 'nullable|integer',
+            'novedades.*.cedula' => 'nullable|string|max:50',
+            'novedades.*.nombres' => 'nullable|string|max:255',
+            'novedades.*.cargo' => 'nullable|string|max:100',
             'novedades.*.fijo' => 'nullable|boolean',
+            'novedades.*.fijo_rescate' => 'nullable|boolean',
+            'novedades.*.fijo_taller' => 'nullable|boolean',
             'novedades.*.permiso' => 'nullable|boolean',
             'novedades.*.incapacidad' => 'nullable|boolean',
             'novedades.*.vacaciones' => 'nullable|boolean',
         ]);
 
         // Verificar que ningún colaborador esté asignado a más de una ruta en la misma fecha
+        // Construir conjunto de colaboradores fijos desde el payload (incluye nuevos pendientes)
+        $fijosIds    = [];
+        $fijosCedulas = [];
+        foreach ($validated['novedades'] ?? [] as $nov) {
+            $esFijo = !empty($nov['fijo_rescate']) || !empty($nov['fijo_taller']) || !empty($nov['fijo']);
+            if (!$esFijo) continue;
+            if (!empty($nov['colaborador_id'])) $fijosIds[]    = (string) $nov['colaborador_id'];
+            if (!empty($nov['cedula']))          $fijosCedulas[] = trim($nov['cedula']);
+        }
+        // También incluir fijos que ya existan en BD para la misma modulacion_id
+        if (!empty($validated['modulacion_id'])) {
+            $fijosBD = ModulacionNovedad::where('modulacion_id', $validated['modulacion_id'])
+                ->where('fijo', true)
+                ->get(['colaborador_id', 'cedula']);
+            foreach ($fijosBD as $f) {
+                if ($f->colaborador_id) $fijosIds[]    = (string) $f->colaborador_id;
+                if ($f->cedula)         $fijosCedulas[] = trim($f->cedula);
+            }
+        }
+        $fijosIds    = array_unique($fijosIds);
+        $fijosCedulas = array_unique($fijosCedulas);
+
         $assignedCollaboratorIds = [];
         $assignedCedulas = [];
 
@@ -160,27 +319,19 @@ class ModulacionController extends Controller
             $tripulacion = $ruta['tripulacion'] ?? [];
             foreach ($tripulacion as $miembro) {
                 $colId = !empty($miembro['colaborador_id']) ? (string)$miembro['colaborador_id'] : null;
-                $ced = !empty($miembro['cedula']) ? trim($miembro['cedula']) : null;
-                $nom = $miembro['nombres'] ?? 'Colaborador';
+                $ced   = !empty($miembro['cedula']) ? trim($miembro['cedula']) : null;
+                $nom   = $miembro['nombres'] ?? 'Colaborador';
 
-                // Si no es un colaborador fijo de la fecha, verificar duplicación
+                // Verificar duplicado solo si NO es fijo
                 if ($colId && in_array($colId, $assignedCollaboratorIds, true)) {
-                    $isFijo = ModulacionNovedad::whereHas('modulacion', function($q) use ($validated) {
-                        $q->where('fecha', $validated['fecha']);
-                    })->where('colaborador_id', $colId)->where('fijo', true)->exists();
-
-                    if (!$isFijo) {
+                    if (!in_array($colId, $fijosIds, true)) {
                         return redirect()->back()->withErrors([
                             'rutas' => "El colaborador '{$nom}' ya se encuentra programado en otra ruta para la fecha {$validated['fecha']}.",
                         ]);
                     }
                 }
                 if ($ced && in_array($ced, $assignedCedulas, true)) {
-                    $isFijo = ModulacionNovedad::whereHas('modulacion', function($q) use ($validated) {
-                        $q->where('fecha', $validated['fecha']);
-                    })->where('cedula', $ced)->where('fijo', true)->exists();
-
-                    if (!$isFijo) {
+                    if (!in_array($ced, $fijosCedulas, true)) {
                         return redirect()->back()->withErrors([
                             'rutas' => "El colaborador con cédula '{$ced}' ({$nom}) ya se encuentra programado en otra ruta para la fecha {$validated['fecha']}.",
                         ]);
@@ -188,25 +339,36 @@ class ModulacionController extends Controller
                 }
 
                 if ($colId) $assignedCollaboratorIds[] = $colId;
-                if ($ced) $assignedCedulas[] = $ced;
+                if ($ced)   $assignedCedulas[]         = $ced;
             }
         }
 
-        $modulacion = Modulacion::firstOrCreate(
-            ['fecha' => $validated['fecha']],
-            [
-                'ud_programado_por' => $validated['ud_programado_por'] ?? null,
-                'despachado_por_colaborador_id' => $validated['despachado_por_colaborador_id'] ?? null,
-                'despachado_por_nombre' => $validated['despachado_por_nombre'] ?? null,
-                'user_id' => $request->user()?->id,
-            ]
-        );
-
-        $modulacion->update([
-            'ud_programado_por' => $validated['ud_programado_por'] ?? $modulacion->ud_programado_por,
-            'despachado_por_colaborador_id' => $validated['despachado_por_colaborador_id'] ?? $modulacion->despachado_por_colaborador_id,
-            'despachado_por_nombre' => $validated['despachado_por_nombre'] ?? $modulacion->despachado_por_nombre,
-        ]);
+        // Obtener o crear la planeación
+        // Si viene modulacion_id, actualizar esa planeación (incluyendo su fecha si cambió)
+        if (!empty($validated['modulacion_id'])) {
+            $modulacion = Modulacion::findOrFail($validated['modulacion_id']);
+            $modulacion->update([
+                'fecha'                        => $validated['fecha'],
+                'ud_programado_por'            => $validated['ud_programado_por'] ?? $modulacion->ud_programado_por,
+                'despachado_por_colaborador_id'=> $validated['despachado_por_colaborador_id'] ?? $modulacion->despachado_por_colaborador_id,
+                'despachado_por_nombre'        => $validated['despachado_por_nombre'] ?? $modulacion->despachado_por_nombre,
+            ]);
+        } else {
+            $modulacion = Modulacion::firstOrCreate(
+                ['fecha' => $validated['fecha']],
+                [
+                    'ud_programado_por'             => $validated['ud_programado_por'] ?? null,
+                    'despachado_por_colaborador_id' => $validated['despachado_por_colaborador_id'] ?? null,
+                    'despachado_por_nombre'         => $validated['despachado_por_nombre'] ?? null,
+                    'user_id'                       => $request->user()?->id,
+                ]
+            );
+            $modulacion->update([
+                'ud_programado_por'             => $validated['ud_programado_por'] ?? $modulacion->ud_programado_por,
+                'despachado_por_colaborador_id' => $validated['despachado_por_colaborador_id'] ?? $modulacion->despachado_por_colaborador_id,
+                'despachado_por_nombre'         => $validated['despachado_por_nombre'] ?? $modulacion->despachado_por_nombre,
+            ]);
+        }
 
         // Reemplazar o guardar rutas de modulación
         $modulacion->items()->delete();
@@ -232,26 +394,65 @@ class ModulacionController extends Controller
         // Actualizar novedades si fueron enviadas en el lote
         if (!empty($validated['novedades'])) {
             foreach ($validated['novedades'] as $novItem) {
+                $fijoRescate = !empty($novItem['fijo_rescate']);
+                $fijoTaller  = !empty($novItem['fijo_taller']);
+                $campos = [
+                    'fijo_rescate' => $fijoRescate,
+                    'fijo_taller'  => $fijoTaller,
+                    'fijo'         => $fijoRescate || $fijoTaller,
+                    'permiso'      => !empty($novItem['permiso']),
+                    'incapacidad'  => !empty($novItem['incapacidad']),
+                    'vacaciones'   => !empty($novItem['vacaciones']),
+                ];
+
                 if (!empty($novItem['id'])) {
-                    ModulacionNovedad::where('id', $novItem['id'])->update([
-                        'fijo' => !empty($novItem['fijo']),
-                        'permiso' => !empty($novItem['permiso']),
-                        'incapacidad' => !empty($novItem['incapacidad']),
-                        'vacaciones' => !empty($novItem['vacaciones']),
-                    ]);
+                    // Novedad existente → actualizar checkboxes
+                    ModulacionNovedad::where('id', $novItem['id'])->update($campos);
+                } else {
+                    // Novedad nueva (pendiente) → crear en BD
+                    ModulacionNovedad::create(array_merge($campos, [
+                        'modulacion_id' => $modulacion->id,
+                        'colaborador_id' => $novItem['colaborador_id'] ?? null,
+                        'cedula'        => $novItem['cedula'] ?? null,
+                        'nombres'       => $novItem['nombres'] ?? null,
+                        'cargo'         => $novItem['cargo'] ?? null,
+                    ]));
                 }
             }
         }
 
-        return redirect()->back()->with('success', 'Planeación de ruta guardada exitosamente.');
+        return redirect()
+            ->route('reparto.modulacion.index', ['fecha' => $modulacion->fecha])
+            ->with('success', 'Planeación de ruta guardada exitosamente.');
     }
 
     public function destroyItem(int $id): RedirectResponse
     {
         $item = ModulacionItem::findOrFail($id);
+        $modulacionId = $item->modulacion_id;
         $item->delete();
 
+        // Si no quedan ítems, eliminar la planeación completa
+        $modulacion = Modulacion::withCount('items')->find($modulacionId);
+        if ($modulacion && $modulacion->items_count === 0) {
+            $modulacion->novedades()->delete();
+            $modulacion->delete();
+            return redirect()->route('reparto.modulacion.historial')
+                ->with('success', 'Planeación eliminada porque no tiene rutas.');
+        }
+
         return redirect()->back()->with('success', 'Ruta eliminada de la modulación.');
+    }
+
+    public function destroyModulacion(int $id): RedirectResponse
+    {
+        $modulacion = Modulacion::findOrFail($id);
+        $modulacion->items()->delete();
+        $modulacion->novedades()->delete();
+        $modulacion->delete();
+
+        return redirect()->route('reparto.modulacion.historial')
+            ->with('success', 'Planeación de ruta eliminada exitosamente.');
     }
 
     public function storeNovedad(Request $request): RedirectResponse
@@ -265,6 +466,8 @@ class ModulacionController extends Controller
             'nombres' => 'nullable|string|max:255',
             'cargo' => 'nullable|string|max:100',
             'fijo' => 'nullable|boolean',
+            'fijo_rescate' => 'nullable|boolean',
+            'fijo_taller' => 'nullable|boolean',
             'permiso' => 'nullable|boolean',
             'incapacidad' => 'nullable|boolean',
             'vacaciones' => 'nullable|boolean',
@@ -280,7 +483,9 @@ class ModulacionController extends Controller
             'cedula' => $validated['cedula'] ?? null,
             'nombres' => $validated['nombres'] ?? null,
             'cargo' => $validated['cargo'] ?? null,
-            'fijo' => !empty($validated['fijo']),
+            'fijo'        => !empty($validated['fijo']) || !empty($validated['fijo_rescate']) || !empty($validated['fijo_taller']),
+            'fijo_rescate' => !empty($validated['fijo_rescate']),
+            'fijo_taller'  => !empty($validated['fijo_taller']),
             'permiso' => !empty($validated['permiso']),
             'incapacidad' => !empty($validated['incapacidad']),
             'vacaciones' => !empty($validated['vacaciones']),

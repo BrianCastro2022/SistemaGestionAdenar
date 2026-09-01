@@ -2,12 +2,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CalendarDays, Eye, FileText, Search, Truck, Users } from 'lucide-react';
-import { useState } from 'react';
+import { CalendarDays, Eye, FileText, Search, Trash2, Truck, Users, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reparto', href: '/modules/reparto/modulacion' },
@@ -44,24 +46,66 @@ interface Paginator {
 
 interface Props {
     planeaciones: Paginator;
-    filters: { search: string };
+    filters: { 
+        fecha_desde: string;
+        fecha_hasta: string;
+        placa: string;
+    };
 }
 
-export default function HistorialModulacion({ planeaciones, filters }: Props) {
-    const [search, setSearch] = useState(filters.search ?? '');
+type Filters = {
+    fecha_desde: string;
+    fecha_hasta: string;
+    placa: string;
+};
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+export default function HistorialModulacion({ planeaciones, filters }: Props) {
+    const [fechaDesde, setFechaDesde] = useState(filters.fecha_desde ?? '');
+    const [fechaHasta, setFechaHasta] = useState(filters.fecha_hasta ?? '');
+    const [placa, setPlaca] = useState(filters.placa ?? '');
+
+    const debouncedFechaDesde = useDebouncedValue(fechaDesde);
+    const debouncedFechaHasta = useDebouncedValue(fechaHasta);
+    const debouncedPlaca = useDebouncedValue(placa);
+
+    const isFirstRender = useRef(true);
+
+    const applyFilters = (overrides: Partial<Filters>) => {
         router.get(
             route('reparto.modulacion.historial'),
-            { search },
-            { preserveState: true, preserveScroll: true }
+            {
+                fecha_desde: overrides.fecha_desde ?? debouncedFechaDesde,
+                fecha_hasta: overrides.fecha_hasta ?? debouncedFechaHasta,
+                placa: overrides.placa ?? debouncedPlaca,
+            },
+            { preserveState: true, preserveScroll: true, replace: true }
         );
     };
 
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        applyFilters({});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedFechaDesde, debouncedFechaHasta, debouncedPlaca]);
+
     const handleClear = () => {
-        setSearch('');
+        setFechaDesde('');
+        setFechaHasta('');
+        setPlaca('');
         router.get(route('reparto.modulacion.historial'), {}, { preserveState: false });
+    };
+
+    const handleDeleteModulacion = (id: number, fecha: string) => {
+        if (confirm(`¿Está seguro de eliminar la planeación del ${formatFecha(fecha)}? Esta acción no se puede deshacer.`)) {
+            router.delete(route('reparto.modulacion.destroy', id), {
+                onSuccess: () => {
+                    router.get(route('reparto.modulacion.historial'), {}, { preserveState: false });
+                },
+            });
+        }
     };
 
     // Formatea fecha YYYY-MM-DD → DD/MM/YYYY
@@ -75,6 +119,8 @@ export default function HistorialModulacion({ planeaciones, filters }: Props) {
         const date = new Date(fecha + 'T12:00:00');
         return date.toLocaleDateString('es-CO', { weekday: 'long' });
     };
+
+    const hasActiveFilters = fechaDesde || fechaHasta || placa;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -100,30 +146,62 @@ export default function HistorialModulacion({ planeaciones, filters }: Props) {
                     </Link>
                 </div>
 
-                {/* Buscador */}
+                {/* Filtros */}
                 <Card className="shadow-sm border bg-white dark:bg-gray-900">
                     <CardContent className="pt-4">
-                        <form onSubmit={handleSearch} className="flex gap-2 items-center">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                            <div className="grid gap-1">
+                                <Label className="text-xs font-semibold uppercase text-gray-600">
+                                    <CalendarDays className="h-3 w-3 inline mr-1" />
+                                    Fecha desde
+                                </Label>
                                 <Input
-                                    type="text"
-                                    placeholder="Buscar por fecha (YYYY-MM-DD), programado por, despachado por..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-9 bg-white dark:bg-gray-800"
+                                    type="date"
+                                    value={fechaDesde}
+                                    onChange={(e) => setFechaDesde(e.target.value)}
                                 />
                             </div>
-                            <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white">
-                                <Search className="h-4 w-4 mr-1" />
-                                Buscar
-                            </Button>
-                            {filters.search && (
-                                <Button type="button" variant="outline" onClick={handleClear}>
-                                    Limpiar
-                                </Button>
+
+                            <div className="grid gap-1">
+                                <Label className="text-xs font-semibold uppercase text-gray-600">
+                                    <CalendarDays className="h-3 w-3 inline mr-1" />
+                                    Fecha hasta
+                                </Label>
+                                <Input
+                                    type="date"
+                                    value={fechaHasta}
+                                    onChange={(e) => setFechaHasta(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="grid gap-1">
+                                <Label className="text-xs font-semibold uppercase text-gray-600">
+                                    <Truck className="h-3 w-3 inline mr-1" />
+                                    Placa
+                                </Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Ej: COLJV386"
+                                    value={placa}
+                                    onChange={(e) => setPlaca(e.target.value.toUpperCase())}
+                                    className="uppercase font-mono"
+                                />
+                            </div>
+
+                            {hasActiveFilters && (
+                                <div className="flex items-end">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleClear}
+                                        className="w-full"
+                                    >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Limpiar
+                                    </Button>
+                                </div>
                             )}
-                        </form>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -162,7 +240,7 @@ export default function HistorialModulacion({ planeaciones, filters }: Props) {
                                                 <div className="flex flex-col items-center gap-2">
                                                     <FileText className="h-10 w-10 text-gray-300" />
                                                     <span>
-                                                        {filters.search
+                                                        {hasActiveFilters
                                                             ? 'No se encontraron planeaciones con ese criterio de búsqueda.'
                                                             : 'No hay planeaciones registradas aún.'}
                                                     </span>
@@ -248,7 +326,7 @@ export default function HistorialModulacion({ planeaciones, filters }: Props) {
                                                 </TableCell>
 
                                                 {/* Acción */}
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right space-x-2 flex justify-end">
                                                     <Link
                                                         href={route('reparto.modulacion.index', { fecha: plan.fecha, readOnly: 'true' })}
                                                     >
@@ -261,6 +339,14 @@ export default function HistorialModulacion({ planeaciones, filters }: Props) {
                                                             Ver
                                                         </Button>
                                                     </Link>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleDeleteModulacion(plan.id, plan.fecha)}
+                                                        className="h-8 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))

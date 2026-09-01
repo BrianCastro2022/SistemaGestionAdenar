@@ -29,7 +29,7 @@ class GeovictoriaAsistencia extends Model
     ];
 
     protected $casts = [
-        'fecha' => 'date',
+        'fecha' => 'date:Y-m-d',
         'exceso_jornada' => 'boolean',
         'descanso_no_efectivo' => 'boolean',
     ];

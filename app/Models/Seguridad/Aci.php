@@ -62,11 +62,11 @@ class Aci extends Model
     protected function casts(): array
     {
         return [
-            'fecha_alzado' => 'date',
-            'fecha_incidente' => 'date',
+            'fecha_alzado' => 'date:Y-m-d',
+            'fecha_incidente' => 'date:Y-m-d',
             'fecha_hora_asignacion' => 'datetime',
             'fecha_hora_cierre' => 'datetime',
-            'fecha_pospuesto' => 'date',
+            'fecha_pospuesto' => 'date:Y-m-d',
             'fue_por_externo' => 'boolean',
             'sif' => 'boolean',
             'datos_adicionales' => 'array',

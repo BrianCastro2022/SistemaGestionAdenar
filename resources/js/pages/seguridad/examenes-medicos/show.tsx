@@ -16,10 +16,6 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Ban, CalendarClock, CheckCircle2, Download, FileCheck2, FileText, History, LoaderCircle, Pencil, Play, Plus, Stethoscope, Trash2, User } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
-// ============================================================================
-// Constantes
-// ============================================================================
-
 const TIPO_LABELS: Record<string, string> = { ingreso: 'Ingreso', periodico: 'Periódico', egreso: 'Egreso' };
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -1052,9 +1048,6 @@ function SeguimientosDialog({
                     </div>
                 )}
 
-                {/* ============================== */}
-                {/* Form: edit existing or create new */}
-                {/* ============================== */}
                 <form onSubmit={submit} className="space-y-4 border-t border-sidebar-border/70 pt-4 dark:border-sidebar-border">
                     <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-foreground">
@@ -1171,7 +1164,7 @@ function SeguimientosDialog({
 
 
 // Componente principal: EvaluacionShow (Detalle y Edición)
-// ============================================================================
+// 
 
 export default function EvaluacionShow({
     evaluacion,
@@ -1283,14 +1276,6 @@ export default function EvaluacionShow({
                                 {formatFecha(evaluacion.colaborador.fecha_ingreso_empresa)}
                             </p>
                         </div>
-                        {(evaluacion.colaborador.fecha_retiro_empresa || (evaluacion.tipo_evaluacion === 'egreso' && evaluacion.fecha_limite)) && (
-                            <div>
-                                <p className="text-xs font-medium text-muted-foreground">Fecha de retiro de la empresa</p>
-                                <p className="text-sm text-foreground">
-                                    {formatFecha(evaluacion.colaborador.fecha_retiro_empresa ?? evaluacion.fecha_limite)}
-                                </p>
-                            </div>
-                        )}
                         {evaluacion.proximo_examen_fecha && (
                             <div>
                                 <p className="text-xs font-medium text-muted-foreground">Próximo examen (Periódico)</p>
@@ -1553,7 +1538,7 @@ export default function EvaluacionShow({
                                         >
                                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sidebar-border/50 pb-3">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="font-semibold text-foreground">{tituloTipo}</span>
+                                                      <span className="font-semibold text-foreground">{tituloTipo}</span>
                                                     {cicloTexto && (
                                                         <Badge variant="secondary" className="text-xs">
                                                             {cicloTexto}

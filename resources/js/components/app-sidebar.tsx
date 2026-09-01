@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { colaboradoresReadOnlySubmodule, geovictoriaAsistenciaReadOnlySubmodule, modules, type ModuleDef, type SubModuleDef } from '@/data/modules';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BellRing, GraduationCap, HeartPulse, LayoutGrid, Stethoscope, TestTube, Truck, User, UserCog } from 'lucide-react';
+import { BellRing, Calendar, GraduationCap, HeartPulse, LayoutGrid, Route, Star, Stethoscope, TestTube, Truck, User, UserCog } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -82,6 +82,9 @@ export function AppSidebar() {
                   { title: 'Mi Perfil', url: '/portal/perfil', icon: User, color: '#3F7A22' },
                   { title: 'Mis Pruebas', url: '/portal/pruebas', icon: TestTube, color: '#3F7A22' },
                   { title: 'Mis Rutas', url: '/portal/rutas', icon: Truck, color: '#3F7A22' },
+                  { title: 'Mis Planeaciones de Ruta', url: '/portal/mis-rutas-reparto', icon: Route, color: '#D4102A' },
+                  { title: 'Mis Estrellas del Camión', url: '/portal/mis-indicadores-reparto', icon: Star, color: '#D4102A' },
+                  { title: 'Mi Compensación Diaria', url: '/portal/mi-compensacion', icon: Calendar, color: '#0891B2' },
                   { title: 'Condición de Salud', url: '/portal/condicion-salud', icon: HeartPulse, color: '#3F7A22' },
                   { title: 'Encuesta de Morbilidad', url: '/portal/encuesta-morbilidad', icon: Stethoscope, color: '#3F7A22' },
                   { title: 'Mis Capacitaciones', url: '/portal/capacitaciones', icon: GraduationCap, color: '#0D9488' },

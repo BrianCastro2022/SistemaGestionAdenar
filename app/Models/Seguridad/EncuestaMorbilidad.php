@@ -19,13 +19,47 @@ class EncuestaMorbilidad extends Model
         'estado',
         'fecha_hora',
         'enviado_en',
+
+        // Paso 1 — identificación
+        'empresa',
+        'correo_electronico',
+        'edad',
+        'estado_civil',
+
+        // Paso 1 — familia
+        'tiene_hijos',
+        'hijos',
+        'personas_a_cargo',
+        'personas_cargo_detalle',
+
+        // Paso 1 — educación y vivienda
+        'nivel_escolaridad',
+        'estrato_socioeconomico',
+        'tenencia_vivienda',
+
+        // Paso 1 — residencia
+        'ciudad_residencia',
+        'direccion_residencia',
+
+        // Paso 1 — información laboral
+        'tipo_contratacion',
+        'cargo_paso1',
+        'area_paso1',
+        'antiguedad_empresa',
+        'antiguedad_cargo',
+        'duracion_contrato',
+        'turno',
+        'promedio_ingresos',
     ];
 
     protected function casts(): array
     {
         return [
-            'fecha_hora' => 'datetime',
-            'enviado_en' => 'datetime',
+            'fecha_hora'             => 'datetime',
+            'enviado_en'             => 'datetime',
+            'hijos'                  => 'array',
+            'personas_cargo_detalle' => 'array',
+            'edad'                   => 'integer',
         ];
     }
 
