@@ -1580,7 +1580,6 @@ export default function ModulacionIndex({
                         </Button>
                     </div>
                 </form>
-                )}
                 {/* fin formulario */}
 
                 {/* 3. TABLA 1: PLANEACIÓN DE RUTA */}
