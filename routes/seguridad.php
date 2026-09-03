@@ -20,6 +20,7 @@ use App\Http\Controllers\Seguridad\EvaluacionOwdImportController;
 use App\Http\Controllers\Seguridad\EvaluacionOwdIndicadorController;
 use App\Http\Controllers\Seguridad\EncuestaMorbilidadController;
 use App\Http\Controllers\Seguridad\EncuestaMorbilidadPreguntaController;
+use App\Http\Controllers\Seguridad\EncuestaMorbilidadSeccionController;
 use App\Http\Controllers\Seguridad\ExamenCatalogoController;
 use App\Http\Controllers\Seguridad\EstadoColaboradorController;
 use App\Http\Controllers\Seguridad\EvaluacionRecomendacionController;
@@ -114,6 +115,11 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad'])
         Route::post('encuestas-morbilidad-preguntas', [EncuestaMorbilidadPreguntaController::class, 'store'])->name('encuestas-morbilidad.preguntas.store');
         Route::patch('encuestas-morbilidad-preguntas/{pregunta}', [EncuestaMorbilidadPreguntaController::class, 'update'])->name('encuestas-morbilidad.preguntas.update');
         Route::delete('encuestas-morbilidad-preguntas/{pregunta}', [EncuestaMorbilidadPreguntaController::class, 'destroy'])->name('encuestas-morbilidad.preguntas.destroy');
+
+        // Gestión de secciones (imagen de portada)
+        Route::get('encuestas-morbilidad-secciones', [EncuestaMorbilidadSeccionController::class, 'index'])->name('encuestas-morbilidad.secciones.index');
+        Route::post('encuestas-morbilidad-secciones/{seccion}/portada', [EncuestaMorbilidadSeccionController::class, 'subirPortada'])->name('encuestas-morbilidad.secciones.portada');
+        Route::delete('encuestas-morbilidad-secciones/{seccion}/portada', [EncuestaMorbilidadSeccionController::class, 'eliminarPortada'])->name('encuestas-morbilidad.secciones.portada.destroy');
 
         // Exámenes médicos ocupacionales (HU-045 y siguientes, Fase 1).
         Route::get('examenes-medicos-indicadores', [ExamenMedicoIndicadorController::class, 'index'])->name('examenes-medicos.indicadores');

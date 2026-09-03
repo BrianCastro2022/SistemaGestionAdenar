@@ -6,6 +6,7 @@ use App\Http\Controllers\Gente\ColaboradorImportController;
 use App\Http\Controllers\Gente\GeovictoriaAsistenciaController;
 use App\Http\Controllers\Gente\LlamadoAtencionController;
 use App\Http\Controllers\Gente\ReferenciaExternaController;
+use App\Http\Controllers\Gente\SeguimientoPruebasController;
 use Illuminate\Support\Facades\Route;
 
 // Colaboradores es propiedad de Gente (crear/importar/editar/eliminar),
@@ -63,6 +64,12 @@ Route::middleware(['auth', 'active', 'role:Administrador|Gente'])
             ->name('colaboradores.llamados-atencion.store');
         Route::post('colaboradores/{colaborador}/entrenamientos', [ColaboradorEntrenamientoController::class, 'store'])
             ->name('colaboradores.entrenamientos.store');
+
+        // Seguimiento de Pruebas y Plan Padrino (7, 30 y 90 días)
+        Route::get('plan-padrinos', [SeguimientoPruebasController::class, 'index'])
+            ->name('plan-padrinos.index');
+        Route::post('plan-padrinos/toggle', [SeguimientoPruebasController::class, 'toggle'])
+            ->name('plan-padrinos.toggle');
     });
 
 Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota|Gente'])
@@ -75,6 +82,9 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota
         Route::resource('colaboradores', ColaboradorController::class)
             ->parameters(['colaboradores' => 'colaborador'])
             ->only(['index', 'show']);
+
+        Route::get('plan-padrinos/alertas-bell', [SeguimientoPruebasController::class, 'alertasBell'])
+            ->name('plan-padrinos.alertas-bell');
     });
 
 Route::middleware(['auth', 'active', 'role:Administrador|Gente|Reparto'])

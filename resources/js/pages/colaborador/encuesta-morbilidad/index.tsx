@@ -303,6 +303,7 @@ export default function EncuestaMorbilidadForm({
     secciones,
     respuestas,
     paso1: paso1Inicial,
+    portadas = {},
 }: {
     encuestaId: number;
     colaborador: ColaboradorPrecarga;
@@ -310,6 +311,7 @@ export default function EncuestaMorbilidadForm({
     secciones: SeccionesCatalogo;
     respuestas: RespuestasState;
     paso1: Paso1Inicial;
+    portadas?: Record<number, string | null>;
 }) {
     const lista = useMemo(() => seccionesOrdenadas(secciones), [secciones]);
 
@@ -717,6 +719,16 @@ export default function EncuestaMorbilidadForm({
 
                         {currentStep >= 2 && seccionActual && (
                             <div className="space-y-4">
+                                {/* Imagen de portada de la sección */}
+                                {portadas[seccionActual.numero] && (
+                                    <div className="overflow-hidden rounded-xl">
+                                        <img
+                                            src={portadas[seccionActual.numero]!}
+                                            alt={`Portada sección ${seccionActual.numero}`}
+                                            className="h-40 w-full object-cover"
+                                        />
+                                    </div>
+                                )}
                                 <p className="text-sm font-medium text-foreground">
                                     {seccionActual.numero}. {seccionActual.titulo}
                                 </p>

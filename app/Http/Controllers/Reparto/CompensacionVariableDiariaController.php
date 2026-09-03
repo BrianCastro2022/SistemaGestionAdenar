@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reparto;
 
 use App\Http\Controllers\Controller;
 use App\Models\Reparto\CompensacionVariableDiaria;
+use App\Models\Seguridad\Colaborador;
 use App\Services\Reparto\CompensacionVariableDiariaImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -240,7 +241,7 @@ class CompensacionVariableDiariaController extends Controller
                 ->sort()
                 ->values()
                 ->toArray(),
-            'cedulas' => CompensacionVariableDiaria::distinct()
+            'cedulas' => Colaborador::distinct()
                 ->whereNotNull('cedula')
                 ->where('cedula', '!=', '')
                 ->pluck('cedula')
@@ -289,7 +290,15 @@ class CompensacionVariableDiariaController extends Controller
             'anios' => [],
             'meses' => [],
             'cargos' => [],
-            'cedulas' => [],
+            'cedulas' => Colaborador::distinct()
+                ->whereNotNull('cedula')
+                ->where('cedula', '!=', '')
+                ->pluck('cedula')
+                ->filter(fn($v) => $v !== null && $v !== '')
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray(),
             'nombres' => [],
             'placas' => [],
             'transportes' => [],

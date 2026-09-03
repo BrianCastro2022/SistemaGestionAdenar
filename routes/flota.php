@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Flota\ActaTallerController;
 use App\Http\Controllers\Flota\SimitConsultaController;
 use App\Http\Controllers\Flota\VaradaController;
 use App\Http\Controllers\Flota\VehiculoController;
@@ -24,4 +25,20 @@ Route::middleware(['auth', 'active', 'role:Administrador|Flota'])
         Route::put('varadas/{varada}', [VaradaController::class, 'update'])->name('varadas.update');
         Route::delete('varadas/{varada}', [VaradaController::class, 'destroy'])->name('varadas.destroy');
         Route::post('varadas/importar', [VaradaController::class, 'importar'])->name('varadas.importar');
+
+        // ── Actas de Entrega a Taller ──────────────────────────────────────────
+        Route::get('actas-taller/dashboard', [ActaTallerController::class, 'dashboard'])
+            ->name('actas-taller.dashboard');
+        Route::get('actas-taller', [ActaTallerController::class, 'index'])
+            ->name('actas-taller.index');
+        Route::get('actas-taller/create', [ActaTallerController::class, 'create'])
+            ->name('actas-taller.create');
+        Route::post('actas-taller', [ActaTallerController::class, 'store'])
+            ->name('actas-taller.store');
+        Route::get('actas-taller/{actasTaller}', [ActaTallerController::class, 'show'])
+            ->name('actas-taller.show');
+        Route::put('actas-taller/{actasTaller}', [ActaTallerController::class, 'update'])
+            ->name('actas-taller.update');
+        Route::delete('actas-taller/{actasTaller}', [ActaTallerController::class, 'destroy'])
+            ->name('actas-taller.destroy');
     });

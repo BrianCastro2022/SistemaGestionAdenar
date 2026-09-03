@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { LoaderCircle, Plus, Trash2, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ImageIcon, LoaderCircle, Pencil, Plus, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -154,10 +154,18 @@ export default function EncuestasMorbilidadPreguntasIndex({
                         title="Catálogo de Preguntas de Morbilidad Sentida"
                         description="Agrega, edita o elimina las preguntas activas del formulario de salud de los colaboradores."
                     />
-                    <Button onClick={abrirCrear} className="gap-1.5">
-                        <Plus className="size-4" />
-                        Nueva Pregunta
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild className="gap-1.5">
+                            <Link href={route('seguridad.encuestas-morbilidad.secciones.index')}>
+                                <ImageIcon className="size-4" />
+                                Portadas de secciones
+                            </Link>
+                        </Button>
+                        <Button onClick={abrirCrear} className="gap-1.5">
+                            <Plus className="size-4" />
+                            Nueva Pregunta
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex gap-4">
@@ -174,7 +182,7 @@ export default function EncuestasMorbilidadPreguntasIndex({
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-16">Sección</TableHead>
-                                <TableHead className="w-16"># Preg</TableHead>
+                                <TableHead className="w-16"># Pregunta</TableHead>
                                 <TableHead>Pregunta / Enunciado</TableHead>
                                 <TableHead>Tipo de Respuesta</TableHead>
                                 <TableHead className="w-24">Obligatoria</TableHead>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Gente\SeguimientoPruebasController;
 use App\Http\Controllers\Reparto\CompensacionVariableController;
 use App\Http\Controllers\Reparto\ModulacionController;
 use App\Http\Controllers\Seguridad\RutaCriticaController;
@@ -47,6 +48,9 @@ Route::middleware(['auth', 'active'])->group(function () {
             }
             if ($module === 'reparto' && $submodule === 'modulacion') {
                 return (new ModulacionController)->index($request);
+            }
+            if ($module === 'gente' && ($submodule === 'plan-padrinos' || $submodule === 'seguimiento-pruebas')) {
+                return (new SeguimientoPruebasController)->index($request);
             }
 
             return Inertia::render('modules/submodule', ['module' => $module, 'submodule' => $submodule]);

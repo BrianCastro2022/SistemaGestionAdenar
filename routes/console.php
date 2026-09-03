@@ -11,4 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('seguridad:revisar-calibraciones')->daily();
 Schedule::command('seguridad:revisar-vencimiento-contratos')->daily();
 Schedule::command('seguridad:recordatorios-pruebas')->hourly();
+Schedule::command('gente:notificar-pruebas-periodo')->dailyAt('07:00');
 Schedule::command('glossary:scrape')->daily()->withoutOverlapping();

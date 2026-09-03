@@ -201,6 +201,11 @@ class Colaborador extends Model
         return $this->hasMany(ColaboradorEntrenamiento::class);
     }
 
+    public function pruebasPeriodo(): HasMany
+    {
+        return $this->hasMany(ColaboradorPruebaPeriodo::class);
+    }
+
     public function acisReportados(): HasMany
     {
         return $this->hasMany(Aci::class);

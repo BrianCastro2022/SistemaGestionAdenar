@@ -36,6 +36,11 @@ class EncuestaMorbilidadController extends Controller
             ]);
         }
 
+        // Cargar portadas de secciones desde la BD
+        $portadas = \App\Models\Seguridad\EncuestaMorbilidadSeccion::all()
+            ->keyBy('numero')
+            ->map(fn ($s) => $s->imagen_portada_url);
+
         return Inertia::render('colaborador/encuesta-morbilidad/index', [
             'encuestaId' => $encuesta->id,
             'colaborador' => [
@@ -54,6 +59,7 @@ class EncuestaMorbilidadController extends Controller
             'fechaHora'  => $encuesta->fecha_hora,
             'secciones'  => (new MorbilidadCatalogoService())->secciones(),
             'respuestas' => $this->respuestasIndexadas($encuesta),
+            'portadas'   => $portadas,
             // Datos del paso 1 ya guardados (para reanudar borrador)
             'paso1' => [
                 'empresa'                => $encuesta->empresa,

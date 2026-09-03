@@ -164,7 +164,7 @@ export const modules: ModuleDef[] = [
             { title: 'Colaboradores', slug: 'colaboradores', icon: UserCheck },
             { title: 'Malas Marcaciones', slug: 'malas-marcaciones', icon: Ban },
             { title: 'Inducciones', slug: 'inducciones', icon: Megaphone },
-            { title: 'Plan Padrinos', slug: 'plan-padrinos', icon: HeartHandshake },
+            { title: 'Seguimiento Pruebas y Plan Padrinos', slug: 'plan-padrinos', icon: HeartHandshake },
             { title: 'Asistencia GeoVictoria', slug: 'asistencia-geovictoria', icon: Clock },
         ],
     },
@@ -180,6 +180,7 @@ export const modules: ModuleDef[] = [
             { title: 'Calibración de Llantas', slug: 'calibracion-llantas', icon: Gauge },
             { title: 'Consultas SIMIT', slug: 'simit-consultas', icon: Gavel },
             { title: 'Control de Varadas', slug: 'varadas', icon: Wrench },
+            { title: 'Actas de Taller', slug: 'actas-taller', icon: ClipboardList },
         ],
     },
     {
