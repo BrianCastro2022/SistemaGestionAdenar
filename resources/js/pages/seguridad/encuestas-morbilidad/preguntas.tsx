@@ -51,7 +51,17 @@ export default function EncuestasMorbilidadPreguntasIndex({
     const [preguntaAEliminar, setPreguntaAEliminar] = useState<PreguntaItem | null>(null);
 
     // Formulario para Crear / Editar
-    const form = useForm({
+    const form = useForm<{
+        seccion_numero: number;
+        seccion_titulo: string;
+        texto: string;
+        tipo: string;
+        obligatorio: boolean;
+        opciones: string[];
+        con_otro: boolean;
+        segmento: string;
+        activo: boolean;
+    }>({
         seccion_numero: 1,
         seccion_titulo: 'Condiciones de Salud y Características Físicas',
         texto: '',

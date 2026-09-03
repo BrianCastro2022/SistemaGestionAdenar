@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import { SeccionCard } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
+import { SeccionCard, type DocumentInfo } from '@/pages/seguridad/colaboradores/colaborador-form-fields';
 import { SimpleFileField } from '@/pages/gente/colaboradores/wizard/components/simple-file-field';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -110,6 +110,7 @@ interface EvaluacionRecomendacionRow {
 interface EvaluacionDetalle {
     id: number;
     tipo_evaluacion: string;
+    numero_periodo: number | null;
     fecha_evaluacion: string;
     proximo_examen_fecha: string | null;
     fecha_entrada_bandeja: string | null;
@@ -217,9 +218,7 @@ function soporteUrl(path: string): string {
     return `/storage/${path}`;
 }
 
-interface SoporteFileItem {
-    path: string;
-    name: string;
+interface SoporteFileItem extends DocumentInfo {
     url: string;
 }
 
@@ -257,6 +256,7 @@ function getSoporteFiles(pathStr?: string | null): SoporteFileItem[] {
     return paths.map((path) => ({
         path,
         name: cleanFileName(path),
+        fecha: null,
         url: soporteUrl(path),
     }));
 }

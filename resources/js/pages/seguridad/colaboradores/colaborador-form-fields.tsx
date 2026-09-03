@@ -4,6 +4,7 @@ import { type LucideIcon } from 'lucide-react';
 export type DocumentInfo = {
     path: string;
     fecha: string | null;
+    name?: string;
 };
 
 export const ESTADOS_CIVILES = [

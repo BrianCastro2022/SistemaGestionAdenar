@@ -14,11 +14,6 @@ interface SimpleFileFieldProps {
     multiple?: boolean;
 }
 
-/**
- * Campo de archivo compacto (lista de nombres + botón agregar/quitar) para
- * documentos sueltos fuera del gestor de dos paneles del Paso 4 (p. ej. el
- * archivo de "tipo de documento" o de EPS/AFP/ARL en el Paso 1).
- */
 export function SimpleFileField({ label, files, existing = [], onRemoveExisting, onChange, error, disabled, multiple = true }: SimpleFileFieldProps) {
     const inputRef = useRef<HTMLInputElement>(null);
 

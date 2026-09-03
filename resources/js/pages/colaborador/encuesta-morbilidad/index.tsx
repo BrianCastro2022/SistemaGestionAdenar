@@ -66,8 +66,8 @@ const INGRESOS = [
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface Hijo { nombre: string; edad: string }
-interface PersonaCargo { tipo: string; edad: string }
+interface Hijo { nombre: string; edad: string; [key: string]: string }
+interface PersonaCargo { tipo: string; edad: string; [key: string]: string }
 
 interface Paso1Data {
     empresa: string;
@@ -134,7 +134,6 @@ interface ColaboradorPrecarga {
 interface EncuestaFormData {
     respuestas: RespuestasState;
     paso1: Paso1Data;
-    [key: string]: RespuestasState | Paso1Data;
 }
 
 // ─── Sub-componentes de apoyo ────────────────────────────────────────────────
@@ -356,10 +355,12 @@ export default function EncuestaMorbilidadForm({
         promedio_ingresos:      paso1Inicial.promedio_ingresos    ?? '',
     };
 
-    const form = useForm<EncuestaFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const form = useForm<any>({
         respuestas: respuestasConValoresPorDefecto(secciones, respuestas),
         paso1: paso1Defecto,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
 
     const errores = form.errors as unknown as Record<string, string | undefined>;
 
@@ -393,7 +394,7 @@ export default function EncuestaMorbilidadForm({
     });
 
     const guardarProgreso = (onSuccess?: () => void, validarPaso1: boolean = false) => {
-        form.transform(data => ({
+        form.transform((data: EncuestaFormData) => ({
             ...transformarParaEnvio(data),
             validar_paso1: validarPaso1,
         }));
@@ -401,7 +402,7 @@ export default function EncuestaMorbilidadForm({
             preserveScroll: true,
             preserveState: true,
             onSuccess,
-            onError: (err) => {
+            onError: (err: Record<string, string>) => {
                 if (Object.keys(err).some(k => k.startsWith('paso1'))) {
                     setCurrentStep(1);
                 }
@@ -414,7 +415,7 @@ export default function EncuestaMorbilidadForm({
         form.post(route('portal.encuesta-morbilidad.enviar', encuestaId), {
             preserveScroll: true,
             preserveState: true,
-            onError: (err) => {
+            onError: (err: Record<string, string>) => {
                 // Si hay errores del paso1, volver al paso 1
                 if (Object.keys(err).some(k => k.startsWith('paso1'))) {
                     setCurrentStep(1);
