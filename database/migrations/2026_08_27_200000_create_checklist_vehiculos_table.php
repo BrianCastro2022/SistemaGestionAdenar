@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -8,10 +9,115 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // innodb_strict_mode=1 en este servidor calcula el tamaño de fila en el
-        // peor caso (COMPACT) aunque innodb_default_row_format sea DYNAMIC.
-        // Desactivamos strict_mode solo para esta sesión, creamos la tabla y
-        // lo restauramos inmediatamente.
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            Schema::create('checklist_vehiculos', function (Blueprint $table) {
+                $table->id();
+                $table->string('id_form', 191)->unique();
+                $table->string('estado', 50)->nullable();
+                $table->dateTime('fecha')->nullable();
+                $table->dateTime('fecha_fin')->nullable();
+                $table->string('id_centro', 50)->nullable();
+                $table->string('id_regional', 50)->nullable();
+                $table->string('regional', 100)->nullable();
+                $table->string('centro', 100)->nullable();
+                $table->string('operacion', 100)->nullable();
+                $table->string('cedula_conductor', 20)->nullable();
+                $table->string('placa_vehiculo', 20)->nullable();
+                $table->string('odometro', 30)->nullable();
+                $table->string('salud_descanso', 50)->nullable();
+                $table->string('libre_medicamentos', 50)->nullable();
+                $table->string('fugas', 50)->nullable();
+                $table->string('testigos_presion_aire', 50)->nullable();
+                $table->string('freno_parqueo', 50)->nullable();
+                $table->string('kit_reparto', 50)->nullable();
+                $table->string('inventario', 50)->nullable();
+                $table->string('capacidad_vehiculo', 50)->nullable();
+                $table->string('condiciones_operar', 50)->nullable();
+                $table->string('documentos_operar', 50)->nullable();
+                $table->string('licencia_vigente', 50)->nullable();
+                $table->string('licencia_original', 50)->nullable();
+                $table->string('tecnomecanica', 50)->nullable();
+                $table->string('soat_vigente', 50)->nullable();
+                $table->string('kit_totalidad', 50)->nullable();
+                $table->string('repuestos_buen_estado', 50)->nullable();
+                $table->string('extintor', 50)->nullable();
+                $table->string('extintor_vigente', 50)->nullable();
+                $table->string('botiquin_condiciones', 50)->nullable();
+                $table->string('linterna_condiciones', 50)->nullable();
+                $table->string('kit_basico', 50)->nullable();
+                $table->string('niveles_totalidad', 50)->nullable();
+                $table->string('combustible_suficiente', 50)->nullable();
+                $table->string('nivel_combustible', 50)->nullable();
+                $table->string('liquido_embrague', 50)->nullable();
+                $table->string('refrigerante_estado', 50)->nullable();
+                $table->string('aceite_estado', 50)->nullable();
+                $table->string('estado_hidraulico', 50)->nullable();
+                $table->string('aceite_caja', 50)->nullable();
+                $table->string('agua_limpiabrisas', 50)->nullable();
+                $table->string('cumple_llantas', 50)->nullable();
+                $table->string('bandas_rodamientos', 50)->nullable();
+                $table->string('deformaciones_costados', 50)->nullable();
+                $table->string('labrado_profundidad', 50)->nullable();
+                $table->string('cumple_visibilidad', 50)->nullable();
+                $table->string('estado_panoramico', 50)->nullable();
+                $table->string('estado_retrovisores', 50)->nullable();
+                $table->string('estado_limpiabrisas', 50)->nullable();
+                $table->string('estado_cinturones', 50)->nullable();
+                $table->string('estado_colapies', 50)->nullable();
+                $table->string('cerrar_fuera', 50)->nullable();
+                $table->string('estado_dashcam', 50)->nullable();
+                $table->string('estado_vidrios', 50)->nullable();
+                $table->string('cumple_luces', 50)->nullable();
+                $table->string('luces_freno', 50)->nullable();
+                $table->string('estado_principales', 50)->nullable();
+                $table->string('luces_reserva', 50)->nullable();
+                $table->string('luces_direccionales', 50)->nullable();
+                $table->string('luces_estacionarias', 50)->nullable();
+                $table->string('luces_laterales', 50)->nullable();
+                $table->string('estado_pito', 50)->nullable();
+                $table->string('estado_pito_reserva', 50)->nullable();
+                $table->string('cumple_audible', 50)->nullable();
+                $table->string('cumple_carroceria', 50)->nullable();
+                $table->string('estado_correas', 50)->nullable();
+                $table->string('estado_parales', 50)->nullable();
+                $table->string('estado_cortinas', 50)->nullable();
+                $table->string('estado_chapas', 50)->nullable();
+                $table->string('cumple_carretilla', 50)->nullable();
+                $table->string('cuenta_etiqueta', 50)->nullable();
+                $table->string('llantas_rodamientos_dos', 50)->nullable();
+                $table->string('estado_carretilla_dos', 50)->nullable();
+                $table->string('carretilla_dos', 50)->nullable();
+                $table->string('etiqueta', 50)->nullable();
+                $table->string('estado_rodamiento', 50)->nullable();
+                $table->string('estado_carretilla_uno', 50)->nullable();
+                $table->string('carretilla_uno', 50)->nullable();
+                $table->text('observaciones')->nullable();
+                $table->string('firma_conductor', 191)->nullable();
+                $table->string('conductor_operar', 100)->nullable();
+                $table->string('vehiculo_operar', 30)->nullable();
+                $table->string('vehiculo_bitren', 30)->nullable();
+                $table->string('estado_bitren', 50)->nullable();
+                $table->string('nombre_flota', 100)->nullable();
+                $table->string('apellido_flota', 100)->nullable();
+                $table->string('firma_responsable', 191)->nullable();
+                $table->string('estado_form', 50)->nullable();
+                $table->decimal('cumpl', 8, 2)->nullable();
+                $table->decimal('meta_td', 8, 2)->nullable();
+                $table->string('tiempo_ejecucion', 50)->nullable();
+                $table->unsignedTinyInteger('mes')->nullable();
+                $table->unsignedTinyInteger('semana')->nullable();
+                $table->unsignedSmallInteger('anio')->nullable();
+                $table->unsignedTinyInteger('dia')->nullable();
+                $table->decimal('meta', 8, 2)->nullable();
+                $table->decimal('cumpl_meta', 8, 2)->nullable();
+                $table->timestamps();
+
+                $table->index(['fecha', 'placa_vehiculo'], 'idx_fecha_placa');
+                $table->index(['cedula_conductor', 'fecha'], 'idx_cedula_fecha');
+            });
+            return;
+        }
+
         DB::statement('SET SESSION innodb_strict_mode=0');
 
         DB::statement('

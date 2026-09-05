@@ -17,7 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Nueva Acta', href: '/modules/flota/actas-taller/create' },
 ];
 
-interface Colaborador { id: number; nombre_completo: string; cargo: string }
+interface Colaborador { id: number; nombre_completo: string; cargo: string; cedula: string; celular: string }
 
 interface Props {
     vehiculos: string[];
@@ -81,6 +81,9 @@ export default function ActasTallerCreate({ vehiculos, colaboradores, numero_act
     const [quienReporta,   setQuienReporta]   = useState(usuario_nombre);
     const [estadoActa,     setEstadoActa]     = useState('pendiente');
     const [nombreEntrega,  setNombreEntrega]  = useState(usuario_nombre);
+    const [cargoEntrega,   setCargoEntrega]   = useState('');
+    const [idEntrega,      setIdEntrega]      = useState('');
+    const [telefonoEntrega,setTelefonoEntrega]= useState('');
     const [nombreRecibe,   setNombreRecibe]   = useState('');
 
     // Novedades
@@ -145,6 +148,9 @@ export default function ActasTallerCreate({ vehiculos, colaboradores, numero_act
         fd.append('quien_reporta',           quienReporta);
         fd.append('estado_acta',             estadoActa);
         fd.append('nombre_entrega',          nombreEntrega);
+        fd.append('cargo_entrega',           cargoEntrega);
+        fd.append('identificacion_entrega',  idEntrega);
+        fd.append('telefono_entrega',        telefonoEntrega);
         fd.append('nombre_recibe',           nombreRecibe);
 
         novedades.forEach((nov, i) => {
@@ -239,10 +245,27 @@ export default function ActasTallerCreate({ vehiculos, colaboradores, numero_act
                                     className="h-9 text-sm" placeholder="Describe el motivo de ingreso al taller..." />
                             </Campo>
                             <Campo label="Quien reporta" error={errors['quien_reporta']}>
-                                <Input value={quienReporta} onChange={e => setQuienReporta(e.target.value)}
-                                    className="h-9 text-sm" placeholder="Nombre de quien reporta..." />
-                            </Campo>
-                            <Campo label="Fecha estimada solución" error={errors['fecha_estimada_solucion']}>
+                                <select
+                                    value={quienReporta}
+                                    onChange={e => {
+                                        const col = colaboradores.find(c => c.nombre_completo === e.target.value);
+                                        setQuienReporta(e.target.value);
+                                        if (col) {
+                                            setNombreEntrega(col.nombre_completo);
+                                            setCargoEntrega(col.cargo);
+                                            setIdEntrega(col.cedula);
+                                            setTelefonoEntrega(col.celular);
+                                        }
+                                    }}
+                                    className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                                    <option value="">Seleccionar colaborador</option>
+                                    {colaboradores.map(c => (
+                                        <option key={c.id} value={c.nombre_completo}>
+                                            {c.nombre_completo} · {c.cargo}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Campo>                            <Campo label="Fecha estimada solución" error={errors['fecha_estimada_solucion']}>
                                 <Input type="datetime-local" value={fechaEstimada}
                                     onChange={e => setFechaEstimada(e.target.value)} className="h-9 text-sm" />
                             </Campo>
@@ -298,6 +321,12 @@ export default function ActasTallerCreate({ vehiculos, colaboradores, numero_act
                             mode="edit"
                             nombreEntrega={nombreEntrega}
                             onNombreEntrega={setNombreEntrega}
+                            cargoEntrega={cargoEntrega}
+                            onCargoEntrega={setCargoEntrega}
+                            idEntrega={idEntrega}
+                            onIdEntrega={setIdEntrega}
+                            telefonoEntrega={telefonoEntrega}
+                            onTelefonoEntrega={setTelefonoEntrega}
                             nombreRecibe={nombreRecibe}
                             onNombreRecibe={setNombreRecibe}
                             firmaEntregaRef={firmaEntregaRef}

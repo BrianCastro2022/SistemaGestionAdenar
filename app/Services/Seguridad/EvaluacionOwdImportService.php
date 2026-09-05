@@ -60,6 +60,10 @@ class EvaluacionOwdImportService
  
     public function importar(array $rutasArchivos, ?User $usuario = null): array
     {
+        // Archivos con muchas filas pueden superar el límite por defecto de 60s.
+        // Se amplía solo para este proceso de importación.
+        set_time_limit(600);
+
         $resultado = [
             'archivos_procesados' => 0,
             'registros_leidos' => 0,
@@ -85,7 +89,7 @@ class EvaluacionOwdImportService
         $hoja = $this->buscarHojaOwd($rutaArchivo);
 
         if (! $hoja) {
-            Log::warning("Importación de Evaluaciones OWD: no se encontró la hoja \"Data OWD\" en {$rutaArchivo}.");
+            Log::warning("Importación de Evaluaciones OWD: el archivo {$rutaArchivo} está vacío o no se pudo leer.");
             $resultado['errores']++;
 
             return;
@@ -99,6 +103,13 @@ class EvaluacionOwdImportService
         $columnasNuevas = collect($mapaColumnas)->filter(fn ($info) => $info['campo'] === null)
             ->pluck('encabezado')->unique()->values()->all();
 
+        // Pre-cargar colaboradores indexados por código QR SKAP para evitar
+        // N+1 queries durante el procesamiento fila a fila.
+        $colaboradoresPorQr = Colaborador::whereNotNull('codigo_qr_skap')
+            ->select(['id', 'codigo_qr_skap', 'nombres', 'apellidos'])
+            ->get()
+            ->keyBy('codigo_qr_skap');
+
         $registro = [
             'leidos' => 0,
             'evaluaciones' => [],
@@ -110,9 +121,9 @@ class EvaluacionOwdImportService
 
         $evaluacionesTocadas = [];
 
-        DB::transaction(function () use ($filas, $mapaColumnas, &$registro, &$evaluacionesTocadas) {
+        DB::transaction(function () use ($filas, $mapaColumnas, &$registro, &$evaluacionesTocadas, $colaboradoresPorQr) {
             foreach ($filas as $numeroFila => $fila) {
-                $this->procesarFila($fila, $mapaColumnas, $numeroFila, $registro, $evaluacionesTocadas);
+                $this->procesarFila($fila, $mapaColumnas, $numeroFila, $registro, $evaluacionesTocadas, $colaboradoresPorQr);
             }
         });
 
@@ -145,8 +156,9 @@ class EvaluacionOwdImportService
      * @param  array<string, array{campo: ?string, encabezado: string}>  $mapaColumnas
      * @param  array{leidos: int, evaluaciones: array<string, true>, nuevos: int, duplicados: int, sin_coincidencia_qr: int, errores: int}  $registro
      * @param  array<int, EvaluacionOwd>  $evaluacionesTocadas
+     * @param  \Illuminate\Support\Collection<string, Colaborador>  $colaboradoresPorQr
      */
-    private function procesarFila(array $fila, array $mapaColumnas, int|string $numeroFila, array &$registro, array &$evaluacionesTocadas): void
+    private function procesarFila(array $fila, array $mapaColumnas, int|string $numeroFila, array &$registro, array &$evaluacionesTocadas, $colaboradoresPorQr): void
     {
         $valores = $this->extraerValoresPorCampo($fila, $mapaColumnas);
 
@@ -170,14 +182,19 @@ class EvaluacionOwdImportService
         try {
             $qrSafetyEvaluador = trim((string) ($valores['qr_safety_evaluador'] ?? ''));
 
-            $colaborador = Colaborador::where('codigo_qr_skap', $qrSafety)->first();
-            $evaluadorColaborador = $qrSafetyEvaluador !== ''
-                ? Colaborador::where('codigo_qr_skap', $qrSafetyEvaluador)->first()
-                : null;
+            // Lookup por QR Safety exacto (en memoria, sin queries)
+            $colaborador = $colaboradoresPorQr->get($qrSafety);
 
+            // Si el QR del evaluado no existe en BD, se descarta la fila
             if (! $colaborador) {
                 $registro['sin_coincidencia_qr']++;
+                return;
             }
+
+            // Evaluador: también solo por QR (puede ser null si no está en BD)
+            $evaluadorColaborador = $qrSafetyEvaluador !== ''
+                ? $colaboradoresPorQr->get($qrSafetyEvaluador)
+                : null;
 
             $claveEvaluacion = "{$qrSafetyEvaluador}|{$qrSafety}|{$fechaEvaluacion}";
             $registro['evaluaciones'][$claveEvaluacion] = true;
@@ -229,10 +246,17 @@ class EvaluacionOwdImportService
     {
         $spreadsheet = IOFactory::load($rutaArchivo);
 
+        // Primero intentar encontrar la hoja por nombre canónico "Data OWD"
         foreach ($spreadsheet->getSheetNames() as $nombre) {
             if (str(trim($nombre))->upper()->value() === 'DATA OWD') {
                 return $spreadsheet->getSheetByName($nombre);
             }
+        }
+
+        // Si no existe hoja "Data OWD", usar la primera hoja disponible
+        // (útil cuando el archivo tiene una sola hoja o un nombre diferente)
+        if ($spreadsheet->getSheetCount() > 0) {
+            return $spreadsheet->getSheet(0);
         }
 
         return null;

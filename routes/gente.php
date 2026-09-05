@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Controllers\Gente\AusentismoController;
+use App\Http\Controllers\Gente\ColaboradorCalificacionController;
 use App\Http\Controllers\Gente\ColaboradorController;
 use App\Http\Controllers\Gente\ColaboradorEntrenamientoController;
 use App\Http\Controllers\Gente\ColaboradorImportController;
+use App\Http\Controllers\Gente\CorreccionMarcacionController;
+use App\Http\Controllers\Gente\DpoAcademyController;
+use App\Http\Controllers\Gente\FestivoCustomController;
 use App\Http\Controllers\Gente\GeovictoriaAsistenciaController;
 use App\Http\Controllers\Gente\LlamadoAtencionController;
+use App\Http\Controllers\Gente\PlanPremiacionController;
 use App\Http\Controllers\Gente\ReferenciaExternaController;
+use App\Http\Controllers\Gente\SacController;
 use App\Http\Controllers\Gente\SeguimientoPruebasController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +77,34 @@ Route::middleware(['auth', 'active', 'role:Administrador|Gente'])
             ->name('plan-padrinos.index');
         Route::post('plan-padrinos/toggle', [SeguimientoPruebasController::class, 'toggle'])
             ->name('plan-padrinos.toggle');
+
+        // Calificaciones de Módulos (Escritura: Importar / Limpiar)
+        Route::post('calificaciones/importar', [ColaboradorCalificacionController::class, 'importar'])
+            ->name('calificaciones.importar');
+        Route::post('calificaciones/limpiar', [ColaboradorCalificacionController::class, 'limpiar'])
+            ->name('calificaciones.limpiar');
+
+        // DPO Academy (Escritura: Importar / Limpiar)
+        Route::post('dpo-academy/importar', [DpoAcademyController::class, 'importar'])
+            ->name('dpo-academy.importar');
+        Route::post('dpo-academy/limpiar', [DpoAcademyController::class, 'limpiar'])
+            ->name('dpo-academy.limpiar');
+
+        // Ausentismo (Escritura: Importar / Limpiar)
+        Route::post('ausentismo/importar', [AusentismoController::class, 'importar'])
+            ->name('ausentismo.importar');
+        Route::post('ausentismo/limpiar', [AusentismoController::class, 'limpiar'])
+            ->name('ausentismo.limpiar');
+
+        // SAC (Escritura: Importar / Limpiar)
+        Route::post('sac/importar', [SacController::class, 'importar'])
+            ->name('sac.importar');
+        Route::post('sac/limpiar', [SacController::class, 'limpiar'])
+            ->name('sac.limpiar');
+
+        // Festivos custom — toggle (agregar/eliminar un día como festivo)
+        Route::post('festivos-custom/toggle', [FestivoCustomController::class, 'toggle'])
+            ->name('festivos-custom.toggle');
     });
 
 Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota|Gente'])
@@ -85,6 +120,42 @@ Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Flota
 
         Route::get('plan-padrinos/alertas-bell', [SeguimientoPruebasController::class, 'alertasBell'])
             ->name('plan-padrinos.alertas-bell');
+
+        // Plan Premiación ACI (32 ACI = 100%)
+        Route::get('plan-premiacion', [PlanPremiacionController::class, 'index'])
+            ->name('plan-premiacion.index');
+        Route::get('plan-premiacion/exportar', [PlanPremiacionController::class, 'exportar'])
+            ->name('plan-premiacion.exportar');
+
+        // Festivos custom — lectura (disponible para todos los roles que ven plan premiación)
+        Route::get('festivos-custom', [FestivoCustomController::class, 'index'])
+            ->name('festivos-custom.index');
+
+        // Calificaciones (Lectura & Exportar)
+        Route::get('calificaciones', [ColaboradorCalificacionController::class, 'index'])
+            ->name('calificaciones.index');
+        Route::get('calificaciones/exportar', [ColaboradorCalificacionController::class, 'exportar'])
+            ->name('calificaciones.exportar');
+
+        // DPO Academy (Lectura & Exportar)
+        Route::get('dpo-academy', [DpoAcademyController::class, 'index'])
+            ->name('dpo-academy.index');
+        Route::get('dpo-academy/exportar', [DpoAcademyController::class, 'exportar'])
+            ->name('dpo-academy.exportar');
+
+        // Ausentismo (Lectura & Exportar)
+        Route::get('ausentismo', [AusentismoController::class, 'index'])
+            ->name('ausentismo.index');
+        Route::get('ausentismo/exportar', [AusentismoController::class, 'exportar'])
+            ->name('ausentismo.exportar');
+
+        // SAC (Lectura, Plantilla & Exportar)
+        Route::get('sac', [SacController::class, 'index'])
+            ->name('sac.index');
+        Route::get('sac/exportar', [SacController::class, 'exportar'])
+            ->name('sac.exportar');
+        Route::get('sac/plantilla', [SacController::class, 'plantilla'])
+            ->name('sac.plantilla');
     });
 
 Route::middleware(['auth', 'active', 'role:Administrador|Gente|Reparto'])
@@ -96,4 +167,28 @@ Route::middleware(['auth', 'active', 'role:Administrador|Gente|Reparto'])
         // la web. Visible para Gente (dueño del módulo) y Reparto.
         Route::get('asistencia-geovictoria', [GeovictoriaAsistenciaController::class, 'index'])
             ->name('asistencia-geovictoria.index');
+    });
+
+// ─────────── Corrección de Marcaciones ────────────────────────────────────
+// Escritura: solo Administrador / Gente pueden subir, confirmar la
+// importación, eliminar registros y limpiar la tabla.
+Route::middleware(['auth', 'active', 'role:Administrador|Gente|Seguridad'])
+    ->prefix('modules/gente')
+    ->name('gente.')
+    ->group(function () {
+        Route::post('correccion-marcaciones/preview',   [CorreccionMarcacionController::class, 'preview'])   ->name('correccion-marcaciones.preview');
+        Route::post('correccion-marcaciones/importar',  [CorreccionMarcacionController::class, 'importar'])  ->name('correccion-marcaciones.importar');
+        Route::post('correccion-marcaciones/limpiar',   [CorreccionMarcacionController::class, 'limpiar'])   ->name('correccion-marcaciones.limpiar');
+        Route::delete('correccion-marcaciones/{id}',    [CorreccionMarcacionController::class, 'destroy'])   ->name('correccion-marcaciones.destroy');
+    });
+
+// Lectura + plantilla + exportación: visible para Gente, Reparto (ya que
+// afecta nóminas del reparto), Administrador y Seguridad.
+Route::middleware(['auth', 'active', 'role:Administrador|Seguridad|Reparto|Gente'])
+    ->prefix('modules/gente')
+    ->name('gente.')
+    ->group(function () {
+        Route::get('correccion-marcaciones',                    [CorreccionMarcacionController::class, 'index'])      ->name('correccion-marcaciones.index');
+        Route::get('correccion-marcaciones/exportar.csv',       [CorreccionMarcacionController::class, 'exportar'])   ->name('correccion-marcaciones.exportar');
+        Route::get('correccion-marcaciones/plantilla.csv',      [CorreccionMarcacionController::class, 'plantilla'])  ->name('correccion-marcaciones.plantilla');
     });

@@ -11,14 +11,16 @@ return new class extends Migration
     {
         // Eliminar duplicados antes de crear el índice único:
         // Conserva el registro con el id más alto para cada par (cedula, fecha).
-        DB::statement("
-            DELETE t1
-            FROM compensaciones_variables_diarias t1
-            INNER JOIN compensaciones_variables_diarias t2
-            ON  t1.cedula = t2.cedula
-            AND t1.fecha  = t2.fecha
-            AND t1.id     < t2.id
-        ");
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            DB::statement("
+                DELETE t1
+                FROM compensaciones_variables_diarias t1
+                INNER JOIN compensaciones_variables_diarias t2
+                ON  t1.cedula = t2.cedula
+                AND t1.fecha  = t2.fecha
+                AND t1.id     < t2.id
+            ");
+        }
 
         Schema::table('compensaciones_variables_diarias', function (Blueprint $table) {
             // Eliminar el índice simple previo en (cedula, fecha)

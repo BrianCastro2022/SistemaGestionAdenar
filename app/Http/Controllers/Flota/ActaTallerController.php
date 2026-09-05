@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Flota;
 
 use App\Http\Controllers\Controller;
+use App\Exports\Flota\ActaTallerExport;
 use App\Models\Flota\ActaTaller;
 use App\Models\Flota\ActaTallerNovedad;
 use App\Models\Flota\Vehiculo;
 use App\Models\Seguridad\Colaborador;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ActaTallerController extends Controller
 {
@@ -28,7 +31,7 @@ class ActaTallerController extends Controller
 
     private function colaboradores(): array
     {
-        return Colaborador::select(['id', 'cedula', 'nombres', 'apellidos', 'cargo'])
+        return Colaborador::select(['id', 'cedula', 'nombres', 'apellidos', 'cargo', 'celular_1'])
             ->where('is_active', true)
             ->orderBy('nombres')
             ->get()
@@ -36,6 +39,8 @@ class ActaTallerController extends Controller
                 'id'              => $c->id,
                 'nombre_completo' => trim("{$c->nombres} {$c->apellidos}"),
                 'cargo'           => $c->cargo ?? '',
+                'cedula'          => $c->cedula ?? '',
+                'celular'         => $c->celular_1 ?? '',
             ])
             ->toArray();
     }
@@ -63,6 +68,8 @@ class ActaTallerController extends Controller
             'combustible'             => $acta->combustible,
             'nombre_entrega'          => $acta->nombre_entrega,
             'cargo_entrega'           => $acta->cargo_entrega,
+            'identificacion_entrega'  => $acta->identificacion_entrega,
+            'telefono_entrega'        => $acta->telefono_entrega,
             'nombre_recibe'           => $acta->nombre_recibe,
             'cargo_recibe'            => $acta->cargo_recibe,
             'nombre_autorizacion'     => $acta->nombre_autorizacion,
@@ -167,6 +174,8 @@ class ActaTallerController extends Controller
             'nombre_entrega'             => ['nullable', 'string', 'max:120'],
             'cargo_entrega'              => ['nullable', 'string', 'max:100'],
             'nombre_recibe'              => ['nullable', 'string', 'max:120'],
+            'identificacion_entrega'     => ['nullable', 'string', 'max:30'],
+            'telefono_entrega'           => ['nullable', 'string', 'max:30'],
             'cargo_recibe'               => ['nullable', 'string', 'max:100'],
             'nombre_autorizacion'        => ['nullable', 'string', 'max:120'],
             'cargo_autorizacion'         => ['nullable', 'string', 'max:100'],
@@ -207,6 +216,8 @@ class ActaTallerController extends Controller
                 'nombre_entrega'          => $data['nombre_entrega'] ?? null,
                 'cargo_entrega'           => $data['cargo_entrega'] ?? null,
                 'nombre_recibe'           => $data['nombre_recibe'] ?? null,
+                'identificacion_entrega'  => $data['identificacion_entrega'] ?? null,
+                'telefono_entrega'        => $data['telefono_entrega'] ?? null,
                 'cargo_recibe'            => $data['cargo_recibe'] ?? null,
                 'nombre_autorizacion'     => $data['nombre_autorizacion'] ?? null,
                 'cargo_autorizacion'      => $data['cargo_autorizacion'] ?? null,
@@ -253,7 +264,7 @@ class ActaTallerController extends Controller
             return $acta;
         });
 
-        return to_route('flota.actas-taller.create')
+        return to_route('flota.actas-taller.index')
             ->with('status', "Acta {$acta->numero_acta} creada correctamente.");
     }
 
@@ -295,6 +306,8 @@ class ActaTallerController extends Controller
             'nombre_entrega'             => ['nullable', 'string', 'max:120'],
             'cargo_entrega'              => ['nullable', 'string', 'max:100'],
             'nombre_recibe'              => ['nullable', 'string', 'max:120'],
+            'identificacion_entrega'     => ['nullable', 'string', 'max:30'],
+            'telefono_entrega'           => ['nullable', 'string', 'max:30'],
             'cargo_recibe'               => ['nullable', 'string', 'max:100'],
             'nombre_autorizacion'        => ['nullable', 'string', 'max:120'],
             'cargo_autorizacion'         => ['nullable', 'string', 'max:100'],
@@ -358,6 +371,52 @@ class ActaTallerController extends Controller
         });
 
         return back()->with('status', 'Acta actualizada correctamente.');
+    }
+
+    // ── exportarExcel ─────────────────────────────────────────────────────────
+
+    public function exportarExcel(Request $request)
+    {
+        $actas = $this->queryExport($request)->get();
+
+        return Excel::download(
+            new ActaTallerExport($actas),
+            'actas-taller-' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+    // ── exportarPdf (lista, con filtros) ─────────────────────────────────────
+
+    public function exportarPdf(Request $request)
+    {
+        $actas = $this->queryExport($request)->get();
+
+        return Pdf::loadView('flota.actas-taller-pdf', ['actas' => $actas])
+            ->setPaper('a4', 'landscape')
+            ->download('actas-taller-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    // ── exportarActaPdf (una sola acta por número) ────────────────────────────
+
+    public function exportarActaPdf(ActaTaller $actasTaller)
+    {
+        $actasTaller->load(['novedades']);
+
+        return Pdf::loadView('flota.acta-taller-pdf', ['acta' => $actasTaller])
+            ->setPaper('a4', 'portrait')
+            ->download('acta-' . $actasTaller->numero_acta . '.pdf');
+    }
+
+    // ── Query compartida para exports ─────────────────────────────────────────
+
+    private function queryExport(Request $request)
+    {
+        return ActaTaller::with(['novedades'])
+            ->when($request->input('placa'),  fn ($q, $v) => $q->where('placa', $v))
+            ->when($request->input('estado'), fn ($q, $v) => $q->where('estado_acta', $v))
+            ->when($request->input('desde'),  fn ($q, $v) => $q->whereDate('fecha_entrega', '>=', $v))
+            ->when($request->input('hasta'),  fn ($q, $v) => $q->whereDate('fecha_entrega', '<=', $v))
+            ->latest('fecha_entrega');
     }
 
     // ── destroy ───────────────────────────────────────────────────────────────

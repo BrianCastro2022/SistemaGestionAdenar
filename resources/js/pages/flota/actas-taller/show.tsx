@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CheckCircle2, LoaderCircle, Pencil, Trash2, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, LoaderCircle, Pencil, Trash2, X, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import NovedadesEditor, { type NovedadLocal } from './components/NovedadesEditor';
 import NovedadesTabla from './components/NovedadesTabla';
@@ -112,6 +112,9 @@ export default function ActasTallerShow({ acta, vehiculos }: Props) {
     const [quienReporta,  setQuienReporta]  = useState(acta.quien_reporta ?? '');
     const [estadoActa,    setEstadoActa]    = useState(acta.estado_acta ?? 'en_taller');
     const [nombreEntrega, setNombreEntrega] = useState(acta.nombre_entrega ?? '');
+    const [cargoEntrega,  setCargoEntrega]  = useState(acta.cargo_entrega ?? '');
+    const [idEntrega,     setIdEntrega]     = useState(acta.identificacion_entrega ?? '');
+    const [telEntrega,    setTelEntrega]    = useState(acta.telefono_entrega ?? '');
     const [nombreRecibe,  setNombreRecibe]  = useState(acta.nombre_recibe ?? '');
     const [novedades,     setNovedades]     = useState<NovedadLocal[]>((acta.novedades ?? []).map(toLocal));
 
@@ -252,6 +255,11 @@ export default function ActasTallerShow({ acta, vehiculos }: Props) {
                         <div className="flex flex-wrap gap-2">
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={route('flota.actas-taller.index')}>← Volver</Link>
+                            </Button>
+                            <Button variant="outline" size="sm" asChild className="gap-1.5">
+                                <a href={route('flota.actas-taller.exportar-acta-pdf', acta.id)}>
+                                    <Download className="size-3.5" /> PDF
+                                </a>
                             </Button>
                             {!editando ? (
                                 <Button type="button" size="sm" onClick={() => setEditando(true)}
@@ -399,6 +407,8 @@ export default function ActasTallerShow({ acta, vehiculos }: Props) {
                                 mode="read"
                                 nombreEntrega={acta.nombre_entrega}
                                 cargoEntrega={acta.cargo_entrega}
+                                idEntrega={acta.identificacion_entrega}
+                                telefonoEntrega={acta.telefono_entrega}
                                 firmaEntrega={acta.firma_entrega}
                                 nombreRecibe={acta.nombre_recibe}
                                 cargoRecibe={acta.cargo_recibe}

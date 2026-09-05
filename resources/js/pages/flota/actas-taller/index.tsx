@@ -4,9 +4,9 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
-import { BarChart3, CheckCircle2, ClipboardList, Eye, Plus, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { BarChart3, CheckCircle2, ClipboardList, Eye, FileSpreadsheet, FileText, Plus, Trash2, X, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -71,6 +71,14 @@ export default function ActasTallerIndex({ actas, vehiculos, filters }: Props) {
     const [hasta,  setHasta]  = useState(filters.hasta  ?? '');
     const [confirmId, setConfirmId] = useState<number | null>(null);
 
+    // Flash de éxito tras crear o eliminar
+    const { props } = usePage<{ flash?: { status?: string } }>();
+    const flashStatus = (props as any).flash?.status ?? (props as any).status ?? null;
+    const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    useEffect(() => {
+        if (flashStatus) setSuccessMsg(flashStatus);
+    }, [flashStatus]);
+
     const aplicar = (overrides: Partial<typeof filters> = {}) => {
         router.get(route('flota.actas-taller.index'), {
             placa:  overrides.placa  ?? placa,
@@ -87,10 +95,25 @@ export default function ActasTallerIndex({ actas, vehiculos, filters }: Props) {
 
     const hayFiltros = placa || estado || desde || hasta;
 
+    const exportUrl = (ruta: string) =>
+        route(ruta, { placa, estado, desde, hasta });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Actas de Taller" />
             <div className="flex flex-col gap-5 px-4 pb-10 sm:px-6">
+
+                {/* Banner éxito */}
+                {successMsg && (
+                    <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 dark:border-green-800/40 dark:bg-green-900/10">
+                        <CheckCircle2 className="size-5 shrink-0 text-green-700" />
+                        <p className="flex-1 text-sm font-semibold text-green-800 dark:text-green-300">{successMsg}</p>
+                        <button type="button" onClick={() => setSuccessMsg(null)}
+                            className="text-green-400 hover:text-green-600 transition-colors">
+                            <XCircle className="size-4" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Título */}
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -107,6 +130,16 @@ export default function ActasTallerIndex({ actas, vehiculos, filters }: Props) {
                             <Link href={route('flota.actas-taller.dashboard')}>
                                 <BarChart3 className="size-4" /> Dashboard
                             </Link>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild className="gap-1.5">
+                            <a href={exportUrl('flota.actas-taller.exportar-excel')}>
+                                <FileSpreadsheet className="size-4" /> Excel
+                            </a>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild className="gap-1.5">
+                            <a href={exportUrl('flota.actas-taller.exportar-pdf')}>
+                                <FileText className="size-4" /> PDF lista
+                            </a>
                         </Button>
                         <Button size="sm" asChild className="gap-1.5 bg-green-700 hover:bg-green-800 text-white">
                             <Link href={route('flota.actas-taller.create')}>
